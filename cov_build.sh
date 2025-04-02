@@ -11,9 +11,9 @@ set -e
 # # ############################
 # # # # 1. Install Dependencies
 
-GITHUB_WORKSPACE=$(pwd)
+GITHUB_WORKSPACE=${PWD}
 echo "akshay GITHUB_WORKSPACE: $GITHUB_WORKSPACE"
-GITHUB_WORKSPACE="$(pwd)"
+GITHUB_WORKSPACE="${PWD}"
 echo "akshay Current Directory: $GITHUB_WORKSPACE"
 
 
@@ -59,7 +59,7 @@ git clone https://$GITHUB_TOKEN@github.com/rdkcentral/entservices-testframework.
 echo "======================================================================================"
 echo "buliding thunderTools"
 cd ThunderTools
-echo "akshay current working dir: "$(pwd)
+echo "akshay current working dir: "${PWD}
 echo "akshay applying patch in thunder tools"
 patch -p1 < $GITHUB_WORKSPACE/entservices-testframework/Tests/L1Tests/patches/00010-R4.4-Add-support-for-project-dir.patch
 cd -
@@ -80,7 +80,7 @@ echo "==========================================================================
 echo "buliding thunder"
 
 cd Thunder
-echo "akshay current working dir: "$(pwd)
+echo "akshay current working dir: "${PWD}
 echo "akshay applying patch in thunder"
 patch -p1 < $GITHUB_WORKSPACE/entservices-testframework/Tests/L2Tests/patches/Use_Legact_Alt_Based_On_ThunderTools_R4.4.3.patch
 patch -p1 < $GITHUB_WORKSPACE/entservices-testframework/Tests/L2Tests/patches/error_code_R4_4.patch
@@ -137,7 +137,7 @@ echo "==========================================================================
 echo "======================================================================================"
 echo "empty headers creation"
 cd headers
-echo "current working dir: "$(pwd)
+echo "current working dir: "${PWD}
 touch audiocapturemgr/audiocapturemgr_iarm.h
 touch ccec/drivers/CecIARMBusMgr.h
 touch rdk/ds/audioOutputPort.hpp
@@ -198,24 +198,24 @@ cmake -G Ninja -S entservices-casting -B build/entservices-casting \
   -DCMAKE_DISABLE_FIND_PACKAGE_RFC=ON \
   -DCMAKE_DISABLE_FIND_PACKAGE_DS=ON \
   -DCMAKE_CXX_FLAGS='-DEXCEPTIONS_ENABLE=ON \
-                      -I $(pwd)/entservices-testframework/Tests/headers \
-                      -I $(pwd)/entservices-testframework/Tests/headers/audiocapturemgr \
-                      -I $(pwd)/entservices-testframework/Tests/headers/rdk/ds \
-                      -I $(pwd)/entservices-testframework/Tests/headers/rdk/iarmbus \
-                      -I $(pwd)/entservices-testframework/Tests/headers/rdk/iarmmgrs-hal \
-                      -I $(pwd)/entservices-testframework/Tests/headers/ccec/drivers \
-                      -I $(pwd)/entservices-testframework/Tests/headers/network \
-                      -include $(pwd)/entservices-testframework/Tests/mocks/devicesettings.h \
-                      -include $(pwd)/entservices-testframework/Tests/mocks/Iarm.h \
-                      -include $(pwd)/entservices-testframework/Tests/mocks/Rfc.h \
-                      -include $(pwd)/entservices-testframework/Tests/mocks/RBus.h \
-                      -include $(pwd)/entservices-testframework/Tests/mocks/Telemetry.h \
-                      -include $(pwd)/entservices-testframework/Tests/mocks/Udev.h \
-                      -include $(pwd)/entservices-testframework/Tests/mocks/pkg.h \
-                      -include $(pwd)/entservices-testframework/Tests/mocks/maintenanceMGR.h \
-                      -include $(pwd)/entservices-testframework/Tests/mocks/secure_wrappermock.h \
+                      -I ${PWD}/entservices-testframework/Tests/headers \
+                      -I ${PWD}/entservices-testframework/Tests/headers/audiocapturemgr \
+                      -I ${PWD}/entservices-testframework/Tests/headers/rdk/ds \
+                      -I ${PWD}/entservices-testframework/Tests/headers/rdk/iarmbus \
+                      -I ${PWD}/entservices-testframework/Tests/headers/rdk/iarmmgrs-hal \
+                      -I ${PWD}/entservices-testframework/Tests/headers/ccec/drivers \
+                      -I ${PWD}/entservices-testframework/Tests/headers/network \
+                      -include ${PWD}/entservices-testframework/Tests/mocks/devicesettings.h \
+                      -include ${PWD}/entservices-testframework/Tests/mocks/Iarm.h \
+                      -include ${PWD}/entservices-testframework/Tests/mocks/Rfc.h \
+                      -include ${PWD}/entservices-testframework/Tests/mocks/RBus.h \
+                      -include ${PWD}/entservices-testframework/Tests/mocks/Telemetry.h \
+                      -include ${PWD}/entservices-testframework/Tests/mocks/Udev.h \
+                      -include ${PWD}/entservices-testframework/Tests/mocks/pkg.h \
+                      -include ${PWD}/entservices-testframework/Tests/mocks/maintenanceMGR.h \
+                      -include ${PWD}/entservices-testframework/Tests/mocks/secure_wrappermock.h \
                       --coverage -Wall -Werror -Wno-error=format \
-                      -Wl,-wrap,system -Wl,-wrap,popen -Wl,-wrap,syslog \
+                      -Wl,-wrap,system -Wl,-wrap,popen -Wl,-wrap,syslog -Wl,-wrap,wpa_ctrl_open -Wl,-wrap,wpa_ctrl_request -Wl,-wrap,wpa_ctrl_close -Wl,-wrap,wpa_ctrl_pending -Wl,-wrap,wpa_ctrl_recv -Wl,-wrap,wpa_ctrl_attach \
                       -DENABLE_TELEMETRY_LOGGING -DUSE_IARMBUS \
                       -DENABLE_SYSTEM_GET_STORE_DEMO_LINK -DENABLE_DEEP_SLEEP \
                       -DENABLE_SET_WAKEUP_SRC_CONFIG -DENABLE_THERMAL_PROTECTION \
@@ -225,7 +225,7 @@ cmake -G Ninja -S entservices-casting -B build/entservices-casting \
   -DRDK_SERVICES_COVERITY=ON \
   -DRDK_SERVICES_L1_TEST=ON \
   -DDS_FOUND=ON \
-  -DPLUGIN_XCAST=ON \
+  -DPLUGIN_MIRACAST=ON \
 
 
 cmake --build build/entservices-casting --target install
