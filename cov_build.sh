@@ -50,9 +50,9 @@ git clone --branch main https://github.com/rdkcentral/entservices-apis.git
 #git clone https://github.com/rdkcentral/entservices-deviceanddisplay.git
 git clone https://github.com/rdkcentral/entservices-casting.git
 #git clone https://github.com/rdkcentral/entservices-infra.git
-git clone https://github.com/rdkcentral/entservices-testframework.git
+#git clone https://github.com/rdkcentral/entservices-testframework.git
 
-#git clone https://$GITHUB_TOKEN@github.com/rdkcentral/entservices-testframework.git
+git clone https://$GITHUB_TOKEN@github.com/rdkcentral/entservices-testframework.git
 
 ############################
 # Build Thunder-Tools
