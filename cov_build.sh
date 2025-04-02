@@ -1,7 +1,7 @@
 # # #!/bin/bash
 set -e
 #GITHUB_TOKEN="${RDKCM_RDKE}"
-#GITHUB_TOKEN="${{ secrets.RDKCM_RDKE }}"
+GITHUB_TOKEN="${{ secrets.RDKCM_RDKE }}"
 
 
 # # ############################
@@ -11,8 +11,8 @@ set -e
 # # ############################
 # # # # 1. Install Dependencies
 
-GITHUB_WORKSPACE=${PWD}
-echo "akshay GITHUB_WORKSPACE: $GITHUB_WORKSPACE"
+#GITHUB_WORKSPACE=${PWD}
+#echo "akshay GITHUB_WORKSPACE: $GITHUB_WORKSPACE"
 GITHUB_WORKSPACE="${PWD}"
 echo "akshay Current Directory: $GITHUB_WORKSPACE"
 
@@ -197,7 +197,7 @@ cmake -G Ninja -S entservices-casting -B build/entservices-casting \
   -DCMAKE_DISABLE_FIND_PACKAGE_IARMBus=ON \
   -DCMAKE_DISABLE_FIND_PACKAGE_RFC=ON \
   -DCMAKE_DISABLE_FIND_PACKAGE_DS=ON \
-  -DCMAKE_CXX_FLAGS='-DEXCEPTIONS_ENABLE=ON \
+  -DCMAKE_CXX_FLAGS="-DEXCEPTIONS_ENABLE=ON \
                       -I ${PWD}/entservices-testframework/Tests/headers \
                       -I ${PWD}/entservices-testframework/Tests/headers/audiocapturemgr \
                       -I ${PWD}/entservices-testframework/Tests/headers/rdk/ds \
@@ -220,7 +220,7 @@ cmake -G Ninja -S entservices-casting -B build/entservices-casting \
                       -DENABLE_SYSTEM_GET_STORE_DEMO_LINK -DENABLE_DEEP_SLEEP \
                       -DENABLE_SET_WAKEUP_SRC_CONFIG -DENABLE_THERMAL_PROTECTION \
                       -DUSE_DRM_SCREENCAPTURE -DHAS_API_SYSTEM -DHAS_API_POWERSTATE \
-                      -DHAS_RBUS -DDISABLE_SECURITY_TOKEN -DENABLE_DEVICE_MANUFACTURER_INFO -DUSE_THUNDER_R4=ON -DTHUNDER_VERSION=4 -DTHUNDER_VERSION_MAJOR=4 -DTHUNDER_VERSION_MINOR=4' \
+                      -DHAS_RBUS -DDISABLE_SECURITY_TOKEN -DENABLE_DEVICE_MANUFACTURER_INFO -DUSE_THUNDER_R4=ON -DTHUNDER_VERSION=4 -DTHUNDER_VERSION_MAJOR=4 -DTHUNDER_VERSION_MINOR=4" \
   -DCOMCAST_CONFIG=OFF \
   -DRDK_SERVICES_COVERITY=ON \
   -DRDK_SERVICES_L1_TEST=ON \
@@ -233,5 +233,7 @@ echo "==========================================================================
 echo "path of so files"
 find . -iname "*.so*"
 exit 0
+
+
 
 
