@@ -187,7 +187,7 @@ echo "==========================================================================
 echo "buliding entservices-deviceanddisplay"
 cd $GITHUB_WORKSPACE
 ls -al
-cmake -G Ninja -S entservices-casting -B build/entservices-casting \
+cmake -G Ninja -S entservices-casting -B build/entservices-casting\
   -DUSE_THUNDER_R4=ON \
   -DCMAKE_INSTALL_PREFIX="$GITHUB_WORKSPACE/install/usr" \
   -DCMAKE_MODULE_PATH="$GITHUB_WORKSPACE/install/tools/cmake" \
