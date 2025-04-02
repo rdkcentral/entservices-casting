@@ -216,6 +216,8 @@ cmake -G Ninja -S entservices-casting -B build/entservices-casting \
                       -include ${PWD}/entservices-testframework/Tests/mocks/secure_wrappermock.h \
                       --coverage -Wall -Werror -Wno-error=format \
                       -Wl,-wrap,system -Wl,-wrap,popen -Wl,-wrap,syslog \
+                      -Wall -Wno-unused-result -Wno-deprecated-declarations -Wno-error=format= \
+                      -Wl,-wrap,system -Wl,-wrap,popen -Wl,-wrap,syslog -Wl,-wrap,wpa_ctrl_open -Wl,-wrap,wpa_ctrl_request -Wl,-wrap,wpa_ctrl_close -Wl,-wrap,wpa_ctrl_pending -Wl,-wrap,wpa_ctrl_recv -Wl,-wrap,wpa_ctrl_attach \
                       -DENABLE_TELEMETRY_LOGGING -DUSE_IARMBUS \
                       -DENABLE_SYSTEM_GET_STORE_DEMO_LINK -DENABLE_DEEP_SLEEP \
                       -DENABLE_SET_WAKEUP_SRC_CONFIG -DENABLE_THERMAL_PROTECTION \
