@@ -1,7 +1,7 @@
 # # #!/bin/bash
 set -e
 #GITHUB_TOKEN="${RDKCM_RDKE}"
-GITHUB_TOKEN="${{ secrets.RDKCM_RDKE }}"
+#GITHUB_TOKEN="${{ secrets.RDKCM_RDKE }}"
 
 
 # # ############################
