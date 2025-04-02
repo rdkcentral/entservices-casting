@@ -198,22 +198,22 @@ cmake -G Ninja -S entservices-casting -B build/entservices-casting \
   -DCMAKE_DISABLE_FIND_PACKAGE_RFC=ON \
   -DCMAKE_DISABLE_FIND_PACKAGE_DS=ON \
   -DCMAKE_CXX_FLAGS='-DEXCEPTIONS_ENABLE=ON \
-                      -I ${PWD}/entservices-testframework/Tests/headers \
-                      -I ${PWD}/entservices-testframework/Tests/headers/audiocapturemgr \
-                      -I ${PWD}/entservices-testframework/Tests/headers/rdk/ds \
-                      -I ${PWD}/entservices-testframework/Tests/headers/rdk/iarmbus \
-                      -I ${PWD}/entservices-testframework/Tests/headers/rdk/iarmmgrs-hal \
-                      -I ${PWD}/entservices-testframework/Tests/headers/ccec/drivers \
-                      -I ${PWD}/entservices-testframework/Tests/headers/network \
-                      -include ${PWD}/entservices-testframework/Tests/mocks/devicesettings.h \
-                      -include ${PWD}/entservices-testframework/Tests/mocks/Iarm.h \
-                      -include ${PWD}/entservices-testframework/Tests/mocks/Rfc.h \
-                      -include ${PWD}/entservices-testframework/Tests/mocks/RBus.h \
-                      -include ${PWD}/entservices-testframework/Tests/mocks/Telemetry.h \
-                      -include ${PWD}/entservices-testframework/Tests/mocks/Udev.h \
-                      -include ${PWD}/entservices-testframework/Tests/mocks/pkg.h \
-                      -include ${PWD}/entservices-testframework/Tests/mocks/maintenanceMGR.h \
-                      -include ${PWD}/entservices-testframework/Tests/mocks/secure_wrappermock.h \
+                      -I $(pwd)/entservices-testframework/Tests/headers \
+                      -I $(pwd)/entservices-testframework/Tests/headers/audiocapturemgr \
+                      -I $(pwd)/entservices-testframework/Tests/headers/rdk/ds \
+                      -I $(pwd)/entservices-testframework/Tests/headers/rdk/iarmbus \
+                      -I $(pwd)/entservices-testframework/Tests/headers/rdk/iarmmgrs-hal \
+                      -I $(pwd)/entservices-testframework/Tests/headers/ccec/drivers \
+                      -I $(pwd)/entservices-testframework/Tests/headers/network \
+                      -include $(pwd)/entservices-testframework/Tests/mocks/devicesettings.h \
+                      -include $(pwd)/entservices-testframework/Tests/mocks/Iarm.h \
+                      -include $(pwd)/entservices-testframework/Tests/mocks/Rfc.h \
+                      -include $(pwd)/entservices-testframework/Tests/mocks/RBus.h \
+                      -include $(pwd)/entservices-testframework/Tests/mocks/Telemetry.h \
+                      -include $(pwd)/entservices-testframework/Tests/mocks/Udev.h \
+                      -include $(pwd)/entservices-testframework/Tests/mocks/pkg.h \
+                      -include $(pwd)/entservices-testframework/Tests/mocks/maintenanceMGR.h \
+                      -include $(pwd)/entservices-testframework/Tests/mocks/secure_wrappermock.h \
                       --coverage -Wall -Werror -Wno-error=format \
                        -Wl,-wrap,system -Wl,-wrap,popen -Wl,-wrap,syslog -Wl,-wrap,wpa_ctrl_open -Wl,-wrap,wpa_ctrl_request -Wl,-wrap,wpa_ctrl_close -Wl,-wrap,wpa_ctrl pending -Wl,-wrap,wpa_ctrl_recv -Wl,-wrap,wpa_ctrl_attach \
                       -DENABLE_TELEMETRY_LOGGING -DUSE_IARMBUS \
