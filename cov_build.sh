@@ -47,8 +47,10 @@ git clone --branch R4.4.1 https://github.com/rdkcentral/Thunder.git
 
 git clone --branch main https://github.com/rdkcentral/entservices-apis.git
 
-git clone https://github.com/rdkcentral/entservices-deviceanddisplay.git
+#git clone https://github.com/rdkcentral/entservices-deviceanddisplay.git
 git clone https://github.com/rdkcentral/entservices-casting.git
+#git clone https://github.com/rdkcentral/entservices-infra.git
+#git clone https://github.com/rdkcentral/entservices-inputoutput.git
 
 git clone https://$GITHUB_TOKEN@github.com/rdkcentral/entservices-testframework.git
 
@@ -187,7 +189,7 @@ echo "==========================================================================
 echo "buliding entservices-deviceanddisplay"
 cd $GITHUB_WORKSPACE
 ls -al
-cmake -G Ninja -S entservices-casting -B build/entservices-casting\
+cmake -G Ninja -S entservices-casting -B build/entservices-casting \
   -DUSE_THUNDER_R4=ON \
   -DCMAKE_INSTALL_PREFIX="$GITHUB_WORKSPACE/install/usr" \
   -DCMAKE_MODULE_PATH="$GITHUB_WORKSPACE/install/tools/cmake" \
@@ -218,12 +220,13 @@ cmake -G Ninja -S entservices-casting -B build/entservices-casting\
                       -DENABLE_SYSTEM_GET_STORE_DEMO_LINK -DENABLE_DEEP_SLEEP \
                       -DENABLE_SET_WAKEUP_SRC_CONFIG -DENABLE_THERMAL_PROTECTION \
                       -DUSE_DRM_SCREENCAPTURE -DHAS_API_SYSTEM -DHAS_API_POWERSTATE \
-                      -DHAS_RBUS -DDISABLE_SECURITY_TOKEN -DENABLE_DEVICE_MANUFACTURER_INFO -DUSE_THUNDER_R4 -DTHUNDER_VERSION=4 -DTHUNDER_VERSION_MAJOR=4 -DTHUNDER_VERSION_MINOR=4" \
+                      -DHAS_RBUS -DDISABLE_SECURITY_TOKEN -DENABLE_DEVICE_MANUFACTURER_INFO -DUSE_THUNDER_R4=ON -DTHUNDER_VERSION=4 -DTHUNDER_VERSION_MAJOR=4 -DTHUNDER_VERSION_MINOR=4" \
   -DCOMCAST_CONFIG=OFF \
   -DRDK_SERVICES_COVERITY=ON \
   -DRDK_SERVICES_L1_TEST=ON \
   -DDS_FOUND=ON \
-  -DPLUGIN_MIRACAS=ON \
+  -DPLUGIN_MIRACAST=ON \
+
 
 cmake --build build/entservices-casting --target install
 echo "======================================================================================"
