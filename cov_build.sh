@@ -215,8 +215,8 @@ cmake -G Ninja -S entservices-casting -B build/entservices-casting \
                       -include ${PWD}/entservices-testframework/Tests/mocks/Udev.h \
                       -include ${PWD}/entservices-testframework/Tests/mocks/pkg.h \
                       -include ${PWD}/entservices-testframework/Tests/mocks/maintenanceMGR.h \
-                      -include ${PWD}/rdkservices/Tests/mocks/gdialservice.h \
-                      -include ${PWD}/rdkservices/Tests/mocks/wpa_ctrl_mock.h \
+                      -include ${PWD}/entservices-testframework/Tests/mocks/gdialservice.h \
+                      -include ${PWD}/entservices-testframework/Tests/mocks/wpa_ctrl_mock.h \
                       -include ${PWD}/entservices-testframework/Tests/mocks/secure_wrappermock.h \
                       --coverage -Wall -Werror -Wno-error=format \
                       -Wl,-wrap,system -Wl,-wrap,popen -Wl,-wrap,syslog -Wl,-wrap,wpa_ctrl_open -Wl,-wrap,wpa_ctrl_request -Wl,-wrap,wpa_ctrl_close -Wl,-wrap,wpa_ctrl_pending -Wl,-wrap,wpa_ctrl_recv -Wl,-wrap,wpa_ctrl_attach \
