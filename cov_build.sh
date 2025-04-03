@@ -177,6 +177,8 @@ touch secure_wrapper.h
 touch wpa_ctrl.h
 touch btmgr.h
 touch rdk_logger_milestone.h
+touch gdialservice.h
+touch gdialservicecommon.h
 echo "files created successfully"
 echo "======================================================================================"
 
