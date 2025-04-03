@@ -230,6 +230,7 @@ cmake -G Ninja -S entservices-casting -B build/entservices-casting \
   -DRDK_SERVICES_L1_TEST=ON \
   -DDS_FOUND=ON \
   -DPLUGIN_XCAST=ON \
+  -DPLUGIN_MIRACAST=ON
 
 
 cmake --build build/entservices-casting --target install
