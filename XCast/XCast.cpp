@@ -28,6 +28,7 @@
 #include <cstring>
 #include "UtilsSynchroIarm.hpp"
 
+
 using namespace std;
 using namespace WPEFramework;
 using PowerState = WPEFramework::Exchange::IPowerManager::PowerState;
