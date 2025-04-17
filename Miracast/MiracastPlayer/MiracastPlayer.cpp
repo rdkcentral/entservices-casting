@@ -226,7 +226,7 @@ namespace WPEFramework
 					{
 						if (0 != setenv("XDG_RUNTIME_DIR", "/run", 1))
 						{
-							MIRACASTLOG_ERROR("Failed, setenv for XDG_RUNTIME_DIR: [%s]",strerror(errno));
+							MIRACASTLOG_ERROR("Failed, setenv for XDG_RUNTIME_DIR: [%s]");
 						}
 						if (0 != setenv("LD_PRELOAD", "libwesteros_gl.so.0.0.0", 1))
 						{
