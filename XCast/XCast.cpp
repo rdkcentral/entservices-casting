@@ -402,7 +402,16 @@ void XCast::Deinitialize(PluginHost::IShell* service)
     ASSERT(_service == service);
     ASSERT(_xcast != nullptr);
 
-    if (_powerManagerPlugin) {
+    getSystemPlugin();
+    if (m_SystemPluginObj)
+    {
+        m_SystemPluginObj->Unsubscribe(THUNDER_RPC_TIMEOUT, "onFriendlyNameChanged");
+    }
+
+    if (_powerManagerPlugin)
+    {
+        _powerManagerPlugin->Unregister(_pwrMgrNotification.baseInterface<Exchange::IPowerManager::INetworkStandbyModeChangedNotification>());
+        _powerManagerPlugin->Unregister(_pwrMgrNotification.baseInterface<Exchange::IPowerManager::IModeChangedNotification>());
         _powerManagerPlugin.Reset();
     }
 
