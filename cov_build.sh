@@ -34,6 +34,8 @@ cmake -G Ninja -S "$GITHUB_WORKSPACE" -B build/entservices-casting \
 -I ${GITHUB_WORKSPACE}/entservices-testframework/Tests/mocks \
 -I ${GITHUB_WORKSPACE}/entservices-testframework/Tests/mocks/thunder \
 -I ${GITHUB_WORKSPACE}/entservices-testframework/Tests/mocks/devicesettings \
+-I ${GITHUB_WORKSPACE}/usr/include/glib-2.0 \
+-I ${GITHUB_WORKSPACE}/usr/lib/x86_64-linux-gnu/glib-2.0/include \
 -include ${GITHUB_WORKSPACE}/entservices-testframework/Tests/mocks/devicesettings.h \
 -include ${GITHUB_WORKSPACE}/entservices-testframework/Tests/mocks/Iarm.h \
 -include ${GITHUB_WORKSPACE}/entservices-testframework/Tests/mocks/Rfc.h \
