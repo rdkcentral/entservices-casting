@@ -34,6 +34,9 @@ cmake -G Ninja -S "$GITHUB_WORKSPACE" -B build/entservices-casting \
 -I${GITHUB_WORKSPACE}/entservices-testframework/Tests/mocks \
 -I${GITHUB_WORKSPACE}/entservices-testframework/Tests/mocks/thunder \
 -I${GITHUB_WORKSPACE}/entservices-testframework/Tests/mocks/devicesettings \
+-I${GITHUB_WORKSPACE}/entservices-testframework/Tests \
+-I${GITHUB_WORKSPACE}/Thunder/Source \
+-I${GITHUB_WORKSPACE}/Thunder/Source/core \
 -I${GITHUB_WORKSPACE}/usr/include/glib-2.0 \
 -I${GITHUB_WORKSPACE}/usr/lib/x86_64-linux-gnu/glib-2.0/include \
 -include ${GITHUB_WORKSPACE}/entservices-testframework/Tests/mocks/devicesettings.h \
@@ -47,7 +50,7 @@ cmake -G Ninja -S "$GITHUB_WORKSPACE" -B build/entservices-casting \
 -include ${GITHUB_WORKSPACE}/entservices-testframework/Tests/mocks/gdialservice.h \
 -include ${GITHUB_WORKSPACE}/entservices-testframework/Tests/mocks/wpa_ctrl_mock.h \
 -include ${GITHUB_WORKSPACE}/entservices-testframework/Tests/mocks/secure_wrappermock.h \
---coverage -Wall -Werror -Wno-error=format \
+-Wall -Werror -Wno-unused-result -Wno-deprecated-declarations -Wno-error=format \
 -Wl,-wrap,system -Wl,-wrap,popen -Wl,-wrap,syslog -Wl,-wrap,wpa_ctrl_open -Wl,-wrap,wpa_ctrl_request -Wl,-wrap,wpa_ctrl_close -Wl,-wrap,wpa_ctrl_pending -Wl,-wrap,wpa_ctrl_recv -Wl,-wrap,wpa_ctrl_attach \
 -DENABLE_TELEMETRY_LOGGING -DUSE_IARMBUS \
 -DENABLE_SYSTEM_GET_STORE_DEMO_LINK -DENABLE_DEEP_SLEEP \
