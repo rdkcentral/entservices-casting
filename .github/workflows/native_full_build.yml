@@ -17,7 +17,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
-          ref: R4.4
+          ref: R4.4.1
 
       - name: native build
         run: |
