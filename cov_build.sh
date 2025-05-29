@@ -35,7 +35,6 @@ cmake -G Ninja -S "$GITHUB_WORKSPACE" -B build/entservices-casting \
 -I ${GITHUB_WORKSPACE}/entservices-testframework/Tests/mocks \
 -I ${GITHUB_WORKSPACE}/entservices-testframework/Tests/mocks/thunder \
 -I ${GITHUB_WORKSPACE}/entservices-testframework/Tests/mocks/devicesettings \
--I ${GITHUB_WORKSPACE}/entservices-testframework/Tests \
 -I ${GITHUB_WORKSPACE}/Thunder/Source \
 -I ${GITHUB_WORKSPACE}/Thunder/Source/core \
 -I ${GITHUB_WORKSPACE}/usr/include/glib-2.0 \
