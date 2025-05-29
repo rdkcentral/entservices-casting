@@ -143,7 +143,6 @@ include_directories(${TEST_INC})
 target_link_directories(${MODULE_NAME} PUBLIC ${CMAKE_INSTALL_PREFIX}/lib/wpeframework/plugins)
 
 target_link_libraries(${MODULE_NAME}
-    PRIVATE
         ${TEST_LIB}
         ${GLIB_LIBRARIES}
         ${GSTREAMER_LIBRARIES}
