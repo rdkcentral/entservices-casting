@@ -654,7 +654,8 @@ namespace WPEFramework
             lock_guard<recursive_mutex> lock(m_EventMutex);
             eMIRA_SERVICE_STATES current_state = getCurrentServiceState();
 
-            if ( MIRACAST_SERVICE_STATE_CONNECTION_ACCEPTED != current_state )
+            if (( MIRACAST_SERVICE_STATE_PLAYER_LAUNCHED == current_state )||
+                ( MIRACAST_SERVICE_STATE_CONNECTION_ACCEPTED != current_state ))
             {
                 MIRACASTLOG_WARNING("Invalid state to process stopClientConnection [%#08X]", current_state);
                 result.message = "Invalid state to process stopClientConnection";
@@ -672,18 +673,10 @@ namespace WPEFramework
                         cached_mac_address = clientMac;
                     }
 
-                    if ( MIRACAST_SERVICE_STATE_PLAYER_LAUNCHED == current_state )
-                    {
-                        result.message = "stopClientConnection received after Launch";
-                        MIRACASTLOG_ERROR("stopClientConnection received after Launch..!!!");
-                    }
-                    else
-                    {
-                        changeServiceState(MIRACAST_SERVICE_STATE_APP_REQ_TO_ABORT_CONNECTION);
-                        m_miracast_ctrler_obj->restart_session_discovery(cached_mac_address);
-                        changeServiceState(MIRACAST_SERVICE_STATE_RESTARTING_SESSION);
-                        isSuccessOrFailure = true;
-                    }
+                    changeServiceState(MIRACAST_SERVICE_STATE_APP_REQ_TO_ABORT_CONNECTION);
+                    m_miracast_ctrler_obj->restart_session_discovery(cached_mac_address);
+                    changeServiceState(MIRACAST_SERVICE_STATE_RESTARTING_SESSION);
+                    isSuccessOrFailure = true;
                 }
                 else
                 {

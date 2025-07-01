@@ -204,7 +204,21 @@ namespace {
     {
         usleep(500000);
         TEST_LOG("Send Msg[%lu][%s]...",msg_buffer.size(),msg_buffer.c_str());
-        send(sockfd, msg_buffer.c_str(), msg_buffer.size(), 0);
+        ssize_t bytes_sent = send(sockfd, msg_buffer.c_str(), msg_buffer.size(), 0);
+
+        if (bytes_sent < 0)
+        {
+            TEST_LOG("ERROR: send failed [%s]...", strerror(errno));
+        }
+        else if (static_cast<size_t>(bytes_sent) < msg_buffer.size())
+        {
+            // Partial send occurred
+            TEST_LOG("Partial message sent: %ld bytes out of %lu", bytes_sent, msg_buffer.size());
+        }
+        else
+        {
+            TEST_LOG("Sent %ld bytes successfully", bytes_sent);
+        }
     }
 
     /*
@@ -267,8 +281,8 @@ namespace {
         else
         {
             *bytes_processed_ptr = recv_return;
+            TEST_LOG("recv string [%s][%d] ...", (char*)buffer,recv_return);
         }
-        TEST_LOG("recv string [%s][%d] ...",buffer,recv_return);
         return status;
     }
 

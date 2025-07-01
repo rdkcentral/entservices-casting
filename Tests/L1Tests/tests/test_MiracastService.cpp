@@ -589,6 +589,9 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_onClientConnectionAndLaunchRequest)
 
 	EXPECT_EQ(Core::ERROR_NONE, P2PGrpStart.Lock(10000));
 
+	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("stopClientConnection"), _T("{\"name\": \"Sample-Test-Android-2\",\"mac\": \"96:52:44:b6:7d:14\"}"), response));
+	EXPECT_EQ(response, string("{\"message\":\"Invalid state to process stopClientConnection\",\"success\":false}"));
+
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("updatePlayerState"), _T("{\"mac\": \"96:52:44:b6:7d:14\",\"state\":\"INITIATED\"}"), response));
 	sleep(1);
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("updatePlayerState"), _T("{\"mac\": \"96:52:44:b6:7d:14\",\"state\":\"INPROGRESS\"}"), response));
