@@ -94,6 +94,29 @@ namespace
 		fileContentStream << "\n";
 		fileContentStream.close();
 	}
+    void log( const char *func, const char *file, int line, int threadID,const char *format, ...)
+    {
+        const short kFormatMessageSize = 4096;
+        char formatted[kFormatMessageSize];
+        char time[24] = {0};
+        va_list argptr;
+
+        current_time(time);
+
+        va_start(argptr, format);
+        vsnprintf(formatted, kFormatMessageSize, format, argptr);
+        va_end(argptr);
+
+        fprintf(stderr, "[GUNIT][%d] INFO [%s:%d %s] %s: %s \n",
+                    (int)syscall(SYS_gettid),
+                    basename(file),
+                    line,
+            time,
+                    func,
+                    formatted);
+
+        fflush(stderr);
+    }
 }
 
 static struct wpa_ctrl global_wpa_ctrl_handle;
