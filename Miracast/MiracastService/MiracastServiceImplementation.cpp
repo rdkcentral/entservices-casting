@@ -59,6 +59,7 @@ namespace WPEFramework
             MIRACAST::logger_init("MiracastService");
             m_isServiceInitialized = false;
             _registeredEventHandlers = false;
+            m_eService_state = MIRACAST_SERVICE_STATE_IDLE;
         }
 
         MiracastServiceImplementation::~MiracastServiceImplementation()
@@ -445,7 +446,7 @@ namespace WPEFramework
                     InitializePowerManager(service);
                     InitializePowerState();
             
-                    m_miracast_ctrler_obj = MiracastController::getInstance(ret_code, this,p2p_ctrl_iface);
+                    m_miracast_ctrler_obj = MiracastController::getInstance(ret_code, this,std::move(p2p_ctrl_iface));
                     if (nullptr != m_miracast_ctrler_obj)
                     {
                         getThunderPlugins();
@@ -469,7 +470,6 @@ namespace WPEFramework
                             MIRACASTLOG_INFO("friendlyName updated properly...");
                         }
                         m_isServiceInitialized = true;
-                        m_miracast_ctrler_obj->m_ePlayer_state = WPEFramework::Exchange::IMiracastService::PLAYER_STATE_IDLE;
                         result = Core::ERROR_NONE;
                     }
                     else
@@ -608,7 +608,6 @@ namespace WPEFramework
                     {
                         changeServiceState(MIRACAST_SERVICE_STATE_CONNECTION_REJECTED);
                         m_miracast_ctrler_obj->restart_session_discovery(m_src_dev_mac);
-                        m_miracast_ctrler_obj->m_ePlayer_state = WPEFramework::Exchange::IMiracastService::PLAYER_STATE_IDLE;
                         changeServiceState(MIRACAST_SERVICE_STATE_RESTARTING_SESSION);
                         MIRACASTLOG_INFO("#### Refreshing the Session ####");
                     }
@@ -673,17 +672,17 @@ namespace WPEFramework
                         cached_mac_address = clientMac;
                     }
 
-                    if ( MIRACAST_SERVICE_STATE_PLAYER_LAUNCHED != current_state )
+                    if ( MIRACAST_SERVICE_STATE_PLAYER_LAUNCHED == current_state )
+                    {
+                        result.message = "stopClientConnection received after Launch";
+                        MIRACASTLOG_ERROR("stopClientConnection received after Launch..!!!");
+                    }
+                    else
                     {
                         changeServiceState(MIRACAST_SERVICE_STATE_APP_REQ_TO_ABORT_CONNECTION);
                         m_miracast_ctrler_obj->restart_session_discovery(cached_mac_address);
                         changeServiceState(MIRACAST_SERVICE_STATE_RESTARTING_SESSION);
                         isSuccessOrFailure = true;
-                    }
-                    else
-                    {
-                        result.message = "stopClientConnection received after Launch";
-                        MIRACASTLOG_ERROR("stopClientConnection received after Launch..!!!");
                     }
                 }
                 else
@@ -710,7 +709,7 @@ namespace WPEFramework
                 case WPEFramework::Exchange::IMiracastService::PLAYER_STATE_STOPPED:
                 {
                     MIRACASTLOG_INFO("#### clientMac[%s] playerState[%d] reasonCode[%d] ####", clientMac.c_str(), (int)playerState, (int)reasonCode);
-                    m_miracast_ctrler_obj->m_ePlayer_state = playerState;
+
                     if (WPEFramework::Exchange::IMiracastService::PLAYER_STATE_STOPPED == playerState)
                     {
                         MiracastPlayerReasonCode playerReasonCode = static_cast<MiracastPlayerReasonCode>(reasonCode);
@@ -799,7 +798,6 @@ namespace WPEFramework
                     commandBuffer[sizeof(commandBuffer) - 1] = '\0';
                     MIRACASTLOG_INFO("Stopping old Session by [%s]",commandBuffer);
                     MiracastCommon::execute_SystemCommand(commandBuffer);
-                    sleep(1);
                 }
                 if (MIRACAST_SERVICE_STATE_DIRECT_LAUCH_REQUESTED == current_state)
                 {
@@ -821,7 +819,7 @@ namespace WPEFramework
 
                 dispatchEvent(MIRACASTSERVICE_EVENT_CLIENT_CONNECTION_REQUEST, pairParam);
 
-                m_src_dev_mac = client_mac;
+                m_src_dev_mac = std::move(client_mac);
 
                 if (MIRACAST_SERVICE_STATE_DIRECT_LAUCH_REQUESTED == current_state)
                 {
@@ -864,12 +862,12 @@ namespace WPEFramework
             if ( !is_connect_req_reported )
             {
                 changeServiceState(MIRACAST_SERVICE_STATE_DIRECT_LAUCH_REQUESTED);
-                m_src_dev_ip = src_dev_ip;
-                m_src_dev_mac = src_dev_mac;
-                m_src_dev_name = src_dev_name;
-                m_sink_dev_ip = sink_dev_ip;
+                m_src_dev_ip = std::move(src_dev_ip);
+                m_src_dev_mac = std::move(src_dev_mac);
+                m_src_dev_name = std::move(src_dev_name);
+                m_sink_dev_ip = std::move(sink_dev_ip);
                 MIRACASTLOG_INFO("Direct Launch request has received. So need to notify connect Request");
-                onMiracastServiceClientConnectionRequest( src_dev_mac, src_dev_name );
+                onMiracastServiceClientConnectionRequest( m_src_dev_mac, m_src_dev_name );
             }
             else if ( MIRACAST_SERVICE_STATE_CONNECTION_ACCEPTED != current_state )
             {
@@ -969,7 +967,7 @@ namespace WPEFramework
             _instance->setPowerStateInternal(newState);
         }
 
-        const void MiracastServiceImplementation::InitializePowerState()
+        void MiracastServiceImplementation::InitializePowerState()
         {
             MIRACASTLOG_TRACE("Entering ...");
             Core::hresult res = Core::ERROR_GENERAL;

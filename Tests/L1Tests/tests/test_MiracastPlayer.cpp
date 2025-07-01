@@ -200,7 +200,7 @@ namespace {
         return seq_str;
     }
 
-    void send_rtsp_msg( int sockfd , std::string msg_buffer )
+    void send_rtsp_msg( int sockfd , const std::string &msg_buffer )
     {
         usleep(500000);
         TEST_LOG("Send Msg[%lu][%s]...",msg_buffer.size(),msg_buffer.c_str());
@@ -229,10 +229,16 @@ namespace {
         return returnValue;
     }
 
-    bool recv_rtsp_msg(int socket_fd, void *buffer, size_t buffer_len )
+    bool recv_rtsp_msg(int socket_fd, void *buffer, size_t buffer_len, int* bytes_processed_ptr )
     {
         int recv_return = -1;
         bool status = true;
+
+        if (nullptr == bytes_processed_ptr)
+        {
+            TEST_LOG("ERROR: Invalid Argument");
+            return false;
+        }
 
         TEST_LOG("Entering ");
         if (!wait_data_timeout(socket_fd, 15000 ))
@@ -250,13 +256,17 @@ namespace {
             if (errno == EAGAIN || errno == EWOULDBLOCK)
             {
                 TEST_LOG("ERROR:recv timed out ...");
-                status = false;
             }
             else
             {
                 TEST_LOG("ERROR: recv failed [%s] ...",strerror(errno));
-                status = false;
             }
+            status = false;
+            *bytes_processed_ptr = 0;
+        }
+        else
+        {
+            *bytes_processed_ptr = recv_return;
         }
         TEST_LOG("recv string [%s][%d] ...",buffer,recv_return);
         return status;
@@ -408,10 +418,12 @@ namespace {
             }
             else
             {
+                int bytes_processed = 0;
                 TEST_LOG("RTSP_RECV");
-                bool status = recv_rtsp_msg( client_fd , buffer , sizeof(buffer));
+                bool status = recv_rtsp_msg( client_fd , buffer , sizeof(buffer), &bytes_processed);
+                buffer[bytes_processed] = '\0'; // Null-terminate the received string
                 msg_buffer = buffer;
-                if ((msg_buffer.find("TEARDOWN") == 0) || (false == status ))
+                if ((false == status ) || (msg_buffer.find("TEARDOWN") == 0))
                 {
                     TEST_LOG("TEARDOWN initiated from Sink Device[%x]",status);
                     response_buffer = "SUCCESS";
@@ -915,10 +927,12 @@ TEST_F(MiracastPlayerEventTest, SRC_DEV_REQUESTED_TO_STOP)
     char buffer[BUFFER_SIZE] = {0};
     std::string teardown_request = "SET_PARAMETER rtsp://localhost/wfd1.0 RTSP/1.0\r\nCSeq: 6\r\nContent-Type: text/parameters\r\nContent-Length: 30\r\n\r\nwfd_trigger_method: TEARDOWN\r\n";
     std::string teardown_response = "RTSP/1.0 200 OK\r\nCSeq: 6\r\n\r\n",
+    int processed_bytes = 0;
     temp_buffer = "";
 
     send_rtsp_msg(client_fd,teardown_request);
-    recv_rtsp_msg( client_fd , buffer , sizeof(buffer));
+    recv_rtsp_msg( client_fd , buffer , sizeof(buffer), &processed_bytes);
+    buffer[processed_bytes] = '\0'; // Null-terminate the received string
     temp_buffer = buffer;
 
     EXPECT_EQ(teardown_response, temp_buffer);
@@ -1199,9 +1213,11 @@ TEST_F(MiracastPlayerEventTest, setPlayerState)
 
     if (Plugin::MiracastPlayerImplementation::_instance->m_miracast_rtsp_obj)
     {
+        int processed_bytes = 0;
         rtsp_hldr_msgq_data.state = RTSP_PAUSE_FROM_SINK2SRC;
         Plugin::MiracastPlayerImplementation::_instance->m_miracast_rtsp_obj->send_msgto_rtsp_msg_hdler_thread(rtsp_hldr_msgq_data);
-        recv_rtsp_msg( client_fd , buffer , sizeof(buffer));
+        recv_rtsp_msg( client_fd , buffer , sizeof(buffer), &processed_bytes);
+        buffer[processed_bytes] = '\0'; // Null-terminate the received string
         temp_buffer = buffer;
         std::string receivedCSeqNum = parse_received_parser_field_value( temp_buffer , "CSeq: " );
         EXPECT_TRUE(temp_buffer.find("PAUSE") == 0);
@@ -1214,7 +1230,8 @@ TEST_F(MiracastPlayerEventTest, setPlayerState)
 
         rtsp_hldr_msgq_data.state = RTSP_PLAY_FROM_SINK2SRC;
         Plugin::MiracastPlayerImplementation::_instance->m_miracast_rtsp_obj->send_msgto_rtsp_msg_hdler_thread(rtsp_hldr_msgq_data);
-        recv_rtsp_msg( client_fd , buffer , sizeof(buffer));
+        recv_rtsp_msg( client_fd , buffer , sizeof(buffer), &processed_bytes);
+        buffer[processed_bytes] = '\0'; // Null-terminate the received string
         temp_buffer = buffer;
         receivedCSeqNum = parse_received_parser_field_value( temp_buffer , "CSeq: " );
         EXPECT_TRUE(temp_buffer.find("PLAY") == 0);
@@ -1227,7 +1244,8 @@ TEST_F(MiracastPlayerEventTest, setPlayerState)
 
         rtsp_hldr_msgq_data.state = RTSP_TEARDOWN_FROM_SINK2SRC;
         Plugin::MiracastPlayerImplementation::_instance->m_miracast_rtsp_obj->send_msgto_rtsp_msg_hdler_thread(rtsp_hldr_msgq_data);
-        recv_rtsp_msg( client_fd , buffer , sizeof(buffer));
+        recv_rtsp_msg( client_fd , buffer , sizeof(buffer), &processed_bytes);
+        buffer[processed_bytes] = '\0'; // Null-terminate the received string
         temp_buffer = buffer;
         receivedCSeqNum = parse_received_parser_field_value( temp_buffer , "CSeq: " );
         EXPECT_TRUE(temp_buffer.find("TEARDOWN") == 0);

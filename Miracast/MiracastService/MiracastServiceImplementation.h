@@ -219,7 +219,7 @@ namespace WPEFramework
 
                 void InitializePowerManager(PluginHost::IShell *service);
                 void registerEventHandlers();
-                const void InitializePowerState();
+                void InitializePowerState();
                 std::string getPowerStateString(PowerState pwrState);
                 PowerState getPowerManagerPluginPowerState(uint32_t powerState);
                 PowerState getCurrentPowerState(void);

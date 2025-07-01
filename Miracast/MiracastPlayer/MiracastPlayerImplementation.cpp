@@ -43,6 +43,7 @@ namespace WPEFramework
         {
             LOGINFO("Call MiracastPlayerImplementation constructor");
             MiracastPlayerImplementation::_instance = this;
+            m_video_sink_rect = {0, 0, 1920, 1080}; // Default video rectangle
             MIRACAST::logger_init("MiracastPlayer");
         }
 
@@ -277,7 +278,8 @@ namespace WPEFramework
             rtsp_hldr_msgq_data.state = RTSP_START_RECEIVE_MSGS;
 
             MIRACASTLOG_INFO("source_dev_ip[%s] source_dev_mac[%s] source_dev_name[%s] sink_dev_ip[%s] videoRect:[%d,%d,%d,%d]",
-                    rtsp_hldr_msgq_data.source_dev_ip, rtsp_hldr_msgq_data.source_dev_mac, rtsp_hldr_msgq_data.source_dev_name, rtsp_hldr_msgq_data.sink_dev_ip);
+                    rtsp_hldr_msgq_data.source_dev_ip, rtsp_hldr_msgq_data.source_dev_mac, rtsp_hldr_msgq_data.source_dev_name, rtsp_hldr_msgq_data.sink_dev_ip,
+                    videoRect.startX, videoRect.startY, videoRect.width, videoRect.height);
             if (( 0 < videoRect.width ) && ( 0 < videoRect.height ))
             {
                 m_video_sink_rect.startX = videoRect.startX;

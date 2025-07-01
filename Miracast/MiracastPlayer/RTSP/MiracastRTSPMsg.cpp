@@ -621,7 +621,7 @@ std::string MiracastRTSPMsg::get_parser_field_value(RTSP_PARSER_FIELDS parse_fie
 
     if ( RTSP_PARSER_FIELD_START < parse_field && parse_field < m_num_parse_fields )
     {
-        MIRACASTLOG_TRACE("parse_field[%#04X][%x]",parse_field,m_rtsp_msg_parser_fields[parse_field].member_variable_ptr);
+        MIRACASTLOG_TRACE("parse_field[%#04X]",parse_field);
         if ( nullptr != m_rtsp_msg_parser_fields[parse_field].member_variable_ptr ){
             MIRACASTLOG_TRACE("Exiting...");
             return (this->*m_rtsp_msg_parser_fields[parse_field].member_variable_ptr).c_str();
@@ -2012,9 +2012,8 @@ void MiracastRTSPMsg::RTSPMessageHandler_Thread(void *args)
         if (RTSP_SELF_ABORT == rtsp_message_data.state)
         {
             MIRACASTLOG_INFO("RTSP_SELF_ABORT ACTION Received");
-            m_rtsp_msg_hldr_running_state = false;
             set_state(WPEFramework::Exchange::IMiracastPlayer::STATE_STOPPED);
-            continue;
+            break;
         }
 
         if ( RTSP_START_RECEIVE_MSGS == rtsp_message_data.state )
