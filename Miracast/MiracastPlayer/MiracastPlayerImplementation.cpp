@@ -433,7 +433,8 @@ namespace WPEFramework
                 }
                 else
                 {
-                    MIRACASTLOG_ERROR("Failed to get Wayland Display Name");
+                    MIRACASTLOG_ERROR("Failed, Missing Wayland Display Name");
+                    result.message = "Failed, Missing Wayland Display Name";
                     isSuccessOrFailure = false;
                     unsetEnvArgumentsInternal();
                 }
@@ -518,8 +519,9 @@ namespace WPEFramework
                 }
                 else
                 {
-                    MIRACASTLOG_ERROR("Failed to get Wayland Display Name");
+                    MIRACASTLOG_ERROR("Failed, Missing Wayland Display Name");
                     isSuccessOrFailure = false;
+                    result.message = "Failed, Missing Wayland Display Name";
                     unsetEnvArgumentsInternal();
                 }
             }

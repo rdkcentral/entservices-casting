@@ -597,10 +597,10 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_onClientConnectionAndLaunchRequest)
 	sleep(1);
 
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": false}"), response));
-    EXPECT_EQ(response, string("{\"message\":\"Invalid state to process stopClientConnection\",\"success\":false}"));
+    EXPECT_EQ(response, string("{\"message\":\"Failed as MiracastPlayer already Launched\",\"success\":false}"));
 
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("stopClientConnection"), _T("{\"name\": \"Sample-Test-Android-2\",\"mac\": \"96:52:44:b6:7d:14\"}"), response));
-    EXPECT_EQ(response, string("{\"message\":\"stopClientConnection received after Launch\",\"success\":false}"));
+    EXPECT_EQ(response, string("{\"message\":\"Invalid state to process stopClientConnection\",\"success\":false}"));
 
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("updatePlayerState"), _T("{\"mac\": \"96:52:44:b6:7d:14\",\"state\":\"STOPPED\"}"), response));
 
