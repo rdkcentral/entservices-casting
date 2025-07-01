@@ -34,6 +34,8 @@
 #include "WrapsMock.h"
 #include "WorkerPoolImplementation.h"
 #include "MiracastServiceImplementation.h"
+#include <sys/time.h>
+#include <future>
 
 using namespace WPEFramework;
 using ::testing::NiceMock;
@@ -94,6 +96,19 @@ namespace
 		fileContentStream << "\n";
 		fileContentStream.close();
 	}
+    void current_time(char *time_str)
+    {
+        struct timeval tv;
+        gettimeofday(&tv, NULL);
+
+        long microseconds = tv.tv_usec;
+
+        // Convert time to human-readable format
+        struct tm *tm_info;
+        tm_info = localtime(&tv.tv_sec);
+
+        sprintf(time_str, ": %02d:%02d:%02d:%06ld", tm_info->tm_hour, tm_info->tm_min, tm_info->tm_sec, microseconds);
+    }
     void log( const char *func, const char *file, int line, int threadID,const char *format, ...)
     {
         const short kFormatMessageSize = 4096;
@@ -111,10 +126,9 @@ namespace
                     (int)syscall(SYS_gettid),
                     basename(file),
                     line,
-            time,
+                    time,
                     func,
                     formatted);
-
         fflush(stderr);
     }
 }
