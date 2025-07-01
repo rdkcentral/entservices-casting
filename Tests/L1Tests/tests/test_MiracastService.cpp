@@ -39,6 +39,8 @@ using namespace WPEFramework;
 using ::testing::NiceMock;
 namespace
 {
+    #define TEST_LOG(FMT, ...) log(__func__, __FILE__, __LINE__, syscall(__NR_gettid),FMT,##__VA_ARGS__)
+
 	static void removeFile(const char* fileName)
 	{
 		if (std::remove(fileName) != 0)

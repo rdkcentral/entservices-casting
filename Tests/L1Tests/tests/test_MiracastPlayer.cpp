@@ -1193,10 +1193,10 @@ TEST_F(MiracastPlayerEventTest, setPlayerState)
 	std::string trigger_response = "",
 		    temp_buffer = "";
 
-	if (Plugin::MiracastServiceImplementation::_instance->m_miracast_rtsp_obj)
+	if (Plugin::MiracastPlayerImplementation::_instance->m_miracast_rtsp_obj)
     {
         rtsp_hldr_msgq_data.state = RTSP_PAUSE_FROM_SINK2SRC;
-        Plugin::MiracastServiceImplementation::_instance->m_miracast_rtsp_obj->send_msgto_rtsp_msg_hdler_thread(rtsp_hldr_msgq_data);
+        Plugin::MiracastPlayerImplementation::_instance->m_miracast_rtsp_obj->send_msgto_rtsp_msg_hdler_thread(rtsp_hldr_msgq_data);
         recv_rtsp_msg( client_fd , buffer , sizeof(buffer));
         temp_buffer = buffer;
         std::string receivedCSeqNum = parse_received_parser_field_value( temp_buffer , "CSeq: " );
@@ -1209,7 +1209,7 @@ TEST_F(MiracastPlayerEventTest, setPlayerState)
         sleep(2);
 
         rtsp_hldr_msgq_data.state = RTSP_PLAY_FROM_SINK2SRC;
-        Plugin::MiracastServiceImplementation::_instance->m_miracast_rtsp_obj->send_msgto_rtsp_msg_hdler_thread(rtsp_hldr_msgq_data);
+        Plugin::MiracastPlayerImplementation::_instance->m_miracast_rtsp_obj->send_msgto_rtsp_msg_hdler_thread(rtsp_hldr_msgq_data);
         recv_rtsp_msg( client_fd , buffer , sizeof(buffer));
         temp_buffer = buffer;
         receivedCSeqNum = parse_received_parser_field_value( temp_buffer , "CSeq: " );
@@ -1222,7 +1222,7 @@ TEST_F(MiracastPlayerEventTest, setPlayerState)
         sleep(2);
 
         rtsp_hldr_msgq_data.state = RTSP_TEARDOWN_FROM_SINK2SRC;
-        Plugin::MiracastServiceImplementation::_instance->m_miracast_rtsp_obj->send_msgto_rtsp_msg_hdler_thread(rtsp_hldr_msgq_data);
+        Plugin::MiracastPlayerImplementation::_instance->m_miracast_rtsp_obj->send_msgto_rtsp_msg_hdler_thread(rtsp_hldr_msgq_data);
         recv_rtsp_msg( client_fd , buffer , sizeof(buffer));
         temp_buffer = buffer;
         receivedCSeqNum = parse_received_parser_field_value( temp_buffer , "CSeq: " );
