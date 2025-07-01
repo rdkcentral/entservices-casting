@@ -927,8 +927,8 @@ TEST_F(MiracastPlayerEventTest, SRC_DEV_REQUESTED_TO_STOP)
     char buffer[BUFFER_SIZE] = {0};
     std::string teardown_request = "SET_PARAMETER rtsp://localhost/wfd1.0 RTSP/1.0\r\nCSeq: 6\r\nContent-Type: text/parameters\r\nContent-Length: 30\r\n\r\nwfd_trigger_method: TEARDOWN\r\n";
     std::string teardown_response = "RTSP/1.0 200 OK\r\nCSeq: 6\r\n\r\n",
+                temp_buffer = "";
     int processed_bytes = 0;
-    temp_buffer = "";
 
     send_rtsp_msg(client_fd,teardown_request);
     recv_rtsp_msg( client_fd , buffer , sizeof(buffer), &processed_bytes);
