@@ -43,6 +43,7 @@ namespace WPEFramework
         {
             LOGINFO("Call MiracastPlayerImplementation constructor");
             MiracastPlayerImplementation::_instance = this;
+            m_video_sink_rect = {0, 0, 1920, 1080}; // Default video rectangle
             MIRACAST::logger_init("MiracastPlayer");
         }
 
@@ -277,7 +278,8 @@ namespace WPEFramework
             rtsp_hldr_msgq_data.state = RTSP_START_RECEIVE_MSGS;
 
             MIRACASTLOG_INFO("source_dev_ip[%s] source_dev_mac[%s] source_dev_name[%s] sink_dev_ip[%s] videoRect:[%d,%d,%d,%d]",
-                    rtsp_hldr_msgq_data.source_dev_ip, rtsp_hldr_msgq_data.source_dev_mac, rtsp_hldr_msgq_data.source_dev_name, rtsp_hldr_msgq_data.sink_dev_ip);
+                    rtsp_hldr_msgq_data.source_dev_ip, rtsp_hldr_msgq_data.source_dev_mac, rtsp_hldr_msgq_data.source_dev_name, rtsp_hldr_msgq_data.sink_dev_ip,
+                    videoRect.startX, videoRect.startY, videoRect.width, videoRect.height);
             if (( 0 < videoRect.width ) && ( 0 < videoRect.height ))
             {
                 m_video_sink_rect.startX = videoRect.startX;
@@ -354,6 +356,13 @@ namespace WPEFramework
                 m_miracast_rtsp_obj->send_msgto_rtsp_msg_hdler_thread(rtsp_hldr_msgq_data);
                 isSuccessOrFailure = true;
             }
+            else
+            {
+                MIRACASTLOG_ERROR("Invalid Video Rectangle Coords[%d,%d,%d,%d] or No Change in Coords[%d,%d,%d,%d]",
+                                  startX, startY, width, height,
+                                  m_video_sink_rect.startX, m_video_sink_rect.startY, m_video_sink_rect.width, m_video_sink_rect.height);
+                result.message = "Invalid Video Rectangle Coords";
+            }
             result.success = isSuccessOrFailure;
             MIRACASTLOG_TRACE("Exiting ...");
             return Core::ERROR_NONE;
@@ -426,7 +435,8 @@ namespace WPEFramework
                 }
                 else
                 {
-                    MIRACASTLOG_ERROR("Failed to get Wayland Display Name");
+                    MIRACASTLOG_ERROR("Failed, Missing Wayland Display Name");
+                    result.message = "Failed, Missing Wayland Display Name";
                     isSuccessOrFailure = false;
                     unsetEnvArgumentsInternal();
                 }
@@ -511,8 +521,9 @@ namespace WPEFramework
                 }
                 else
                 {
-                    MIRACASTLOG_ERROR("Failed to get Wayland Display Name");
+                    MIRACASTLOG_ERROR("Failed, Missing Wayland Display Name");
                     isSuccessOrFailure = false;
+                    result.message = "Failed, Missing Wayland Display Name";
                     unsetEnvArgumentsInternal();
                 }
             }

@@ -97,6 +97,7 @@ namespace WPEFramework
                             mMiracastServiceImpl->Register(&mMiracastServiceNotification);
                             /* Invoking Plugin API register to wpeframework */
                             Exchange::JMiracastService::Register(*this, mMiracastServiceImpl);
+                            mRegisterEvents = true;
                         }
                         mConfigure->Release();
                     }
@@ -135,13 +136,20 @@ namespace WPEFramework
 
             if (nullptr != mMiracastServiceImpl)
             {
-                mMiracastServiceImpl->Unregister(&mMiracastServiceNotification);
-                Exchange::JMiracastService::Unregister(*this);
+                if (mRegisterEvents)
+                {
+                    mMiracastServiceImpl->Unregister(&mMiracastServiceNotification);
+                    Exchange::JMiracastService::Unregister(*this);
+                    mRegisterEvents = false;
+                }
 
                 /* Stop processing: */
-                RPC::IRemoteConnection* connection = service->RemoteConnection(mConnectionId);
+                RPC::IRemoteConnection* connection = nullptr;
+                if (service)
+                {
+                    connection = service->RemoteConnection(mConnectionId);
+                }
                 VARIABLE_IS_NOT_USED uint32_t result = mMiracastServiceImpl->Release();
-    
                 mMiracastServiceImpl = nullptr;
     
                 /* It should have been the last reference we are releasing,
@@ -152,15 +160,15 @@ namespace WPEFramework
                 /* If this was running in a (container) process... */
                 if (nullptr != connection)
                 {
-                /* Lets trigger the cleanup sequence for
+                   /* Lets trigger the cleanup sequence for
                     * out-of-process code. Which will guard
                     * that unwilling processes, get shot if
-                    * not stopped friendly :-) */
-                connection->Terminate();
-                connection->Release();
+                    * not stopped friendly :-)
+                    */
+                    connection->Terminate();
+                    connection->Release();
                 }
             }
-    
             if (nullptr != mCurrentService)
             {
                 /* Make sure the Activated and Deactivated are no longer called before we start cleaning up.. */
@@ -168,7 +176,6 @@ namespace WPEFramework
                 mCurrentService->Release();
                 mCurrentService = nullptr;
             }
-
             mConnectionId = 0;
             SYSLOG(Logging::Shutdown, (string(_T("MiracastService de-initialised"))));
         }

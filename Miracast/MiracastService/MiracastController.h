@@ -97,7 +97,6 @@ public:
     std::string get_FriendlyName(void);
     void set_enable(bool is_enabled);
     void accept_client_connection(std::string is_accepted);
-    MiracastPlayerState m_ePlayer_state;
 
     void set_WFDSourceMACAddress(std::string MAC_Addr);
     void set_WFDSourceName(std::string device_name);

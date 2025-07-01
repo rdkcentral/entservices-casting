@@ -219,8 +219,7 @@ namespace WPEFramework
 
                 void InitializePowerManager(PluginHost::IShell *service);
                 void registerEventHandlers();
-                void onPowerModeChanged(const PowerState currentState, const PowerState newState);
-                const void InitializePowerState();
+                void InitializePowerState();
                 std::string getPowerStateString(PowerState pwrState);
                 PowerState getPowerManagerPluginPowerState(uint32_t powerState);
                 PowerState getCurrentPowerState(void);
@@ -242,6 +241,8 @@ namespace WPEFramework
                 static PowerManagerInterfaceRef _powerManagerPlugin;
                 Core::Sink<PowerManagerNotification> _pwrMgrNotification;
                 bool _registeredEventHandlers;
+
+                void onPowerModeChanged(const PowerState currentState, const PowerState newState);
 
                 friend class Job;
         }; // class MiracastServiceImplementation
