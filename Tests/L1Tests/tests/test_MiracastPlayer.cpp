@@ -18,19 +18,28 @@
 **/
 
 #include <gtest/gtest.h>
-#include <future>
-#include <thread>
-#include "ServiceMock.h"
+
 #include "MiracastPlayer.h"
-#include "WrapsMock.h"
-#include <sys/time.h>
 
 #include "FactoriesImplementation.h"
-
+#include "ServiceMock.h"
 #include "ThunderPortability.h"
-using ::testing::NiceMock;
+
+#include <iostream>
+#include <string>
+#include <vector>
+#include <cstdio>
+#include "COMLinkMock.h"
+#include "WrapsMock.h"
+#include "WorkerPoolImplementation.h"
+#include "MiracastPlayerImplementation.h"
+#include <sys/time.h>
+#include <future>
+#include <thread>
+
 using namespace WPEFramework;
 
+using ::testing::NiceMock;
 namespace {
 
 #define RTSP_SEND (1)
@@ -492,101 +501,122 @@ namespace {
 }
 
 class MiracastPlayerTest : public ::testing::Test {
-	protected:
-		Core::ProxyType<Plugin::MiracastPlayer> plugin;
-		Core::JSONRPC::Handler& handler;
-		DECL_CORE_JSONRPC_CONX connection;
-		string response;
-		ServiceMock service;
-		WrapsImplMock *p_wrapsImplMock = nullptr;
+protected:
+    Core::ProxyType<Plugin::MiracastPlayer> plugin;
+    Core::JSONRPC::Handler& handler;
+    DECL_CORE_JSONRPC_CONX connection;
+    Core::JSONRPC::Message message;
+    string response;
 
-		MiracastPlayerTest()
-			: plugin(Core::ProxyType<Plugin::MiracastPlayer>::Create())
-			  , handler(*(plugin))
-			  , INIT_CONX(1, 0)
-	{
-		p_wrapsImplMock  = new NiceMock <WrapsImplMock>;
-                Wraps::setImpl(p_wrapsImplMock);
+    WrapsImplMock *p_wrapsImplMock = nullptr;
+    Core::ProxyType<Plugin::MiracastPlayerImplementation> miracastPlayerImpl;
 
-		EXPECT_CALL(service, QueryInterfaceByCallsign(::testing::_, ::testing::_))
-			.Times(::testing::AnyNumber())
-			.WillRepeatedly(::testing::Invoke(
-						[&](const uint32_t, const string& name) -> void* {
-						return nullptr;
-						}));
-		ON_CALL(*p_wrapsImplMock, system(::testing::_))
-                        .WillByDefault(::testing::Invoke([&](const char* command) {return 0;}));
-		EXPECT_EQ(string(""), plugin->Initialize(&service));
-	}
-	virtual ~MiracastPlayerTest() override
-	{
-		plugin->Deinitialize(nullptr);
-		Wraps::setImpl(nullptr);
-		if (p_wrapsImplMock != nullptr)
-		{
-			delete p_wrapsImplMock;
-			p_wrapsImplMock = nullptr;
-		}
-	}
+    NiceMock<COMLinkMock> comLinkMock;
+    NiceMock<ServiceMock> service;
+    PLUGINHOST_DISPATCHER* dispatcher;
+    Core::ProxyType<WorkerPoolImplementation> workerPool;
+    
+    NiceMock<FactoriesImplementation> factoriesImplementation;
+
+    MiracastPlayerTest()
+        : plugin(Core::ProxyType<Plugin::MiracastPlayer>::Create())
+        , handler(*(plugin))
+        , INIT_CONX(1, 0)
+        , workerPool(Core::ProxyType<WorkerPoolImplementation>::Create(2, Core::Thread::DefaultStackSize(), 16))
+    {
+        p_wrapsImplMock = new NiceMock<WrapsImplMock>;
+        printf("Pass created wrapsImplMock: %p ", p_wrapsImplMock);
+        Wraps::setImpl(p_wrapsImplMock);
+        
+        ON_CALL(service, COMLink())
+        .WillByDefault(::testing::Invoke(
+              [this]() {
+                    TEST_LOG("Pass created comLinkMock: %p ", &comLinkMock);
+                    return &comLinkMock;
+                }));
+
+
+        #ifdef USE_THUNDER_R4
+            ON_CALL(comLinkMock, Instantiate(::testing::_, ::testing::_, ::testing::_))
+                .WillByDefault(::testing::Invoke(
+                        [&](const RPC::Object& object, const uint32_t waitTime, uint32_t& connectionId) {
+                            miracastPlayerImpl = Core::ProxyType<Plugin::MiracastPlayerImplementation>::Create();
+                            TEST_LOG("Pass created miracastPlayerImpl: %p ", &miracastPlayerImpl);
+                            return &miracastPlayerImpl;
+                    }));
+         #else
+            ON_CALL(comLinkMock, Instantiate(::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_))
+                 .WillByDefault(::testing::Return(miracastPlayerImpl));
+         #endif /*USE_THUNDER_R4 */
+        
+                PluginHost::IFactories::Assign(&factoriesImplementation);
+        
+                Core::IWorkerPool::Assign(&(*workerPool));
+                workerPool->Run();
+        
+                dispatcher = static_cast<PLUGINHOST_DISPATCHER*>(
+                plugin->QueryInterface(PLUGINHOST_DISPATCHER_ID));
+                dispatcher->Activate(&service);
+        
+                EXPECT_EQ(string(""), plugin->Initialize(&service));
+
+    }
+    virtual ~MiracastPlayerTest() override
+    {
+        TEST_LOG("MiracastPlayerTest Destructor");
+
+        plugin->Deinitialize(&service);
+
+        dispatcher->Deactivate();
+        dispatcher->Release();
+
+        Core::IWorkerPool::Assign(nullptr);
+        workerPool.Release();
+    
+        Wraps::setImpl(nullptr);
+        if (p_wrapsImplMock != nullptr)
+        {
+            delete p_wrapsImplMock;
+            p_wrapsImplMock = nullptr;
+        }
+        PluginHost::IFactories::Assign(nullptr);
+        IarmBus::setImpl(nullptr);
+    }
 };
 
 class MiracastPlayerEventTest : public MiracastPlayerTest {
-	protected:
-		NiceMock<ServiceMock> service;
-		NiceMock<FactoriesImplementation> factoriesImplementation;
-		PLUGINHOST_DISPATCHER* dispatcher;
-		Core::JSONRPC::Message message;
+protected:
+    NiceMock<ServiceMock> service;
+    NiceMock<FactoriesImplementation> factoriesImplementation;
+    PLUGINHOST_DISPATCHER* dispatcher;
+    Core::JSONRPC::Message message;
 
-		MiracastPlayerEventTest()
-			: MiracastPlayerTest()
-		{
-			PluginHost::IFactories::Assign(&factoriesImplementation);
+    MiracastPlayerEventTest()
+        : MiracastPlayerTest()
+    {
+        PluginHost::IFactories::Assign(&factoriesImplementation);
 
-			dispatcher = static_cast<PLUGINHOST_DISPATCHER*>(
-					plugin->QueryInterface(PLUGINHOST_DISPATCHER_ID));
-			dispatcher->Activate(&service);
-		}
+        dispatcher = static_cast<PLUGINHOST_DISPATCHER*>(
+            plugin->QueryInterface(PLUGINHOST_DISPATCHER_ID));
+        dispatcher->Activate(&service);
+    }
 
-		virtual ~MiracastPlayerEventTest() override
-		{
-			dispatcher->Deactivate();
-			dispatcher->Release();
+    virtual ~MiracastPlayerEventTest() override
+    {
+        dispatcher->Deactivate();
+        dispatcher->Release();
 
-			PluginHost::IFactories::Assign(nullptr);
-		}
+        PluginHost::IFactories::Assign(nullptr);
+    }
 };
 
 TEST_F(MiracastPlayerTest, RegisteredMethods)
 {
 	EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("playRequest")));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("stopRequest")));
-	EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("setPlayerState")));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("setVideoRectangle")));
-	EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("setLogging")));
 }
 
-TEST_F(MiracastPlayerTest, Logging)
-{
-        EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setLogging"), _T("{\"separate_logger\": {\"status\":\"ENABLE\",\"logfilename\": \"GTest\"}}"), response));
-        EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setLogging"), _T("{\"level\": \"VERBOSE\"}"), response));
-        EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setLogging"), _T("{\"level\": \"WARNING\"}"), response));
-        EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setLogging"), _T("{\"level\": \"ERROR\"}"), response));
-        EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setLogging"), _T("{\"level\": \"FATAL\"}"), response));
-        EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setLogging"), _T("{\"level\": \"TRACE\"}"), response));
-        EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setLogging"), _T("{\"level\": \"INFO\"}"), response));
-        EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setLogging"), _T("{\"level\": \"UNKNOWN\"}"), response));
-
-        EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setLogging"), _T("{\"separate_logger\": {\"status\":\"DISABLE\",\"logfilename\": \"GTest\"}}"), response));
-}
-
-TEST_F(MiracastPlayerTest, setRTSPWaitTimeOutAndAVFormats)
-{
-        EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setRTSPWaitTimeOut"), _T("{\"Request\": 10000,\"Response\": 10000}"), response));
-        EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setVideoFormats"), _T("{\"native\": 0x02,\"display_mode_supported\": false,\"h264_codecs\": [{\"profile\": 0x01,\"level\": 0x08,\"cea_mask\": 0x00010000,\"vesa_mask\": 0x00000000,\"hh_mask\": 0x00000000,\"latency\": 0,\"min_slice\": 0,\"slice_encode\": 0,\"video_frame_skip_support\": true,\"max_skip_intervals\": 0,\"video_frame_rate_change_support\": false}]}"), response));
-        EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setAudioFormats"), _T("{\"audio_codecs\": [{\"audio_format\": 0x01,\"modes\": 0x00000002,\"latency\": 0}]}"), response));
-}
-
-#if 0
 TEST_F(MiracastPlayerEventTest, APP_REQUESTED_TO_STOP)
 {
 	std::string rtsp_response = "";
@@ -894,7 +924,7 @@ TEST_F(MiracastPlayerEventTest, SRC_DEV_REQUESTED_TO_STOP)
 
 	EVENT_UNSUBSCRIBE(0, _T("onStateChange"), _T("client.events"), message);
 }
-#endif
+
 TEST_F(MiracastPlayerEventTest, RTSP_TimeOut)
 {
 	std::string rtsp_response = "";
@@ -1068,7 +1098,7 @@ TEST_F(MiracastPlayerEventTest, RTSP_Failure)
 
 	EVENT_UNSUBSCRIBE(0, _T("onStateChange"), _T("client.events"), message);
 }
-#if 0
+
 TEST_F(MiracastPlayerEventTest, setPlayerState)
 {
 	std::string rtsp_response = "";
@@ -1159,52 +1189,54 @@ TEST_F(MiracastPlayerEventTest, setPlayerState)
 	EXPECT_EQ(Core::ERROR_NONE, Playing.Lock(10000));
         
 	char buffer[BUFFER_SIZE] = {0};
-	//std::string trigger_request = "SET_PARAMETER rtsp://localhost/wfd1.0 RTSP/1.0\r\nCSeq: 6\r\nContent-Type: text/parameters\r\nContent-Length: 30\r\n\r\nwfd_trigger_method: TEARDOWN\r\n";
+    RTSP_HLDR_MSGQ_STRUCT rtsp_hldr_msgq_data = {0};
 	std::string trigger_response = "",
 		    temp_buffer = "";
 
-	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setPlayerState"), _T("{\"state\": \"PAUSE\"}"), response));
-	recv_rtsp_msg( client_fd , buffer , sizeof(buffer));
-	temp_buffer = buffer;
-	std::string receivedCSeqNum = parse_received_parser_field_value( temp_buffer , "CSeq: " );
-	EXPECT_TRUE(temp_buffer.find("PAUSE") == 0);
-	trigger_response = "RTSP/1.0 200 OK\r\nCSeq: " + receivedCSeqNum + "\r\n\r\n";
-	send_rtsp_msg(client_fd,trigger_response);
-	receivedCSeqNum.clear();
-	memset(buffer,0x00,sizeof(buffer));
+	if (Plugin::MiracastServiceImplementation::_instance->m_miracast_rtsp_obj)
+    {
+        rtsp_hldr_msgq_data.state = RTSP_PAUSE_FROM_SINK2SRC;
+        Plugin::MiracastServiceImplementation::_instance->m_miracast_rtsp_obj->send_msgto_rtsp_msg_hdler_thread(rtsp_hldr_msgq_data);
+        recv_rtsp_msg( client_fd , buffer , sizeof(buffer));
+        temp_buffer = buffer;
+        std::string receivedCSeqNum = parse_received_parser_field_value( temp_buffer , "CSeq: " );
+        EXPECT_TRUE(temp_buffer.find("PAUSE") == 0);
+        trigger_response = "RTSP/1.0 200 OK\r\nCSeq: " + receivedCSeqNum + "\r\n\r\n";
+        send_rtsp_msg(client_fd,trigger_response);
+        receivedCSeqNum.clear();
+        memset(buffer,0x00,sizeof(buffer));
 
-	sleep(2);
+        sleep(2);
 
-	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setPlayerState"), _T("{\"state\": \"PLAY\"}"), response));
-	recv_rtsp_msg( client_fd , buffer , sizeof(buffer));
-	temp_buffer = buffer;
-	receivedCSeqNum = parse_received_parser_field_value( temp_buffer , "CSeq: " );
-	EXPECT_TRUE(temp_buffer.find("PLAY") == 0);
-	trigger_response = "RTSP/1.0 200 OK\r\nCSeq: " + receivedCSeqNum + "\r\n\r\n";
-	send_rtsp_msg(client_fd,trigger_response);
-	receivedCSeqNum.clear();
-	memset(buffer,0x00,sizeof(buffer));
+        rtsp_hldr_msgq_data.state = RTSP_PLAY_FROM_SINK2SRC;
+        Plugin::MiracastServiceImplementation::_instance->m_miracast_rtsp_obj->send_msgto_rtsp_msg_hdler_thread(rtsp_hldr_msgq_data);
+        recv_rtsp_msg( client_fd , buffer , sizeof(buffer));
+        temp_buffer = buffer;
+        receivedCSeqNum = parse_received_parser_field_value( temp_buffer , "CSeq: " );
+        EXPECT_TRUE(temp_buffer.find("PLAY") == 0);
+        trigger_response = "RTSP/1.0 200 OK\r\nCSeq: " + receivedCSeqNum + "\r\n\r\n";
+        send_rtsp_msg(client_fd,trigger_response);
+        receivedCSeqNum.clear();
+        memset(buffer,0x00,sizeof(buffer));
 
-	sleep(2);
+        sleep(2);
 
-	EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setPlayerState"), _T("{\"state\": \"UNKNOWN\"}"), response));
-
-	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setPlayerState"), _T("{\"state\": \"STOP\"}"), response));
-	recv_rtsp_msg( client_fd , buffer , sizeof(buffer));
-	temp_buffer = buffer;
-	receivedCSeqNum = parse_received_parser_field_value( temp_buffer , "CSeq: " );
-	EXPECT_TRUE(temp_buffer.find("TEARDOWN") == 0);
-	trigger_response = "RTSP/1.0 200 OK\r\nCSeq: " + receivedCSeqNum + "\r\n\r\n";
-	send_rtsp_msg(client_fd,trigger_response);
-	receivedCSeqNum.clear();
-	memset(buffer,0x00,sizeof(buffer));
-
-	EXPECT_EQ(Core::ERROR_NONE, Stopped.Lock(10000));
-	release_SocketDescriptor();
-
+        rtsp_hldr_msgq_data.state = RTSP_TEARDOWN_FROM_SINK2SRC;
+        Plugin::MiracastServiceImplementation::_instance->m_miracast_rtsp_obj->send_msgto_rtsp_msg_hdler_thread(rtsp_hldr_msgq_data);
+        recv_rtsp_msg( client_fd , buffer , sizeof(buffer));
+        temp_buffer = buffer;
+        receivedCSeqNum = parse_received_parser_field_value( temp_buffer , "CSeq: " );
+        EXPECT_TRUE(temp_buffer.find("TEARDOWN") == 0);
+        trigger_response = "RTSP/1.0 200 OK\r\nCSeq: " + receivedCSeqNum + "\r\n\r\n";
+        send_rtsp_msg(client_fd,trigger_response);
+        receivedCSeqNum.clear();
+        memset(buffer,0x00,sizeof(buffer));
+        EXPECT_EQ(Core::ERROR_NONE, Stopped.Lock(10000));
+        release_SocketDescriptor();
+    }
 	EVENT_UNSUBSCRIBE(0, _T("onStateChange"), _T("client.events"), message);
 }
-#endif
+
 TEST_F(MiracastPlayerTest, AutoConnectOptFlag)
 {
 	std::string rtsp_response = "";

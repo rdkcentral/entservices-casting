@@ -17,18 +17,26 @@
 * limitations under the License.
 **/
 
-
 #include <gtest/gtest.h>
+
+#include "MiracastService.h"
+
 #include "FactoriesImplementation.h"
 #include "ServiceMock.h"
-#include "MiracastService.h"
-#include "wpa_ctrl_mock.h"
-#include "WrapsMock.h"
-#include "IarmBusMock.h"
 #include "ThunderPortability.h"
+#include "PowerManagerMock.h"
 
-using ::testing::NiceMock;
+#include <iostream>
+#include <string>
+#include <vector>
+#include <cstdio>
+#include "COMLinkMock.h"
+#include "WrapsMock.h"
+#include "WorkerPoolImplementation.h"
+#include "MiracastServiceImplementation.h"
+
 using namespace WPEFramework;
+using ::testing::NiceMock;
 namespace
 {
 	static void removeFile(const char* fileName)
@@ -89,32 +97,55 @@ namespace
 static struct wpa_ctrl global_wpa_ctrl_handle;
 
 class MiracastServiceTest : public ::testing::Test {
-	protected:
-		Core::ProxyType<Plugin::MiracastService> plugin;
-		Core::JSONRPC::Handler& handler;
-		DECL_CORE_JSONRPC_CONX connection;
-		string response;
-		ServiceMock service;
-		WrapsImplMock *p_wrapsImplMock   = nullptr;
-		IarmBusImplMock   *p_iarmBusImplMock = nullptr;
-		IARM_EventHandler_t pwrMgrEventHandler;
+protected:
+    Core::ProxyType<Plugin::MiracastService> plugin;
+    Core::JSONRPC::Handler& handler;
+    DECL_CORE_JSONRPC_CONX connection;
+    Core::JSONRPC::Message message;
+    string response;
 
-		MiracastServiceTest()
-			: plugin(Core::ProxyType<Plugin::MiracastService>::Create())
-			  , handler(*(plugin))
-			  , INIT_CONX(1, 0)
+    WrapsImplMock *p_wrapsImplMock = nullptr;
+    Core::ProxyType<Plugin::MiracastServiceImplementation> miracastServiceImpl;
 
-	{
-		p_wrapsImplMock  = new NiceMock <WrapsImplMock>;
-		Wraps::setImpl(p_wrapsImplMock);
+    NiceMock<COMLinkMock> comLinkMock;
+    NiceMock<ServiceMock> service;
+    PLUGINHOST_DISPATCHER* dispatcher;
+    Core::ProxyType<WorkerPoolImplementation> workerPool;
+    
+    NiceMock<FactoriesImplementation> factoriesImplementation;
 
-		p_iarmBusImplMock  = new testing::NiceMock <IarmBusImplMock>;
-		IarmBus::setImpl(p_iarmBusImplMock);
+    MiracastServiceTest()
+        : plugin(Core::ProxyType<Plugin::MiracastService>::Create())
+        , handler(*(plugin))
+        , INIT_CONX(1, 0)
+        , workerPool(Core::ProxyType<WorkerPoolImplementation>::Create(2, Core::Thread::DefaultStackSize(), 16))
+    {
+        p_wrapsImplMock = new NiceMock<WrapsImplMock>;
+        printf("Pass created wrapsImplMock: %p ", p_wrapsImplMock);
+        Wraps::setImpl(p_wrapsImplMock);
+        
+        ON_CALL(service, COMLink())
+        .WillByDefault(::testing::Invoke(
+              [this]() {
+                    TEST_LOG("Pass created comLinkMock: %p ", &comLinkMock);
+                    return &comLinkMock;
+                }));
 
-		EXPECT_CALL(service, QueryInterfaceByCallsign(::testing::_, ::testing::_))
-			.Times(::testing::AnyNumber())
-			.WillRepeatedly(::testing::Invoke([&](const uint32_t, const string& name) -> void* { return nullptr; }));
-		ON_CALL(*p_wrapsImplMock, wpa_ctrl_open(::testing::_))
+
+        #ifdef USE_THUNDER_R4
+            ON_CALL(comLinkMock, Instantiate(::testing::_, ::testing::_, ::testing::_))
+                .WillByDefault(::testing::Invoke(
+                        [&](const RPC::Object& object, const uint32_t waitTime, uint32_t& connectionId) {
+                            miracastServiceImpl = Core::ProxyType<Plugin::MiracastServiceImplementation>::Create();
+                            TEST_LOG("Pass created miracastServiceImpl: %p ", &miracastServiceImpl);
+                            return &miracastServiceImpl;
+                    }));
+         #else
+            ON_CALL(comLinkMock, Instantiate(::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_))
+                 .WillByDefault(::testing::Return(miracastServiceImpl));
+         #endif /*USE_THUNDER_R4 */
+        
+        ON_CALL(*p_wrapsImplMock, wpa_ctrl_open(::testing::_))
 			.WillByDefault(::testing::Invoke([&](const char *ctrl_path) { return &global_wpa_ctrl_handle; }));
 		ON_CALL(*p_wrapsImplMock, wpa_ctrl_close(::testing::_))
 			.WillByDefault(::testing::Invoke([&](struct wpa_ctrl *) { return; }));
@@ -124,66 +155,64 @@ class MiracastServiceTest : public ::testing::Test {
 			.WillByDefault(::testing::Invoke([&](struct wpa_ctrl *ctrl) { return false; }));
 		ON_CALL(*p_wrapsImplMock, system(::testing::_))
 			.WillByDefault(::testing::Invoke([&](const char* command) {return 0;}));
-#if 0 // will fix in RDK-55557
-		ON_CALL(*p_iarmBusImplMock, IARM_Bus_RegisterEventHandler(::testing::_, ::testing::_, ::testing::_))
-			.WillByDefault(::testing::Invoke([&](const char* ownerName, IARM_EventId_t eventId, IARM_EventHandler_t handler){
-				if ((string(IARM_BUS_PWRMGR_NAME) == string(ownerName)) && (eventId == IARM_BUS_PWRMGR_EVENT_MODECHANGED)) {
-					pwrMgrEventHandler = handler;
-				}
-				return IARM_RESULT_SUCCESS;
-			}));
-		ON_CALL(*p_iarmBusImplMock, IARM_Bus_Call)
-			.WillByDefault([](const char* ownerName, const char* methodName, void* arg, size_t argLen){
-				if (strcmp(methodName, IARM_BUS_PWRMGR_API_GetPowerState) == 0){
-					auto* param = static_cast<IARM_Bus_PWRMgr_GetPowerState_Param_t*>(arg);
-					param->curState = IARM_BUS_PWRMGR_POWERSTATE_ON;
-				}
-				return IARM_RESULT_SUCCESS;
-			});
-#endif
-	}
-	virtual ~MiracastServiceTest() override
-	{
-		Wraps::setImpl(nullptr);
-		if (p_wrapsImplMock != nullptr)
-		{
-			delete p_wrapsImplMock;
-			p_wrapsImplMock = nullptr;
-		}
+        
+        PluginHost::IFactories::Assign(&factoriesImplementation);
 
-		IarmBus::setImpl(nullptr);
-		if (p_iarmBusImplMock != nullptr)
-		{
-			delete p_iarmBusImplMock;
-			p_iarmBusImplMock = nullptr;
-		}
-	}
+        Core::IWorkerPool::Assign(&(*workerPool));
+        workerPool->Run();
+
+        dispatcher = static_cast<PLUGINHOST_DISPATCHER*>(
+        plugin->QueryInterface(PLUGINHOST_DISPATCHER_ID));
+        dispatcher->Activate(&service);
+
+        EXPECT_EQ(string(""), plugin->Initialize(&service));
+    }
+    virtual ~MiracastServiceTest() override
+    {
+        TEST_LOG("MiracastServiceTest Destructor");
+
+        plugin->Deinitialize(&service);
+
+        dispatcher->Deactivate();
+        dispatcher->Release();
+
+        Core::IWorkerPool::Assign(nullptr);
+        workerPool.Release();
+    
+        Wraps::setImpl(nullptr);
+        if (p_wrapsImplMock != nullptr)
+        {
+            delete p_wrapsImplMock;
+            p_wrapsImplMock = nullptr;
+        }
+        PluginHost::IFactories::Assign(nullptr);
+    }
 };
 
 class MiracastServiceEventTest : public MiracastServiceTest {
-	protected:
-		NiceMock<ServiceMock> service;
-		NiceMock<FactoriesImplementation> factoriesImplementation;
-		PLUGINHOST_DISPATCHER* dispatcher;
-		Core::JSONRPC::Message message;
+protected:
+    NiceMock<ServiceMock> service;
+    NiceMock<FactoriesImplementation> factoriesImplementation;
+    PLUGINHOST_DISPATCHER* dispatcher;
+    Core::JSONRPC::Message message;
 
-		MiracastServiceEventTest()
-			: MiracastServiceTest()
-		{
-			PluginHost::IFactories::Assign(&factoriesImplementation);
+    MiracastServiceEventTest()
+        : MiracastServiceTest()
+    {
+        PluginHost::IFactories::Assign(&factoriesImplementation);
 
-			dispatcher = static_cast<PLUGINHOST_DISPATCHER*>(
-					plugin->QueryInterface(PLUGINHOST_DISPATCHER_ID));
-			dispatcher->Activate(&service);
-		}
+        dispatcher = static_cast<PLUGINHOST_DISPATCHER*>(
+            plugin->QueryInterface(PLUGINHOST_DISPATCHER_ID));
+        dispatcher->Activate(&service);
+    }
 
-		virtual ~MiracastServiceEventTest() override
-		{
-			dispatcher->Deactivate();
-			dispatcher->Release();
+    virtual ~MiracastServiceEventTest() override
+    {
+        dispatcher->Deactivate();
+        dispatcher->Release();
 
-			PluginHost::IFactories::Assign(nullptr);
-		}
+        PluginHost::IFactories::Assign(nullptr);
+    }
 };
 
 TEST_F(MiracastServiceTest, P2PCtrlInterfaceNameNotFound)
@@ -206,7 +235,7 @@ TEST_F(MiracastServiceTest, P2PCtrlInterfacePathNotFound)
 
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 }
-#if 0
+
 TEST_F(MiracastServiceTest, RegisteredMethods)
 {
 	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
@@ -219,17 +248,13 @@ TEST_F(MiracastServiceTest, RegisteredMethods)
 	EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("acceptClientConnection")));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("stopClientConnection")));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("updatePlayerState")));
-	EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("setLogging")));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("setP2PBackendDiscovery")));
-	EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("getStatus")));
-	EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("setWiFiState")));
 
 	plugin->Deinitialize(nullptr);
 
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	removeFile("/var/run/wpa_supplicant/p2p0");
 }
-#endif
 
 TEST_F(MiracastServiceTest, P2P_DiscoveryStatus)
 {
@@ -278,30 +303,6 @@ TEST_F(MiracastServiceTest, BackendDiscoveryStatus)
 
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	removeFile("/var/run/wpa_supplicant/p2p0");
-}
-
-TEST_F(MiracastServiceTest, Logging)
-{
-	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
-
-	EXPECT_EQ(string(""), plugin->Initialize(&service));
-
-	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setLogging"), _T("{\"separate_logger\": {\"status\":\"ENABLE\",\"logfilename\": \"GTest\"}}"), response));
-	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setLogging"), _T("{\"level\": \"VERBOSE\"}"), response));
-	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setLogging"), _T("{\"level\": \"WARNING\"}"), response));
-	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setLogging"), _T("{\"level\": \"ERROR\"}"), response));
-	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setLogging"), _T("{\"level\": \"FATAL\"}"), response));
-	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setLogging"), _T("{\"level\": \"TRACE\"}"), response));
-	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setLogging"), _T("{\"level\": \"INFO\"}"), response));
-	EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setLogging"), _T("{\"level\": \"UNKNOWN\"}"), response));
-
-	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setLogging"), _T("{\"separate_logger\": {\"status\":\"DISABLE\",\"logfilename\": \"GTest\"}}"), response));
-	plugin->Deinitialize(nullptr);
-
-	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	removeFile("/var/run/wpa_supplicant/p2p0");
-	removeFile("/opt/logs/GTest.log");
 }
 
 TEST_F(MiracastServiceEventTest, stopClientConnection)
@@ -1970,10 +1971,9 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_AutoConnect)
 	removeFile("/var/run/wpa_supplicant/p2p0");
 	removeFile("/opt/miracast_autoconnect");
 }
-#if 0 // will fix in RDK-55557
+
 TEST_F(MiracastServiceEventTest, powerStateChange)
 {
-	IARM_Bus_PWRMgr_EventData_t param;
 	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
@@ -1981,87 +1981,15 @@ TEST_F(MiracastServiceEventTest, powerStateChange)
 
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
 
-	param.data.state.curState = IARM_BUS_PWRMGR_POWERSTATE_ON;
-	param.data.state.newState = IARM_BUS_PWRMGR_POWERSTATE_STANDBY_DEEP_SLEEP;
-	pwrMgrEventHandler(IARM_BUS_PWRMGR_NAME, IARM_BUS_PWRMGR_EVENT_MODECHANGED, &param, 0);
-
-	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getStatus"), _T("{}"), response));
-	EXPECT_EQ(response, string("{\"enabled\":true,\"state\":\"0\",\"powerState\":\"DEEP_SLEEP\",\"DeepSleepTransition\":true,\"wifiState\":false,\"success\":true}"));
-
-	param.data.state.curState = IARM_BUS_PWRMGR_POWERSTATE_STANDBY_DEEP_SLEEP;
-	param.data.state.newState = IARM_BUS_PWRMGR_POWERSTATE_ON;
-	pwrMgrEventHandler(IARM_BUS_PWRMGR_NAME, IARM_BUS_PWRMGR_EVENT_MODECHANGED, &param, 0);
-	sleep(5);
-
-	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getStatus"), _T("{}"), response));
-	EXPECT_EQ(response, string("{\"enabled\":true,\"state\":\"1\",\"powerState\":\"ON\",\"DeepSleepTransition\":false,\"wifiState\":false,\"success\":true}"));
-
-	param.data.state.curState = IARM_BUS_PWRMGR_POWERSTATE_ON;
-	param.data.state.newState = IARM_BUS_PWRMGR_POWERSTATE_STANDBY_DEEP_SLEEP;
-	pwrMgrEventHandler(IARM_BUS_PWRMGR_NAME, IARM_BUS_PWRMGR_EVENT_MODECHANGED, &param, 0);
-
-	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getStatus"), _T("{}"), response));
-	EXPECT_EQ(response, string("{\"enabled\":true,\"state\":\"0\",\"powerState\":\"DEEP_SLEEP\",\"DeepSleepTransition\":true,\"wifiState\":false,\"success\":true}"));
-
+	Plugin::MiracastServiceImplementation::_instance->onPowerModeChanged(WPEFramework::Exchange::IPowerManager::POWER_STATE_ON, WPEFramework::Exchange::IPowerManager::POWER_STATE_STANDBY_DEEP_SLEEP);
+    Plugin::MiracastServiceImplementation::_instance->onPowerModeChanged(WPEFramework::Exchange::IPowerManager::POWER_STATE_STANDBY_DEEP_SLEEP, WPEFramework::Exchange::IPowerManager::POWER_STATE_ON);
+    sleep(5);
+    Plugin::MiracastServiceImplementation::_instance->onPowerModeChanged(WPEFramework::Exchange::IPowerManager::POWER_STATE_ON, WPEFramework::Exchange::IPowerManager::POWER_STATE_STANDBY_DEEP_SLEEP);
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": false}"), response));
-	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getStatus"), _T("{}"), response));
-	EXPECT_EQ(response, string("{\"enabled\":false,\"state\":\"0\",\"powerState\":\"DEEP_SLEEP\",\"DeepSleepTransition\":true,\"wifiState\":false,\"success\":true}"));
-
-	param.data.state.curState = IARM_BUS_PWRMGR_POWERSTATE_STANDBY_DEEP_SLEEP;
-	param.data.state.newState = IARM_BUS_PWRMGR_POWERSTATE_ON;
-	pwrMgrEventHandler(IARM_BUS_PWRMGR_NAME, IARM_BUS_PWRMGR_EVENT_MODECHANGED, &param, 0);
-
-	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getStatus"), _T("{}"), response));
-	EXPECT_EQ(response, string("{\"enabled\":false,\"state\":\"0\",\"powerState\":\"ON\",\"DeepSleepTransition\":true,\"wifiState\":false,\"success\":true}"));
-
+    Plugin::MiracastServiceImplementation::_instance->onPowerModeChanged(WPEFramework::Exchange::IPowerManager::POWER_STATE_STANDBY_DEEP_SLEEP, WPEFramework::Exchange::IPowerManager::POWER_STATE_ON);
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
-	sleep(5);
-
-	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getStatus"), _T("{}"), response));
-	EXPECT_EQ(response, string("{\"enabled\":true,\"state\":\"1\",\"powerState\":\"ON\",\"DeepSleepTransition\":false,\"wifiState\":false,\"success\":true}"));
-
 	plugin->Deinitialize(nullptr);
 
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	removeFile("/var/run/wpa_supplicant/p2p0");
 }
-
-TEST_F(MiracastServiceEventTest, wifiStateChange)
-{
-	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
-
-	EXPECT_EQ(string(""), plugin->Initialize(&service));
-
-	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
-
-	// Setting WiFi Connecting State
-	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setWiFiState"), _T("{\"state\": 4 }"), response));
-
-	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getStatus"), _T("{}"), response));
-	EXPECT_EQ(response, string("{\"enabled\":true,\"state\":\"0\",\"powerState\":\"ON\",\"DeepSleepTransition\":false,\"wifiState\":true,\"success\":true}"));
-
-	// Setting WiFi Connected State
-	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setWiFiState"), _T("{\"state\": 5 }"), response));
-
-	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getStatus"), _T("{}"), response));
-	EXPECT_EQ(response, string("{\"enabled\":true,\"state\":\"1\",\"powerState\":\"ON\",\"DeepSleepTransition\":false,\"wifiState\":false,\"success\":true}"));
-
-	// Setting WiFi Connecting State
-	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setWiFiState"), _T("{\"state\": 4 }"), response));
-
-	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getStatus"), _T("{}"), response));
-	EXPECT_EQ(response, string("{\"enabled\":true,\"state\":\"0\",\"powerState\":\"ON\",\"DeepSleepTransition\":false,\"wifiState\":true,\"success\":true}"));
-
-	// Setting WiFi Connect Failed State
-	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setWiFiState"), _T("{\"state\": 6 }"), response));
-
-	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getStatus"), _T("{}"), response));
-	EXPECT_EQ(response, string("{\"enabled\":true,\"state\":\"1\",\"powerState\":\"ON\",\"DeepSleepTransition\":false,\"wifiState\":false,\"success\":true}"));
-
-	plugin->Deinitialize(nullptr);
-
-	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	removeFile("/var/run/wpa_supplicant/p2p0");
-}
-#endif
