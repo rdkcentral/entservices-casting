@@ -121,6 +121,7 @@ namespace WPEFramework
                 Exchange::IMiracastService* mMiracastServiceImpl{};
                 Exchange::IConfiguration* mConfigure;
                 Core::Sink<Notification> mMiracastServiceNotification;
+                bool mRegisterEvents{false};
 
             public /* constants */:
                 static const string SERVICE_NAME;
