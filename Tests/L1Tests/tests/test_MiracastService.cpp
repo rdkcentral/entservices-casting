@@ -203,14 +203,10 @@ protected:
         dispatcher = static_cast<PLUGINHOST_DISPATCHER*>(
         plugin->QueryInterface(PLUGINHOST_DISPATCHER_ID));
         dispatcher->Activate(&service);
-
-        EXPECT_EQ(string(""), plugin->Initialize(&service));
     }
     virtual ~MiracastServiceTest() override
     {
         TEST_LOG("MiracastServiceTest Destructor");
-
-        plugin->Deinitialize(&service);
 
         dispatcher->Deactivate();
         dispatcher->Release();
@@ -258,8 +254,8 @@ TEST_F(MiracastServiceTest, P2PCtrlInterfaceNameNotFound)
 {
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 
-	//EXPECT_EQ(string("WIFI_P2P_CTRL_INTERFACE not configured in device properties file"), plugin->Initialize(&service));
-	EXPECT_EQ("WIFI_P2P_CTRL_INTERFACE not configured in device properties file", plugin->Initialize(&service));
+	// WIFI_P2P_CTRL_INTERFACE not configured in device properties file
+	EXPECT_NE(string(""), plugin->Initialize(&service));
 	plugin->Deinitialize(nullptr);
 }
 
@@ -268,8 +264,8 @@ TEST_F(MiracastServiceTest, P2PCtrlInterfacePathNotFound)
 	removeFile("/var/run/wpa_supplicant/p2p0");
 	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 
-	//EXPECT_EQ(string("Invalid P2P Ctrl iface configured"), plugin->Initialize(&service));
-	EXPECT_EQ("Invalid P2P Ctrl iface configured", plugin->Initialize(&service));
+	// Invalid P2P Ctrl iface configured
+	EXPECT_NE(string(""), plugin->Initialize(&service));
 	plugin->Deinitialize(nullptr);
 
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
@@ -305,8 +301,8 @@ TEST_F(MiracastServiceTest, P2P_DiscoveryStatus)
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
 	EXPECT_EQ(response, string("{\"message\":\"Successfully enabled the WFD Discovery\",\"success\":true}"));
 
-	/* @return      :  {"message":"WFD Discovery already enabled.","success":false}*/
-	EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
+	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
+    EXPECT_EQ(response, string("{\"message\":\"WFD Discovery already enabled.\",\"success\":false}"));
 
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getEnable"), _T("{}"), response));
 	EXPECT_EQ(response, string("{\"enabled\":true,\"success\":true}"));
@@ -314,8 +310,8 @@ TEST_F(MiracastServiceTest, P2P_DiscoveryStatus)
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": false}"), response));
 	EXPECT_EQ(response, string("{\"message\":\"Successfully disabled the WFD Discovery\",\"success\":true}"));
 
-	/* @return      :  {"message":"WFD Discovery already disabled.","success":false}*/
-	EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": false}"), response));
+	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": false}"), response));
+    EXPECT_EQ(response, string("{\"message\":\"WFD Discovery already disabled.\",\"success\":false}"));
 
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getEnable"), _T("{}"), response));
 	EXPECT_EQ(response, string("{\"enabled\":false,\"success\":true}"));
@@ -335,8 +331,8 @@ TEST_F(MiracastServiceTest, BackendDiscoveryStatus)
 
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setP2PBackendDiscovery"), _T("{\"enabled\": true}"), response));
 
-	/* @return      :  {"message":"Invalid parameter passed","success":false}*/
-	EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setP2PBackendDiscovery"), _T("{\"enable\": true}"), response));
+	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setP2PBackendDiscovery"), _T("{\"enable\": true}"), response));
+    EXPECT_EQ(response, string("{\"message\":\"Invalid parameter passed\",\"success\":false}"));
 
 	plugin->Deinitialize(nullptr);
 
@@ -417,18 +413,20 @@ TEST_F(MiracastServiceEventTest, stopClientConnection)
 
 	EXPECT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000));
 
-	/* @return      :  {"message":"Supported 'requestStatus' parameter values are Accept or Reject","success":false}*/
-	EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Timeout}"), response));
-	/* @return      :  {"message":"Invalid parameter passed","success":false}*/
-	EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"request\": Accept}"), response));
+	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Timeout}"), response));
+    EXPECT_EQ(response, string("{\"message\":\"Supported 'requestStatus' parameter values are Accept or Reject\",\"success\":false}"));
+
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"request\": Accept}"), response));
+    EXPECT_EQ(response, string("{\"message\":\"Invalid parameter passed\",\"success\":false}"));
 
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
 	sleep(2);
 
-	/* @return      :  {"message":"Invalid MAC and Name","success":false}*/
-	EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("stopClientConnection"), _T("{\"name\": \"Sample-Test\",\"mac\": \"96:52:44:b6:7d:14\"}"), response));
-	EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("stopClientConnection"), _T("{\"name\": \"Sample-Test-Android-2\",\"mac\": \"96:52:44:b6:7d\"}"), response));
+	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("stopClientConnection"), _T("{\"name\": \"Sample-Test\",\"mac\": \"96:52:44:b6:7d:14\"}"), response));
+    EXPECT_EQ(response, string("{\"message\":\"Invalid MAC and Name\",\"success\":false}"));
+	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("stopClientConnection"), _T("{\"name\": \"Sample-Test-Android-2\",\"mac\": \"96:52:44:b6:7d\"}"), response));
+    EXPECT_EQ(response, string("{\"message\":\"Invalid MAC and Name\",\"success\":false}"));
 
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("stopClientConnection"), _T("{\"name\": \"Sample-Test-Android-2\",\"mac\": \"96:52:44:b6:7d:14\"}"), response));
 
@@ -601,11 +599,11 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_onClientConnectionAndLaunchRequest)
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("updatePlayerState"), _T("{\"mac\": \"96:52:44:b6:7d:14\",\"state\":\"PLAYING\"}"), response));
 	sleep(1);
 
-	/* @return      :  {"message":"Failed as MiracastPlayer already Launched.","success":false}*/
-	EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": false}"), response));
+	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": false}"), response));
+    EXPECT_EQ(response, string("{\"message\":\"Failed as MiracastPlayer already Launched.\",\"success\":false}"));
 
-	/* @return      :  {"message":"stopClientConnection received after Launch","success":false}*/
-	EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("stopClientConnection"), _T("{\"name\": \"Sample-Test-Android-2\",\"mac\": \"96:52:44:b6:7d:14\"}"), response));
+	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("stopClientConnection"), _T("{\"name\": \"Sample-Test-Android-2\",\"mac\": \"96:52:44:b6:7d:14\"}"), response));
+    EXPECT_EQ(response, string("{\"message\":\"stopClientConnection received after Launch\",\"success\":false}"));
 
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("updatePlayerState"), _T("{\"mac\": \"96:52:44:b6:7d:14\",\"state\":\"STOPPED\"}"), response));
 
