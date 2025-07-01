@@ -354,6 +354,13 @@ namespace WPEFramework
                 m_miracast_rtsp_obj->send_msgto_rtsp_msg_hdler_thread(rtsp_hldr_msgq_data);
                 isSuccessOrFailure = true;
             }
+            else
+            {
+                MIRACASTLOG_ERROR("Invalid Video Rectangle Coords[%d,%d,%d,%d] or No Change in Coords[%d,%d,%d,%d]",
+                                  startX, startY, width, height,
+                                  m_video_sink_rect.startX, m_video_sink_rect.startY, m_video_sink_rect.width, m_video_sink_rect.height);
+                result.message = "Invalid Video Rectangle Coords";
+            }
             result.success = isSuccessOrFailure;
             MIRACASTLOG_TRACE("Exiting ...");
             return Core::ERROR_NONE;

@@ -688,7 +688,7 @@ TEST_F(MiracastPlayerEventTest, APP_REQUESTED_TO_STOP)
                         "\"mac\":\"A1:B2:C3:D4:E5:F6\","
                         "\"state\":\"STOPPED\","
                         "\"reason_code\":\"201\","
-                        "\"reason\":\"APP REQUESTED TO STOP.\""
+                        "\"reason\":\"APP_REQ_TO_STOP\""
                         "}}"
                     )));
                 Stopped.SetEvent();
@@ -709,7 +709,8 @@ TEST_F(MiracastPlayerEventTest, APP_REQUESTED_TO_STOP)
 
     sleep(2);
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("stopRequest"), _T("{\"reason_code\": 303}"), response));
-    EXPECT_EQ(response, string("stopRequest Error Test"));
+    EXPECT_EQ(response, string("{\"message\":\"UNKNOWN STOP REASON CODE RECEIVED\",\"success\":false}"));
+
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("stopRequest"), _T("{\"reason_code\": 300}"), response));
     
     EXPECT_EQ(Core::ERROR_NONE, Stopped.Lock(10000));
@@ -809,7 +810,7 @@ TEST_F(MiracastPlayerEventTest, APP_REQ_TO_STOP_FOR_NEW_CONNECTION)
 
     sleep(2);
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("stopRequest"), _T("{\"reason_code\": 303}"), response));
-    EXPECT_EQ(response, string("stopRequest Error Test"));
+    EXPECT_EQ(response, string("{\"message\":\"UNKNOWN STOP REASON CODE RECEIVED\",\"success\":false}"));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("stopRequest"), _T("{\"reason_code\": 301}"), response));
     
     EXPECT_EQ(Core::ERROR_NONE, Stopped.Lock(10000));
@@ -909,7 +910,7 @@ TEST_F(MiracastPlayerEventTest, SRC_DEV_REQUESTED_TO_STOP)
 
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setVideoRectangle"), _T("{\"X\": 0,\"Y\": 0,\"W\": 1280,\"H\": 720}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setVideoRectangle"), _T("{\"X\": 0,\"Y\": 0,\"W\": 1280,\"H\": 720}"), response));
-    EXPECT_EQ(response, string("setVideoRectangle Error Test"));
+    EXPECT_EQ(response, string("{\"message\":\"Invalid Video Rectangle Coords\",\"success\":false}"));
 
     char buffer[BUFFER_SIZE] = {0};
     std::string teardown_request = "SET_PARAMETER rtsp://localhost/wfd1.0 RTSP/1.0\r\nCSeq: 6\r\nContent-Type: text/parameters\r\nContent-Length: 30\r\n\r\nwfd_trigger_method: TEARDOWN\r\n";
@@ -992,7 +993,7 @@ TEST_F(MiracastPlayerEventTest, RTSP_TimeOut)
                         "\"mac\":\"A1:B2:C3:D4:E5:F6\","
                         "\"state\":\"STOPPED\","
                         "\"reason_code\":\"204\","
-                        "\"reason\":\"RTSP Timeout.\""
+                        "\"reason\":\"RTSP_TIMEOUT\""
                         "}}"
                     )));
                 Stopped.SetEvent();
@@ -1080,7 +1081,7 @@ TEST_F(MiracastPlayerEventTest, RTSP_Failure)
                         "\"mac\":\"A1:B2:C3:D4:E5:F6\","
                         "\"state\":\"STOPPED\","
                         "\"reason_code\":\"203\","
-                        "\"reason\":\"RTSP Failure.\""
+                        "\"reason\":\"RTSP_FAILURE\""
                         "}}"
                     )));
                 Stopped.SetEvent();

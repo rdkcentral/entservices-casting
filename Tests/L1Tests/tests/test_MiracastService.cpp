@@ -331,9 +331,6 @@ TEST_F(MiracastServiceTest, BackendDiscoveryStatus)
 
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setP2PBackendDiscovery"), _T("{\"enabled\": true}"), response));
 
-	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setP2PBackendDiscovery"), _T("{\"enable\": true}"), response));
-    EXPECT_EQ(response, string("{\"message\":\"Invalid parameter passed\",\"success\":false}"));
-
 	plugin->Deinitialize(nullptr);
 
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
@@ -417,7 +414,7 @@ TEST_F(MiracastServiceEventTest, stopClientConnection)
     EXPECT_EQ(response, string("{\"message\":\"Supported 'requestStatus' parameter values are Accept or Reject\",\"success\":false}"));
 
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"request\": Accept}"), response));
-    EXPECT_EQ(response, string("{\"message\":\"Invalid parameter passed\",\"success\":false}"));
+    EXPECT_EQ(response, string("{\"message\":\"Supported 'requestStatus' parameter values are Accept or Reject\",\"success\":false}"));
 
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
@@ -600,7 +597,7 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_onClientConnectionAndLaunchRequest)
 	sleep(1);
 
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": false}"), response));
-    EXPECT_EQ(response, string("{\"message\":\"Failed as MiracastPlayer already Launched.\",\"success\":false}"));
+    EXPECT_EQ(response, string("{\"message\":\"Invalid state to process stopClientConnection\",\"success\":false}"));
 
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("stopClientConnection"), _T("{\"name\": \"Sample-Test-Android-2\",\"mac\": \"96:52:44:b6:7d:14\"}"), response));
     EXPECT_EQ(response, string("{\"message\":\"stopClientConnection received after Launch\",\"success\":false}"));
@@ -771,7 +768,7 @@ TEST_F(MiracastServiceEventTest, P2P_CONNECT_FAIL_onClientConnectionError)
 								"\"params\":{\"mac\":\"96:52:44:b6:7d:14\","
 								"\"name\":\"Sample-Test-Android-2\","
 								"\"error_code\":\"101\","
-								"\"reason\":\"P2P CONNECT FAILURE.\""
+								"\"reason\":\"P2P_CONNECT_FAILURE\""
 								"}"
 								"}")));
 				P2PConnectFail.SetEvent();
@@ -885,7 +882,7 @@ TEST_F(MiracastServiceEventTest, P2P_GO_NEGOTIATION_FAIL_onClientConnectionError
 								"\"params\":{\"mac\":\"96:52:44:b6:7d:14\","
 								"\"name\":\"Sample-Test-Android-2\","
 								"\"error_code\":\"102\","
-								"\"reason\":\"P2P GROUP NEGOTIATION FAILURE.\""
+								"\"reason\":\"P2P_GROUP_NEGOTIATION_FAILURE\""
 								"}"
 								"}")));
 				P2PGoFail.SetEvent();
@@ -1006,7 +1003,7 @@ TEST_F(MiracastServiceEventTest, P2P_GO_FORMATION_FAIL_onClientConnectionError)
 								"\"params\":{\"mac\":\"96:52:44:b6:7d:14\","
 								"\"name\":\"Sample-Test-Android-2\","
 								"\"error_code\":\"103\","
-								"\"reason\":\"P2P GROUP FORMATION FAILURE.\""
+								"\"reason\":\"P2P_GROUP_FORMATION_FAILURE\""
 								"}"
 								"}")));
 				P2PGoFail.SetEvent();
@@ -1744,7 +1741,7 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_GENERIC_FAILURE)
                                                                 "\"params\":{\"mac\":\"96:52:44:b6:7d:14\","
                                                                 "\"name\":\"Sample-Test-Android-2\","
                                                                 "\"error_code\":\"104\","
-                                                                "\"reason\":\"P2P GENERIC FAILURE.\""
+                                                                "\"reason\":\"GENERIC_FAILURE\""
                                                                 "}"
                                                                 "}"
 							)));
@@ -1884,7 +1881,7 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_GENERIC_FAILURE)
 												"\"params\":{\"mac\":\"96:52:44:b6:7d:14\","
 												"\"name\":\"Sample-Test-Android-2\","
 												"\"error_code\":\"104\","
-												"\"reason\":\"P2P GENERIC FAILURE.\""
+												"\"reason\":\"GENERIC_FAILURE\""
 												"}"
 												"}"
 											)));

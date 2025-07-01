@@ -504,7 +504,7 @@ namespace WPEFramework
             return result;
         }
 
-        Core::hresult MiracastServiceImplementation::SetEnabled(const bool enabled , Result &returnPayload )
+        Core::hresult MiracastServiceImplementation::SetEnabled(const bool enabled , Result &result )
         {
             MIRACASTLOG_TRACE("Entering ...");
             bool isSuccessOrFailure = false;
@@ -527,19 +527,19 @@ namespace WPEFramework
                     {
                         setEnableInternal(true);
                     }
-                    returnPayload.message = "Successfully enabled the WFD Discovery";
+                    result.message = "Successfully enabled the WFD Discovery";
                     isSuccessOrFailure = true;
                 }
                 else
                 {
-                    returnPayload.message = "WFD Discovery already enabled.";
+                    result.message = "WFD Discovery already enabled.";
                 }
             }
             else
             {
                 if ( MIRACAST_SERVICE_STATE_PLAYER_LAUNCHED == current_state )
                 {
-                    returnPayload.message = "Failed as MiracastPlayer already Launched";
+                    result.message = "Failed as MiracastPlayer already Launched";
                 }
                 else if (m_isServiceEnabled)
                 {
@@ -563,14 +563,14 @@ namespace WPEFramework
                     remove_wifi_connection_state_timer();
                     remove_miracast_connection_timer();
                     isSuccessOrFailure = true;
-                    returnPayload.message = "Successfully disabled the WFD Discovery";
+                    result.message = "Successfully disabled the WFD Discovery";
                 }
                 else
                 {
-                    returnPayload.message = "WFD Discovery already disabled.";
+                    result.message = "WFD Discovery already disabled.";
                 }
             }
-            returnPayload.success = isSuccessOrFailure;
+            result.success = isSuccessOrFailure;
             MIRACASTLOG_TRACE("Exiting ...");
             return Core::ERROR_NONE;
         }
@@ -584,7 +584,7 @@ namespace WPEFramework
             return Core::ERROR_NONE;
         }
 
-        Core::hresult MiracastServiceImplementation::AcceptClientConnection(const string &requestStatus , Result &returnPayload )
+        Core::hresult MiracastServiceImplementation::AcceptClientConnection(const string &requestStatus , Result &result )
         {
             MIRACASTLOG_TRACE("Entering ...");
             bool isSuccessOrFailure = false;
@@ -639,15 +639,15 @@ namespace WPEFramework
             }
             else
             {
-                returnPayload.message = "Supported 'requestStatus' parameter values are Accept or Reject";
+                result.message = "Supported 'requestStatus' parameter values are Accept or Reject";
                 MIRACASTLOG_ERROR("Unsupported param passed [%s]", requestStatus.c_str());
             }
-            returnPayload.success = isSuccessOrFailure;
+            result.success = isSuccessOrFailure;
             MIRACASTLOG_TRACE("Exiting ...");
             return Core::ERROR_NONE;
         }
 
-        Core::hresult MiracastServiceImplementation::StopClientConnection(const string &clientMac , const string &clientName, Result &returnPayload )
+        Core::hresult MiracastServiceImplementation::StopClientConnection(const string &clientMac , const string &clientName, Result &result )
         {
             MIRACASTLOG_TRACE("Entering ...");
             bool isSuccessOrFailure = false;
@@ -657,8 +657,8 @@ namespace WPEFramework
 
             if ( MIRACAST_SERVICE_STATE_CONNECTION_ACCEPTED != current_state )
             {
-                MIRACASTLOG_WARNING("stopClientConnection Already Received..!!!");
-                returnPayload.message = "stopClientConnection Already Received";
+                MIRACASTLOG_WARNING("Invalid state to process stopClientConnection [%#08X]", current_state);
+                result.message = "Invalid state to process stopClientConnection";
             }
             else
             {
@@ -682,22 +682,22 @@ namespace WPEFramework
                     }
                     else
                     {
-                        returnPayload.message = "stopClientConnection received after Launch";
+                        result.message = "stopClientConnection received after Launch";
                         MIRACASTLOG_ERROR("stopClientConnection received after Launch..!!!");
                     }
                 }
                 else
                 {
-                    returnPayload.message = "Invalid MAC and Name";
+                    result.message = "Invalid MAC and Name";
                     MIRACASTLOG_ERROR("Invalid MAC and Name[%s][%s]..!!!",clientMac.c_str(),clientName.c_str());
                 }
             }
             MIRACASTLOG_TRACE("Exiting ...");
-            returnPayload.success = isSuccessOrFailure;
+            result.success = isSuccessOrFailure;
             return Core::ERROR_NONE;
         }
 
-        Core::hresult MiracastServiceImplementation::UpdatePlayerState(const string &clientMac , const MiracastPlayerState playerState , const int reasonCode , Result &returnPayload )
+        Core::hresult MiracastServiceImplementation::UpdatePlayerState(const string &clientMac , const MiracastPlayerState playerState , const int reasonCode , Result &result )
         {
             MIRACASTLOG_TRACE("Entering ...");
             bool restart_discovery_needed = false;
@@ -740,7 +740,7 @@ namespace WPEFramework
                 break;
                 default:
                 {
-                    returnPayload.message = "Invalid Player State";
+                    result.message = "Invalid Player State";
                     MIRACASTLOG_ERROR("Invalid Player State[%#04X]", (int)playerState);
                     return Core::ERROR_BAD_REQUEST;
                 }
@@ -754,11 +754,11 @@ namespace WPEFramework
             }
             MIRACASTLOG_INFO("#### MiracastPlayerState[%d] reasonCode[%#04X] ####", (int)playerState, (int)reasonCode);
             MIRACASTLOG_TRACE("Exiting ...");
-            returnPayload.success = true;
+            result.success = true;
             return Core::ERROR_NONE;
         }
 
-        Core::hresult MiracastServiceImplementation::SetP2PBackendDiscovery(const bool enabled , Result &returnPayload )
+        Core::hresult MiracastServiceImplementation::SetP2PBackendDiscovery(const bool enabled , Result &result )
         {
             MIRACASTLOG_TRACE("Entering ...");
             if (m_miracast_ctrler_obj)
@@ -766,7 +766,7 @@ namespace WPEFramework
                 m_miracast_ctrler_obj->setP2PBackendDiscovery(enabled);
             }
             MIRACASTLOG_TRACE("Exiting ...");
-            returnPayload.success = true;
+            result.success = true;
             return Core::ERROR_NONE;
         }
         /*  COMRPC Methods End */
@@ -777,7 +777,6 @@ namespace WPEFramework
         void MiracastServiceImplementation::onMiracastServiceClientConnectionRequest(string client_mac, string client_name)
         {
             MIRACASTLOG_TRACE("Entering ...");
-            std::string requestStatus = "Accept";
             bool is_another_connect_request = false;
 
             lock_guard<recursive_mutex> lock(m_EventMutex);
@@ -811,10 +810,8 @@ namespace WPEFramework
                     changeServiceState(MIRACAST_SERVICE_STATE_CONNECTING);
                 }
                 memset(commandBuffer,0x00,sizeof(commandBuffer));
-                snprintf( commandBuffer,
-                        sizeof(commandBuffer),
-                        "curl -H \"Authorization: Bearer `WPEFrameworkSecurityUtility | cut -d '\"' -f 4`\" --header \"Content-Type: application/json\" --request POST --data '{\"jsonrpc\":\"2.0\", \"id\":3,\"method\":\"org.rdk.MiracastService.1.acceptClientConnection\", \"params\":{\"requestStatus\": \"%s\"}}' http://127.0.0.1:9998/jsonrpc &",
-                        requestStatus.c_str());
+                strncpy(commandBuffer,"curl -H \"Authorization: Bearer `WPEFrameworkSecurityUtility | cut -d '\"' -f 4`\" --header \"Content-Type: application/json\" --request POST --data '{\"jsonrpc\":\"2.0\", \"id\":3,\"method\":\"org.rdk.MiracastService.1.acceptClientConnection\", \"params\":{\"requestStatus\": \"Accept\"}}' http://127.0.0.1:9998/jsonrpc &",sizeof(commandBuffer));
+                commandBuffer[sizeof(commandBuffer) - 1] = '\0';
                 MIRACASTLOG_INFO("AutoConnecting [%s - %s] by [%s]",client_name.c_str(),client_mac.c_str(),commandBuffer);
                 MiracastCommon::execute_SystemCommand(commandBuffer);
             }
