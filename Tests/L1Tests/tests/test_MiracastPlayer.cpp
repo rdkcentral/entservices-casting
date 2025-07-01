@@ -575,17 +575,16 @@ protected:
                 .WillByDefault(::testing::Return(miracastPlayerImpl));
         #endif /*USE_THUNDER_R4 */
         
-                PluginHost::IFactories::Assign(&factoriesImplementation);
-        
-                Core::IWorkerPool::Assign(&(*workerPool));
-                workerPool->Run();
-        
-                dispatcher = static_cast<PLUGINHOST_DISPATCHER*>(
-                plugin->QueryInterface(PLUGINHOST_DISPATCHER_ID));
-                dispatcher->Activate(&service);
-        
-                EXPECT_EQ(string(""), plugin->Initialize(&service));
+        PluginHost::IFactories::Assign(&factoriesImplementation);
 
+        Core::IWorkerPool::Assign(&(*workerPool));
+        workerPool->Run();
+
+        dispatcher = static_cast<PLUGINHOST_DISPATCHER*>(
+        plugin->QueryInterface(PLUGINHOST_DISPATCHER_ID));
+        dispatcher->Activate(&service);
+
+        EXPECT_EQ(string(""), plugin->Initialize(&service));
     }
     virtual ~MiracastPlayerTest() override
     {
@@ -732,6 +731,10 @@ TEST_F(MiracastPlayerEventTest, APP_REQUESTED_TO_STOP)
     EXPECT_EQ(rtsp_response, string("SUCCESS"));
 
     EXPECT_EQ(Core::ERROR_NONE, Playing.Lock(10000));
+
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setVideoRectangle"), _T("{\"X\": 0,\"Y\": 0,\"W\": 1280,\"H\": 720}"), response));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setVideoRectangle"), _T("{\"X\": 0,\"Y\": 0,\"W\": 1280,\"H\": 720}"), response));
+    EXPECT_EQ(response, string("{\"message\":\"Invalid Video Rectangle Coords\",\"success\":false}"));
 
     sleep(2);
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("stopRequest"), _T("{\"reason_code\": 303}"), response));
@@ -933,10 +936,6 @@ TEST_F(MiracastPlayerEventTest, SRC_DEV_REQUESTED_TO_STOP)
     EXPECT_EQ(rtsp_response, string("SUCCESS"));
 
     EXPECT_EQ(Core::ERROR_NONE, Playing.Lock(10000));
-
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setVideoRectangle"), _T("{\"X\": 0,\"Y\": 0,\"W\": 1280,\"H\": 720}"), response));
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setVideoRectangle"), _T("{\"X\": 0,\"Y\": 0,\"W\": 1280,\"H\": 720}"), response));
-    EXPECT_EQ(response, string("{\"message\":\"Invalid Video Rectangle Coords\",\"success\":false}"));
 
     char buffer[BUFFER_SIZE] = {0};
     std::string teardown_request = "SET_PARAMETER rtsp://localhost/wfd1.0 RTSP/1.0\r\nCSeq: 6\r\nContent-Type: text/parameters\r\nContent-Length: 30\r\n\r\nwfd_trigger_method: TEARDOWN\r\n";
