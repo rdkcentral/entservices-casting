@@ -185,14 +185,14 @@ void *MiracastGstPlayer::playbackThread(void *ctx)
     while (self && m_playbackThreadLoop )
     {
         usleep(50);
-        if (m_customQueueHandle)
+        if (self->m_customQueueHandle)
         {
             GstBuffer *new_buffer = nullptr;
             new_buffer = gst_buffer_new_allocate(NULL, 256, NULL);
             if (new_buffer)
             {
                 MIRACASTLOG_INFO("gstBuffer[%x]",new_buffer);
-                m_customQueueHandle->sendData(static_cast<void*>(new_buffer));
+                self->m_customQueueHandle->sendData(static_cast<void*>(new_buffer));
             }
         }
         gstBuffer = NULL;
