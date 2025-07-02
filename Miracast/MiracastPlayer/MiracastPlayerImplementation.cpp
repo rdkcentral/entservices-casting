@@ -44,6 +44,7 @@ namespace WPEFramework
             LOGINFO("Call MiracastPlayerImplementation constructor");
             MiracastPlayerImplementation::_instance = this;
             m_video_sink_rect = {0, 0, 1920, 1080}; // Default video rectangle
+            m_GstPlayer = nullptr;
             MIRACAST::logger_init("MiracastPlayer");
         }
 

@@ -82,8 +82,14 @@ bool MiracastGstPlayer::launch(std::string& localip , std::string& streaming_por
             MIRACASTLOG_ERROR("Failed to create MessageQueue");
             return false;
         }
-        pthread_create(&m_playback_thread, nullptr, MiracastGstPlayer::playbackThread, this);
-        pthread_create(&m_pushbuffer_handler_tid, nullptr, MiracastGstPlayer::pushbuffer_handler_thread, this);
+        if (0 != pthread_create(&m_playback_thread, nullptr, MiracastGstPlayer::playbackThread, this))
+        {
+            MIRACASTLOG_ERROR("Failed to create playback thread");
+        }
+        if (0 != pthread_create(&m_pushbuffer_handler_tid, nullptr, MiracastGstPlayer::pushbuffer_handler_thread, this))
+        {
+            MIRACASTLOG_ERROR("Failed to create push buffer handler thread");
+        }
 	}
 	return true;
 }
@@ -172,8 +178,9 @@ void MiracastGstPlayer::gstBufferReleaseCallback(void* userParam)
 
     if (nullptr != gstBuffer)
     {
-        MIRACASTLOG_INFO("gstBuffer[%x]",gstBuffer);
+        MIRACASTLOG_INFO("gstBuffer[%u]",gstBuffer);
         gst_buffer_unref(gstBuffer);
+        gstBuffer = nullptr;
     }
 }
 
@@ -190,11 +197,14 @@ void *MiracastGstPlayer::playbackThread(void *ctx)
             new_buffer = gst_buffer_new_allocate(NULL, 128, NULL);
             if (new_buffer)
             {
-                MIRACASTLOG_INFO("gstBuffer[%x]",new_buffer);
+                MIRACASTLOG_INFO("gstBuffer[%u]",new_buffer);
                 self->m_customQueueHandle->sendData(static_cast<void*>(new_buffer));
             }
+            else
+            {
+                MIRACASTLOG_ERROR("Failed to create new GstBuffer");
+            }
         }
-        new_buffer = NULL;
     }
     MIRACASTLOG_TRACE("Exiting..!!!");
     pthread_exit(nullptr);
@@ -206,20 +216,27 @@ void* MiracastGstPlayer::pushbuffer_handler_thread(void *ctx)
     MIRACASTLOG_TRACE("Entering..!!!");
     void* buffer = nullptr;
     GstBuffer *gstBuffer = nullptr;
-    self->m_pushBufferLoop = true;
+    if (self)
+    {
+        self->m_pushBufferLoop = true;
+    }
     while (self && (self->m_pushBufferLoop))
     {
         usleep(50);
+        buffer = nullptr;
         self->m_customQueueHandle->ReceiveData(buffer);
 
         if (nullptr != buffer)
         {
             gstBuffer = static_cast<GstBuffer*>(buffer);
-            MIRACASTLOG_INFO("Received buffer [%x]", gstBuffer);
+            MIRACASTLOG_INFO("Received buffer [%u]", gstBuffer);
             gst_buffer_unref(gstBuffer);
+            gstBuffer = nullptr;
         }
-        gstBuffer = NULL;
-        buffer = NULL;
+        else
+        {
+            MIRACASTLOG_ERROR("Received buffer is NULL");
+        }
     }
     MIRACASTLOG_TRACE("Exiting..!!!");
     pthread_exit(nullptr);

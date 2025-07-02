@@ -182,7 +182,7 @@ namespace WPEFramework
 
         string MiracastService::Information() const
         {
-            return(string("{\"service\": \"") + SERVICE_NAME + string("\"}"));
+            return("This MiracastService Plugin Facilitates Peer-to-Peer Control and WFD Source Device Discovery");
         }
 
         void MiracastService::Deactivated(RPC::IRemoteConnection* connection)

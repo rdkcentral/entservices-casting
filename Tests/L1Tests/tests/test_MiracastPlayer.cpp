@@ -642,6 +642,11 @@ TEST_F(MiracastPlayerTest, RegisteredMethods)
     EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("setVideoRectangle")));
 }
 
+TEST_F(MiracastPlayerTest, GetInformation)
+{
+    EXPECT_EQ("This MiracastPlayer Plugin Facilitates Miracast session like RTSP communication and GStreamer Playback", plugin->Information());
+}
+
 TEST_F(MiracastPlayerEventTest, APP_REQUESTED_TO_STOP)
 {
     std::string rtsp_response = "";

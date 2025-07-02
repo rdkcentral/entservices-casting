@@ -60,6 +60,8 @@ namespace WPEFramework
             m_isServiceInitialized = false;
             _registeredEventHandlers = false;
             m_eService_state = MIRACAST_SERVICE_STATE_IDLE;
+            m_CurrentService = nullptr;
+            m_isServiceEnabled = false;
         }
 
         MiracastServiceImplementation::~MiracastServiceImplementation()
@@ -105,24 +107,10 @@ namespace WPEFramework
                 m_isServiceEnabled = false;
                 MIRACASTLOG_INFO("Done..!!!");
             }
-            if (_powerManagerPlugin)
-            {
-                _powerManagerPlugin.Reset();
-            }
             if(m_CurrentService)
             {
                 m_CurrentService->Release();
                 m_CurrentService = nullptr;
-            }
-            if (nullptr != m_SystemPluginObj)
-            {
-                delete m_SystemPluginObj;
-                m_SystemPluginObj = nullptr;
-            }
-            if (nullptr != m_WiFiPluginObj)
-            {
-                delete m_WiFiPluginObj;
-                m_WiFiPluginObj = nullptr;
             }
             MIRACAST::logger_deinit();
             MiracastServiceImplementation::_instance = nullptr;
@@ -999,19 +987,6 @@ namespace WPEFramework
             }
             MIRACASTLOG_INFO("Power State[%#04X - %s]",pwrState ,pwrStateStr.c_str());
             return pwrStateStr;
-        }
-
-        PowerState MiracastServiceImplementation::getPowerManagerPluginPowerState(uint32_t powerState)
-        {
-            PowerState ret_power_state = (PowerState)powerState++;
-            MIRACASTLOG_INFO("Current PowerManagerPlugin state [%#04X]",ret_power_state);
-            return ret_power_state;
-        }
-
-        PowerState MiracastServiceImplementation::getCurrentPowerState(void)
-        {
-            MIRACASTLOG_INFO("current power state [%s]",getPowerStateString(m_powerState).c_str());
-            return m_powerState;
         }
 
         void MiracastServiceImplementation::setPowerStateInternal(PowerState pwrState)

@@ -221,8 +221,6 @@ namespace WPEFramework
                 void registerEventHandlers();
                 void InitializePowerState();
                 std::string getPowerStateString(PowerState pwrState);
-                PowerState getPowerManagerPluginPowerState(uint32_t powerState);
-                PowerState getCurrentPowerState(void);
                 void setPowerStateInternal(PowerState pwrState);
 
                 void setWiFiStateInternal(DEVICE_WIFI_STATES wifiState);
