@@ -230,7 +230,7 @@ namespace WPEFramework
              
             std::list<Exchange::IXCast::INotification *> _xcastNotification; // List of registered notifications
 
-            void dumpDynamicAppCacheList(string strListName, std::vector<DynamicAppConfig*> appConfigList);
+            void dumpDynamicAppCacheList(string strListName, std::vector<DynamicAppConfig*>& appConfigList);
             bool deleteFromDynamicAppCache(vector<string>& appsToDelete);
 
             void dispatchEvent(Event,string callsign, const JsonObject &params);
@@ -268,7 +268,7 @@ namespace WPEFramework
             
             void onXcastUpdatePowerStateRequest(string powerState);
             uint32_t SetNetworkStandbyMode(bool networkStandbyMode);
-            bool setPowerState(std::string powerState);
+            bool setPowerState(const std::string& powerState);
             void getUrlFromAppLaunchParams (const char *app_name, const char *payload, const char *query_string, const char *additional_data_url, char *url);
             void updateDynamicAppCache(Exchange::IXCast::IApplicationInfoIterator* const appInfoList);
             

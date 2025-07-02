@@ -289,7 +289,7 @@ namespace WPEFramework
             if (parameters.HasLabel("friendlyName")) {
                 value = parameters["friendlyName"].String();
 
-                    m_friendlyName = value;
+                    m_friendlyName = std::move(value);
                     LOGINFO("onFriendlyNameUpdateHandler  :%s",m_friendlyName.c_str());
                     if (m_FriendlyNameUpdateTimerID)
                     {
@@ -767,7 +767,7 @@ namespace WPEFramework
                 m_xcast_manager->enableCastService(friendlyname,enableService);
             }
             xcastEnableCache = enableService;
-            friendlyNameCache = friendlyname;
+            friendlyNameCache = std::move(friendlyname);
             return 0;
         }
         void XCastImplementation::startTimer(int interval)
@@ -995,7 +995,7 @@ namespace WPEFramework
             }
             LOGINFO("Exiting..!!!");
         }
-         void XCastImplementation::dumpDynamicAppCacheList(string strListName, std::vector<DynamicAppConfig*> appConfigList)
+void XCastImplementation::dumpDynamicAppCacheList(string strListName, std::vector<DynamicAppConfig*>& appConfigList)
         {
             LOGINFO ("=================Current Apps[%s] size[%d] ===========================", strListName.c_str(), (int)appConfigList.size());
             for (DynamicAppConfig* pDynamicAppConfig : appConfigList)
@@ -1359,7 +1359,7 @@ namespace WPEFramework
                 appConfigList = m_appConfigCache;
             }
             dumpDynamicAppCacheList(string("m_appConfigCache"), appConfigList);
-	    lock_guard<mutex> lck(m_appConfigMutex);
+	        lock_guard<mutex> lck(m_appConfigMutex);
             //Pass the dynamic cache to xdial process
             m_xcast_manager->registerApplications(m_appConfigCache);
 
@@ -1412,13 +1412,13 @@ namespace WPEFramework
             return (returnStatus)? Core::ERROR_NONE : Core::ERROR_GENERAL;
         }
 
-        bool XCastImplementation::setPowerState(std::string powerState)
+        bool XCastImplementation::setPowerState(const string &powerState)
         {
             PowerState cur_powerState = m_powerState,
             new_powerState = WPEFramework::Exchange::IPowerManager::POWER_STATE_OFF;
             Core::hresult status = Core::ERROR_GENERAL;
             bool ret = true;
-            if ("ON" == powerState)
+            if ("ON" == powerState )
             {
                 new_powerState = WPEFramework::Exchange::IPowerManager::POWER_STATE_ON;
             }
