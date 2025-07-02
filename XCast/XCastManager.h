@@ -76,7 +76,6 @@ public:
     string getManufacturerName(void);
     int setModelName( string model);
     string getModelName(void);
-    void triggerevent();
     /**
      *Request the single instance of this class
      */
