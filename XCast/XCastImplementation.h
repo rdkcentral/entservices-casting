@@ -29,6 +29,7 @@
 #include <core/core.h>
 #include <mutex>
 #include <vector>
+#include <glib.h> 
 
 #include "XCastManager.h"
 #include "XCastNotifier.h"
