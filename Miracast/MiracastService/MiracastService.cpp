@@ -136,7 +136,6 @@ namespace WPEFramework
 
             if (nullptr != mMiracastServiceImpl)
             {
-                SYSLOG(Logging::Shutdown, (string(_T("MiracastService TRACE 1"))));
                 if (mRegisterEvents)
                 {
                     mMiracastServiceImpl->Unregister(&mMiracastServiceNotification);
@@ -144,18 +143,13 @@ namespace WPEFramework
                     mRegisterEvents = false;
                 }
 
-                SYSLOG(Logging::Shutdown, (string(_T("MiracastService TRACE 2"))));
-
                 /* Stop processing: */
                 RPC::IRemoteConnection* connection = nullptr;
                 if (service)
                 {
                     connection = service->RemoteConnection(mConnectionId);
                 }
-                SYSLOG(Logging::Shutdown, (string(_T("MiracastService TRACE 3"))));
                 VARIABLE_IS_NOT_USED uint32_t result = mMiracastServiceImpl->Release();
-                SYSLOG(Logging::Shutdown, (string(_T("MiracastService TRACE 4"))));
-    
                 mMiracastServiceImpl = nullptr;
     
                 /* It should have been the last reference we are releasing,
@@ -171,26 +165,17 @@ namespace WPEFramework
                     * that unwilling processes, get shot if
                     * not stopped friendly :-)
                     */
-                    SYSLOG(Logging::Shutdown, (string(_T("MiracastService TRACE 5"))));
                     connection->Terminate();
-                    SYSLOG(Logging::Shutdown, (string(_T("MiracastService TRACE 6"))));
                     connection->Release();
-                    SYSLOG(Logging::Shutdown, (string(_T("MiracastService TRACE 7"))));
                 }
-                SYSLOG(Logging::Shutdown, (string(_T("MiracastService TRACE 8"))));
             }
-            SYSLOG(Logging::Shutdown, (string(_T("MiracastService TRACE 9"))));
-    
             if (nullptr != mCurrentService)
             {
                 /* Make sure the Activated and Deactivated are no longer called before we start cleaning up.. */
                 mCurrentService->Unregister(&mMiracastServiceNotification);
-                SYSLOG(Logging::Shutdown, (string(_T("MiracastService TRACE 10"))));
                 mCurrentService->Release();
-                SYSLOG(Logging::Shutdown, (string(_T("MiracastService TRACE 11"))));
                 mCurrentService = nullptr;
             }
-
             mConnectionId = 0;
             SYSLOG(Logging::Shutdown, (string(_T("MiracastService de-initialised"))));
         }
