@@ -55,6 +55,7 @@ void MiracastGstPlayer::destroyInstance()
 
 MiracastGstPlayer::MiracastGstPlayer()
 {
+    gst_init(nullptr, nullptr);
 }
 
 MiracastGstPlayer::~MiracastGstPlayer()
