@@ -180,23 +180,20 @@ void *MiracastGstPlayer::playbackThread(void *ctx)
 {
     MiracastGstPlayer *self = (MiracastGstPlayer *)ctx;
     MIRACASTLOG_TRACE("Entering..!!!");
-    void* buffer = nullptr;
-    GstBuffer *gstBuffer = nullptr;
+    GstBuffer *new_buffer = nullptr;
     while (self && m_playbackThreadLoop )
     {
         usleep(50);
         if (self->m_customQueueHandle)
         {
-            GstBuffer *new_buffer = nullptr;
-            new_buffer = gst_buffer_new_allocate(NULL, 256, NULL);
+            new_buffer = gst_buffer_new_allocate(NULL, 128, NULL);
             if (new_buffer)
             {
                 MIRACASTLOG_INFO("gstBuffer[%x]",new_buffer);
                 self->m_customQueueHandle->sendData(static_cast<void*>(new_buffer));
             }
         }
-        gstBuffer = NULL;
-        buffer = NULL;
+        new_buffer = NULL;
     }
     MIRACASTLOG_TRACE("Exiting..!!!");
     pthread_exit(nullptr);
