@@ -1343,7 +1343,7 @@ namespace WPEFramework
             //Clear the tempopary list here
             appsToDelete.clear();
             appConfigList.clear();
-            
+            lock_guard<mutex> lck(m_appConfigMutex);
             dumpDynamicAppCacheList(string("m_appConfigCache"), m_appConfigCache);
             return;
         }
@@ -1359,6 +1359,7 @@ namespace WPEFramework
                 appConfigList = m_appConfigCache;
             }
             dumpDynamicAppCacheList(string("m_appConfigCache"), appConfigList);
+	    lock_guard<mutex> lck(m_appConfigMutex);
             //Pass the dynamic cache to xdial process
             m_xcast_manager->registerApplications(m_appConfigCache);
 
