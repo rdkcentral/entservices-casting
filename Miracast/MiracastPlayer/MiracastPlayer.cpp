@@ -139,7 +139,11 @@ namespace WPEFramework
                 Exchange::JMiracastPlayer::Unregister(*this);
 
                 /* Stop processing: */
-                RPC::IRemoteConnection* connection = service->RemoteConnection(mConnectionId);
+                RPC::IRemoteConnection* connection = nullptr;
+                if (nullptr != service)
+                {
+                    connection = service->RemoteConnection(mConnectionId);
+                }
                 VARIABLE_IS_NOT_USED uint32_t result = mMiracastPlayerImpl->Release();
 
                 mMiracastPlayerImpl = nullptr;
@@ -176,7 +180,7 @@ namespace WPEFramework
 
         string MiracastPlayer::Information() const
         {
-            return(string("{\"service\": \"") + SERVICE_NAME + string("\"}"));
+            return("This MiracastPlayer Plugin Facilitates Miracast session like RTSP communication and GStreamer Playback");
         }
 
         void MiracastPlayer::Deactivated(RPC::IRemoteConnection* connection)
