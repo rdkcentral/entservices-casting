@@ -178,7 +178,7 @@ void MiracastGstPlayer::gstBufferReleaseCallback(void* userParam)
 
     if (nullptr != gstBuffer)
     {
-        MIRACASTLOG_INFO("gstBuffer[%u]",gstBuffer);
+        MIRACASTLOG_INFO("gstBuffer[%p]", static_cast<void*>(gstBuffer));
         gst_buffer_unref(gstBuffer);
         gstBuffer = nullptr;
     }
@@ -197,7 +197,7 @@ void *MiracastGstPlayer::playbackThread(void *ctx)
             new_buffer = gst_buffer_new_allocate(NULL, 128, NULL);
             if (new_buffer)
             {
-                MIRACASTLOG_INFO("gstBuffer[%u]",new_buffer);
+                MIRACASTLOG_INFO("new_buffer[%p]", static_cast<void*>(new_buffer));
                 self->m_customQueueHandle->sendData(static_cast<void*>(new_buffer));
             }
             else
@@ -229,7 +229,7 @@ void* MiracastGstPlayer::pushbuffer_handler_thread(void *ctx)
         if (nullptr != buffer)
         {
             gstBuffer = static_cast<GstBuffer*>(buffer);
-            MIRACASTLOG_INFO("Received buffer [%u]", gstBuffer);
+            MIRACASTLOG_INFO("Received buffer [%p]", static_cast<void*>(gstBuffer));
             gst_buffer_unref(gstBuffer);
             gstBuffer = nullptr;
         }
