@@ -317,12 +317,12 @@ namespace WPEFramework
         /*  Helper and Internal methods End */
         /* ------------------------------------------------------------------------------------------------------- */
 
-        void MiracastServiceImplementation::dispatchEvent(Event event, const ParamsType &params)
+        void MiracastServiceImplementation::dispatchEvent(Event event, const JsonObject &params)
         {
             Core::IWorkerPool::Instance().Submit(Job::Create(this, event, params));
         }
 
-        void MiracastServiceImplementation::Dispatch(Event event,const ParamsType& params)
+        void MiracastServiceImplementation::Dispatch(Event event,const JsonObject& params)
         {
             _adminLock.Lock();
 
@@ -332,35 +332,51 @@ namespace WPEFramework
             {
                 case MIRACASTSERVICE_EVENT_CLIENT_CONNECTION_REQUEST:
                 {
-                    string clientMac;
-                    string clientName;
-                    if (const auto* pairValue = boost::get<std::pair<std::string, std::string>>(&params))
+                    string clientMac = "";
+                    string clientName = "";
+
+                    if (!(params.HasLabel("source_dev_mac") && !(clientMac = params["source_dev_mac"].String()).empty()))
                     {
-                        clientMac = pairValue->first;
-                        clientName = pairValue->second;
+                        MIRACASTLOG_ERROR("source_dev_mac not present or empty");
                     }
-                    MIRACASTLOG_INFO("Notifying CLIENT_CONNECTION_REQUEST Event ClientMac[%s] ClientName[%s]", clientMac.c_str(), clientName.c_str());
-                    while (index != _miracastServiceNotification.end())
+                    else if (!(params.HasLabel("source_dev_name") && !(clientName = params["source_dev_name"].String()).empty()))
                     {
-                        (*index)->OnClientConnectionRequest(clientMac , clientName );
-                        ++index;
+                        MIRACASTLOG_ERROR("source_dev_name not present or empty");
+                    }
+                    else
+                    {
+                        MIRACASTLOG_INFO("Notifying CLIENT_CONNECTION_REQUEST Event ClientMac[%s] ClientName[%s]", clientMac.c_str(), clientName.c_str());
+                        while (index != _miracastServiceNotification.end())
+                        {
+                            (*index)->OnClientConnectionRequest(clientMac , clientName );
+                            ++index;
+                        }
                     }
                 }
                 break;
                 case MIRACASTSERVICE_EVENT_CLIENT_CONNECTION_ERROR:
                 {
-                    string clientMac;
-                    string clientName;
-                    string reasonCodeStr;
-                    MiracastServiceReasonCode reason;
+                    string clientMac = "";
+                    string clientName = "";
+                    string reasonCodeStr = "";
+                    MiracastServiceReasonCode reason = WPEFramework::Exchange::IMiracastService::REASON_CODE_SUCCESS;
 
-                    if (const auto* tupleValue = boost::get<std::tuple<std::string, std::string, MiracastServiceReasonCode>>(&params))
+                    if (!(params.HasLabel("source_dev_mac") && !(clientMac = params["source_dev_mac"].String()).empty()))
                     {
-                        clientMac = std::get<0>(*tupleValue);
-                        clientName = std::get<1>(*tupleValue);
-                        reason = std::get<2>(*tupleValue);
+                        MIRACASTLOG_ERROR("source_dev_mac not present or empty");
+                    }
+                    else if (!(params.HasLabel("source_dev_name") && !(clientName = params["source_dev_name"].String()).empty()))
+                    {
+                        MIRACASTLOG_ERROR("source_dev_name not present or empty");
+                    }
+                    else if (!(params.HasLabel("reason_code")))
+                    {
+                        MIRACASTLOG_ERROR("reason_code not present or empty");
+                    }
+                    else
+                    {
+                        reason = static_cast<MiracastServiceReasonCode>(params["reason_code"].Number());
                         reasonCodeStr = std::to_string(reason);
-
                         MIRACASTLOG_INFO("Notifying CLIENT_CONNECTION_ERROR Event Mac[%s] Name[%s] Reason[%u]",clientMac.c_str(), clientName.c_str(), reason);
                         while (index != _miracastServiceNotification.end())
                         {
@@ -368,30 +384,37 @@ namespace WPEFramework
                             ++index;
                         }
                     }
-                    else
-                    {
-                        MIRACASTLOG_ERROR("CLIENT_CONNECTION_ERROR: Invalid parameters");
-                    }
                 }
                 break;
                 case MIRACASTSERVICE_EVENT_PLAYER_LAUNCH_REQUEST:
                 {
                     DeviceParameters deviceParameters;
-
-                    if (const auto* tupleValue = boost::get<std::tuple<std::string, std::string, std::string,std::string>>(&params))
+                    if (!(params.HasLabel("source_dev_mac") && !(deviceParameters.sourceDeviceMac = params["source_dev_mac"].String()).empty()))
                     {
-                        deviceParameters.sourceDeviceIP = std::get<0>(*tupleValue);
-                        deviceParameters.sourceDeviceMac = std::get<1>(*tupleValue);
-                        deviceParameters.sourceDeviceName = std::get<2>(*tupleValue);
-                        deviceParameters.sinkDeviceIP = std::get<3>(*tupleValue);
+                        MIRACASTLOG_ERROR("source_dev_mac not present or empty");
                     }
-                    MIRACASTLOG_INFO("Notifying PLAYER_LAUNCH_REQUEST Event SourceDeviceIP[%s] SourceDeviceMac[%s] SourceDeviceName[%s] SinkDeviceIP[%s]",
+                    else if (!(params.HasLabel("source_dev_name") && !(deviceParameters.sourceDeviceName = params["source_dev_name"].String()).empty()))
+                    {
+                        MIRACASTLOG_ERROR("source_dev_name not present or empty");
+                    }
+                    else if (!(params.HasLabel("source_dev_ip") && !(deviceParameters.sourceDeviceIP = params["source_dev_ip"].String()).empty()))
+                    {
+                        MIRACASTLOG_ERROR("source_dev_ip not present or empty");
+                    }
+                    else if (!(params.HasLabel("sink_dev_ip") && !(deviceParameters.sinkDeviceIP = params["sink_dev_ip"].String()).empty()))
+                    {
+                        MIRACASTLOG_ERROR("sink_dev_ip not present or empty");
+                    }
+                    else
+                    {
+                        MIRACASTLOG_INFO("Notifying PLAYER_LAUNCH_REQUEST Event SourceDeviceIP[%s] SourceDeviceMac[%s] SourceDeviceName[%s] SinkDeviceIP[%s]",
                                         deviceParameters.sourceDeviceIP.c_str(), deviceParameters.sourceDeviceMac.c_str(),
                                         deviceParameters.sourceDeviceName.c_str(), deviceParameters.sinkDeviceIP.c_str());
-                    while (index != _miracastServiceNotification.end())
-                    {
-                        (*index)->OnLaunchRequest(deviceParameters);
-                        ++index;
+                        while (index != _miracastServiceNotification.end())
+                        {
+                            (*index)->OnLaunchRequest(deviceParameters);
+                            ++index;
+                        }
                     }
                 }
                 break;
@@ -796,9 +819,10 @@ namespace WPEFramework
             }
             else
             {
-                auto pairParam = std::make_pair(client_mac,client_name);
-
-                dispatchEvent(MIRACASTSERVICE_EVENT_CLIENT_CONNECTION_REQUEST, pairParam);
+                JsonObject eventDetails;
+                eventDetails["source_dev_mac"] = client_mac;
+                eventDetails["source_dev_name"] = client_name;
+                dispatchEvent(MIRACASTSERVICE_EVENT_CLIENT_CONNECTION_REQUEST, eventDetails);
 
                 m_src_dev_mac = std::move(client_mac);
 
@@ -828,8 +852,11 @@ namespace WPEFramework
             }
             else
             {
-                auto tupleParam = std::make_tuple(client_mac,client_name,reason_code);
-                dispatchEvent(MIRACASTSERVICE_EVENT_CLIENT_CONNECTION_ERROR, tupleParam);
+                JsonObject eventDetails;
+                eventDetails["source_dev_mac"] = client_mac;
+                eventDetails["source_dev_name"] = client_name;
+                eventDetails["reason_code"] = static_cast<int>(reason_code);
+                dispatchEvent(MIRACASTSERVICE_EVENT_CLIENT_CONNECTION_ERROR, eventDetails);
             }
             MIRACASTLOG_TRACE("Exiting ...");
         }
@@ -874,7 +901,12 @@ namespace WPEFramework
                 }
                 else
                 {
-                    dispatchEvent(MIRACASTSERVICE_EVENT_PLAYER_LAUNCH_REQUEST, tupleParam);
+                    JsonObject eventDetails;
+                    eventDetails["source_dev_mac"] = src_dev_mac;
+                    eventDetails["source_dev_name"] = src_dev_name;
+                    eventDetails["source_dev_ip"] = src_dev_ip;
+                    eventDetails["sink_dev_ip"] = sink_dev_ip;
+                    dispatchEvent(MIRACASTSERVICE_EVENT_PLAYER_LAUNCH_REQUEST, eventDetails);
                 }
                 changeServiceState(MIRACAST_SERVICE_STATE_PLAYER_LAUNCHED);
             }

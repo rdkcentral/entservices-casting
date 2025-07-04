@@ -21,8 +21,6 @@
 
 #include "Module.h"
 
-#include <boost/variant.hpp>
-
 #include <interfaces/Ids.h>
 #include <interfaces/IMiracastService.h>
 #include <interfaces/IPowerManager.h>
@@ -45,9 +43,6 @@ using PowerState = WPEFramework::Exchange::IPowerManager::PowerState;
 using MiracastPlayerState = WPEFramework::Exchange::IMiracastService::PlayerState;
 using MiracastPlayerReasonCode = WPEFramework::Exchange::IMiracastService::PlayerReasonCode;
 using MiracastServiceReasonCode = WPEFramework::Exchange::IMiracastService::ReasonCode;
-using ParamsType = boost::variant<std::tuple<std::string, std::string, WPEFramework::Exchange::IMiracastService::ReasonCode>,
-    std::tuple<std::string, std::string, std::string, std::string>,
-    std::pair<std::string, std::string>>;
 
 typedef enum DeviceWiFiStates
 {
@@ -99,7 +94,7 @@ namespace WPEFramework
                 class EXTERNAL Job : public Core::IDispatch
                 {
                     protected:
-                        Job(MiracastServiceImplementation *MiracastServiceImplementation, Event event, ParamsType &params)
+                        Job(MiracastServiceImplementation *MiracastServiceImplementation, Event event, JsonObject &params)
                             : _miracastServiceImplementation(MiracastServiceImplementation), _event(event), _params(params)
                         {
                             if (_miracastServiceImplementation != nullptr)
@@ -121,7 +116,7 @@ namespace WPEFramework
                         }
 
                     public:
-                        static Core::ProxyType<Core::IDispatch> Create(MiracastServiceImplementation *miracastServiceImplementation, Event event, ParamsType params)
+                        static Core::ProxyType<Core::IDispatch> Create(MiracastServiceImplementation *miracastServiceImplementation, Event event, JsonObject params)
                         {
         #ifndef USE_THUNDER_R4
                             return (Core::proxy_cast<Core::IDispatch>(Core::ProxyType<Job>::Create(miracastServiceImplementation, event, params)));
@@ -138,7 +133,7 @@ namespace WPEFramework
                     private:
                         MiracastServiceImplementation *_miracastServiceImplementation;
                         const Event _event;
-                        ParamsType _params;
+                        JsonObject _params;
                 }; // class Job
 
             public:
@@ -207,8 +202,8 @@ namespace WPEFramework
                 bool m_isServiceInitialized{false};
                 bool m_isServiceEnabled{false};
 
-                void dispatchEvent(Event, const ParamsType &params);
-                void Dispatch(Event event, const ParamsType &params);
+                void dispatchEvent(Event, const JsonObject &params);
+                void Dispatch(Event event, const JsonObject &params);
 
                 eMIRA_SERVICE_STATES getCurrentServiceState(void);
                 void changeServiceState(eMIRA_SERVICE_STATES eService_state);
