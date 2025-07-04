@@ -60,6 +60,16 @@ typedef enum DeviceWiFiStates
     DEVICE_WIFI_STATE_FAILED = 6
 }DEVICE_WIFI_STATES;
 
+typedef struct sampleTestSt
+{
+    std::string stringData1;
+    std::string stringData2;
+    std::string stringData3;
+    std::string stringData4;
+    MiracastServiceReasonCode reasonCode;
+}
+SampleTestStruct;
+
 namespace WPEFramework
 {
     namespace Plugin
