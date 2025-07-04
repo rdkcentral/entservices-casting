@@ -332,18 +332,19 @@ namespace WPEFramework
             {
                 case MIRACASTSERVICE_EVENT_CLIENT_CONNECTION_REQUEST:
                 {
-                    if (!(params.HasLabel("source_dev_mac") && !(appId = params["source_dev_mac"].String()).empty()))
+                    string clientMac = "";
+                    string clientName = "";
+
+                    if (!(params.HasLabel("source_dev_mac") && !(clientMac = params["source_dev_mac"].String()).empty()))
                     {
                         MIRACASTLOG_ERROR("source_dev_mac not present or empty");
                     }
-                    else if (!(params.HasLabel("source_dev_name") && !(appId = params["source_dev_name"].String()).empty()))
+                    else if (!(params.HasLabel("source_dev_name") && !(clientName = params["source_dev_name"].String()).empty()))
                     {
                         MIRACASTLOG_ERROR("source_dev_name not present or empty");
                     }
                     else
                     {
-                        string clientMac = params["source_dev_mac"].String();
-                        string clientName = params["source_dev_name"].String();
                         MIRACASTLOG_INFO("Notifying CLIENT_CONNECTION_REQUEST Event ClientMac[%s] ClientName[%s]", clientMac.c_str(), clientName.c_str());
                         while (index != _miracastServiceNotification.end())
                         {
@@ -355,26 +356,27 @@ namespace WPEFramework
                 break;
                 case MIRACASTSERVICE_EVENT_CLIENT_CONNECTION_ERROR:
                 {
-                    if (!(params.HasLabel("source_dev_mac") && !(appId = params["source_dev_mac"].String()).empty()))
+                    string clientMac = "";
+                    string clientName = "";
+                    string reasonCodeStr = "";
+                    MiracastServiceReasonCode reason = WPEFramework::Exchange::IMiracastService::REASON_CODE_SUCCESS;
+
+                    if (!(params.HasLabel("source_dev_mac") && !(clientMac = params["source_dev_mac"].String()).empty()))
                     {
                         MIRACASTLOG_ERROR("source_dev_mac not present or empty");
                     }
-                    else if (!(params.HasLabel("source_dev_name") && !(appId = params["source_dev_name"].String()).empty()))
+                    else if (!(params.HasLabel("source_dev_name") && !(clientName = params["source_dev_name"].String()).empty()))
                     {
                         MIRACASTLOG_ERROR("source_dev_name not present or empty");
                     }
-                    else if (!(params.HasLabel("reason_code") && !(appId = params["reason_code"].Number()).empty()))
+                    else if (!(params.HasLabel("reason_code")))
                     {
                         MIRACASTLOG_ERROR("reason_code not present or empty");
                     }
                     else
                     {
-                        string clientMac = params["source_dev_mac"].String();
-                        string clientName = params["source_dev_name"].String();
-                        string reasonCodeStr = "";
-                        MiracastServiceReasonCode reason = static_cast<MiracastServiceReasonCode>(params["reason_code"].Number());
+                        reason = static_cast<MiracastServiceReasonCode>(params["reason_code"].Number());
                         reasonCodeStr = std::to_string(reason);
-
                         MIRACASTLOG_INFO("Notifying CLIENT_CONNECTION_ERROR Event Mac[%s] Name[%s] Reason[%u]",clientMac.c_str(), clientName.c_str(), reason);
                         while (index != _miracastServiceNotification.end())
                         {
@@ -386,31 +388,25 @@ namespace WPEFramework
                 break;
                 case MIRACASTSERVICE_EVENT_PLAYER_LAUNCH_REQUEST:
                 {
-                    if (!(params.HasLabel("source_dev_mac") && !(appId = params["source_dev_mac"].String()).empty()))
+                    DeviceParameters deviceParameters;
+                    if (!(params.HasLabel("source_dev_mac") && !(deviceParameters.sourceDeviceMac = params["source_dev_mac"].String()).empty()))
                     {
                         MIRACASTLOG_ERROR("source_dev_mac not present or empty");
                     }
-                    else if (!(params.HasLabel("source_dev_name") && !(appId = params["source_dev_name"].String()).empty()))
+                    else if (!(params.HasLabel("source_dev_name") && !(deviceParameters.sourceDeviceName = params["source_dev_name"].String()).empty()))
                     {
                         MIRACASTLOG_ERROR("source_dev_name not present or empty");
                     }
-                    else if (!(params.HasLabel("source_dev_ip") && !(appId = params["source_dev_ip"].String()).empty()))
+                    else if (!(params.HasLabel("source_dev_ip") && !(deviceParameters.sourceDeviceIP = params["source_dev_ip"].String()).empty()))
                     {
                         MIRACASTLOG_ERROR("source_dev_ip not present or empty");
                     }
-                    else if (!(params.HasLabel("sink_dev_ip") && !(appId = params["sink_dev_ip"].String()).empty()))
+                    else if (!(params.HasLabel("sink_dev_ip") && !(deviceParameters.sinkDeviceIP = params["sink_dev_ip"].String()).empty()))
                     {
                         MIRACASTLOG_ERROR("sink_dev_ip not present or empty");
                     }
                     else
                     {
-                        DeviceParameters deviceParameters;
-
-                        deviceParameters.sourceDeviceMac = params["source_dev_mac"].String();
-                        deviceParameters.sourceDeviceName = params["source_dev_name"].String();
-                        deviceParameters.sourceDeviceIP = params["source_dev_ip"].String();
-                        deviceParameters.sinkDeviceIP = params["sink_dev_ip"].String();
-
                         MIRACASTLOG_INFO("Notifying PLAYER_LAUNCH_REQUEST Event SourceDeviceIP[%s] SourceDeviceMac[%s] SourceDeviceName[%s] SinkDeviceIP[%s]",
                                         deviceParameters.sourceDeviceIP.c_str(), deviceParameters.sourceDeviceMac.c_str(),
                                         deviceParameters.sourceDeviceName.c_str(), deviceParameters.sinkDeviceIP.c_str());
