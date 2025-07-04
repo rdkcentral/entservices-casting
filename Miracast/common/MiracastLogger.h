@@ -31,9 +31,6 @@
 
 namespace MIRACAST {
 
-std::string methodName(const std::string& prettyFunction);
-#define __METHOD_NAME__ MIRACAST::methodName(__PRETTY_FUNCTION__)
-
 /**
  * Logging level with an increasing order of refinement
  * (TRACE_LEVEL = Finest logging)
@@ -55,8 +52,6 @@ void logger_init(const char* module_name);
 void logger_deinit();
 
 void set_loglevel(LogLevel level);
-void enable_separate_logger( std::string filename = "" );
-void disable_separate_logger( void );
 
 #define MIRACAST_assert(expr) do { \
                               if ( __builtin_expect(expr, true) ) \
