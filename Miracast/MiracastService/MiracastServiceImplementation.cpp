@@ -417,6 +417,7 @@ namespace WPEFramework
 
             if (nullptr != m_CurrentService)
             {
+                MIRACASTLOG_INFO("Size of ParamsType: %zu bytes",sizeof(ParamsType));
                 m_CurrentService->AddRef();
                 string	p2p_ctrl_iface = "";
 
