@@ -62,10 +62,10 @@ typedef enum DeviceWiFiStates
 
 typedef struct sampleTestSt
 {
-    std::string stringData1;
-    std::string stringData2;
-    std::string stringData3;
-    std::string stringData4;
+    std::array<char, 36> stringData1;
+    std::array<char, 20> stringData2;
+    std::array<char, 16> stringData3;
+    std::array<char, 16> stringData4;
     MiracastServiceReasonCode reasonCode;
 }
 SampleTestStruct;
