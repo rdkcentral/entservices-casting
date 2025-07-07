@@ -19,7 +19,8 @@ cmake_minimum_required(VERSION 3.8)
 set(PLUGIN_NAME L1TestsCA)
 set(MODULE_NAME ${NAMESPACE}${PLUGIN_NAME})
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(${NAMESPACE}Plugins REQUIRED)
 find_package(GLIB REQUIRED)
@@ -28,20 +29,11 @@ pkg_check_modules(GSTREAMERBASE REQUIRED gstreamer-app-1.0)
 
 find_package(GStreamer REQUIRED)
 
-include(FetchContent)
-FetchContent_Declare(
-        googletest
-        URL https://github.com/google/googletest/archive/e39786088138f2749d64e9e90e0f9902daa77c40.zip
-)
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-FetchContent_MakeAvailable(googletest)
-
 set (TEST_SRC
     tests/test_UtilsFile.cpp
 )
 
 set (TEST_LIB
-    gmock_main
     ${NAMESPACE}Plugins::${NAMESPACE}Plugins
 )
 
@@ -116,7 +108,7 @@ endmacro()
 
 # PLUGIN_MIRACAST
 set (MIRACAST_INC ${CMAKE_SOURCE_DIR}/../entservices-casting/Miracast/MiracastPlayer ${CMAKE_SOURCE_DIR}/../entservices-casting/Miracast/MiracastPlayer/RTSP ${CMAKE_SOURCE_DIR}/../entservices-casting/Miracast/MiracastService ${CMAKE_SOURCE_DIR}/../entservices-casting/Miracast/MiracastService/P2P ${CMAKE_SOURCE_DIR}/../entservices-casting/Miracast/common ${CMAKE_SOURCE_DIR}/../entservices-casting/helpers)
-set (MIRACAST_LIBS ${NAMESPACE}MiracastPlayer ${NAMESPACE}MiracastService)
+set (MIRACAST_LIBS ${NAMESPACE}MiracastPlayer ${NAMESPACE}MiracastService ${NAMESPACE}MiracastServiceImplementation ${NAMESPACE}MiracastPlayerImplementation)
 set (MIRACAST_SRC tests/test_MiracastService.cpp tests/test_MiracastPlayer.cpp)
 add_plugin_test_ex(PLUGIN_MIRACAST "${MIRACAST_SRC}" "${MIRACAST_INC}" "${MIRACAST_LIBS}")
 
@@ -140,7 +132,7 @@ endif (RDK_SERVICES_L1_TEST)
 
 include_directories(${TEST_INC})
 
-target_link_directories(${MODULE_NAME} PUBLIC ${CMAKE_INSTALL_PREFIX}/lib/wpeframework/plugins)
+target_link_directories(${MODULE_NAME} PUBLIC ${CMAKE_INSTALL_PREFIX}/lib ${CMAKE_INSTALL_PREFIX}/lib/wpeframework/plugins)
 
 target_link_libraries(${MODULE_NAME}
         ${TEST_LIB}
