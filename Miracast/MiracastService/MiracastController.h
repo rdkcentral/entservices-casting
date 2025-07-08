@@ -37,12 +37,28 @@
 #include <MiracastCommon.h>
 #include "MiracastP2P.h"
 #include "MiracastLogger.h"
+#include <interfaces/IMiracastService.h>
 
 using namespace std;
 using namespace MIRACAST;
+using namespace WPEFramework;
+using MiracastServiceReasonCode = WPEFramework::Exchange::IMiracastService::ReasonCode;
+using MiracastPlayerState = WPEFramework::Exchange::IMiracastService::PlayerState;
 
 #define THUNDER_REQ_THREAD_CLIENT_CONNECTION_WAITTIME (30)
 #define MAX_IFACE_NAME_LEN 16
+
+/**
+ * Abstract class for MiracastService Notification.
+ */
+class MiracastServiceNotifier
+{
+public:
+    virtual void onMiracastServiceClientConnectionRequest(string client_mac, string client_name) = 0;
+    virtual void onMiracastServiceClientConnectionError(string client_mac, string client_name , MiracastServiceReasonCode reason_code ) = 0;
+    virtual void onMiracastServiceLaunchRequest(string src_dev_ip, string src_dev_mac, string src_dev_name, string sink_dev_ip, bool is_connect_req_reported ) = 0;
+    virtual void onStateChange(eMIRA_SERVICE_STATES state ) = 0;
+};
 
 class MiracastController
 {
@@ -69,17 +85,9 @@ public:
     void Controller_Thread(void *args);
     void notify_ConnectionRequest(std::string device_name,std::string device_mac);
 
-#ifdef ENABLE_MIRACAST_SERVICE_TEST_NOTIFIER
-    MiracastThread  *m_test_notifier_thread;
-    MiracastError create_TestNotifier(void);
-    void destroy_TestNotifier();
-    void TestNotifier_Thread(void *args);
-    void send_msgto_test_notifier_thread( MIRACAST_SERVICE_TEST_NOTIFIER_MSGQ_ST stMsgQ );
-#endif /* ENABLE_MIRACAST_SERVICE_TEST_NOTIFIER */
-
     MiracastError stop_discover_devices(bool isNotificationRequired = true);
     MiracastError set_WFDParameters(void);
-    void restart_session_discovery(std::string& mac_address);
+    void restart_session_discovery(const std::string& mac_address);
     void flush_current_session(void);
     void remove_P2PGroupInstance(void);
     void restart_session(bool start_discovering_enabled);
@@ -89,7 +97,6 @@ public:
     std::string get_FriendlyName(void);
     void set_enable(bool is_enabled);
     void accept_client_connection(std::string is_accepted);
-    eMIRA_PLAYER_STATES m_ePlayer_state;
 
     void set_WFDSourceMACAddress(std::string MAC_Addr);
     void set_WFDSourceName(std::string device_name);
