@@ -837,7 +837,7 @@ namespace WPEFramework
                     {
                         string appName = params["appName"].String();
                         string appId = params["appId"].String();
-                        (*index)->OnApplicationCurrentStateRequest(appName,appId);
+                        (*index)->OnApplicationStateRequest(appName,appId);
                     }
                     break;
                     case RESUME_REQUEST:
@@ -1011,13 +1011,13 @@ void XCastImplementation::dumpDynamicAppCacheList(string strListName, std::vecto
             LOGINFO ("=================================================================");
         }  
 
-        Core::hresult XCastImplementation::UpdateApplicationState(const string& applicationName, const Exchange::IXCast::State& state, const string& applicationId, const Exchange::IXCast::ErrorCode& error,Exchange::IXCast::XCastSuccess &success){
+        Core::hresult XCastImplementation::SetApplicationState(const string& applicationName, const Exchange::IXCast::State& state, const string& applicationId, const Exchange::IXCast::ErrorCode& error,Exchange::IXCast::XCastSuccess &success){
             LOGINFO("ARGS = %s : %s : %d : %d ", applicationName.c_str(), applicationId.c_str() , state , error);
             success.success = false;
             uint32_t status = Core::ERROR_GENERAL;
             if(!applicationName.empty() && (nullptr != m_xcast_manager))
             {
-                LOGINFO("XCastImplementation::UpdateApplicationState  ARGS = %s : %s : %d : %d ", applicationName.c_str(), applicationId.c_str() , state , error);
+                LOGINFO("XCastImplementation::SetApplicationState  ARGS = %s : %s : %d : %d ", applicationName.c_str(), applicationId.c_str() , state , error);
                 string appstate = "";
                 if (state == Exchange::IXCast::State::RUNNING)
                 {
@@ -1055,7 +1055,7 @@ void XCastImplementation::dumpDynamicAppCacheList(string strListName, std::vecto
                 }
                 else
                 {
-                    LOGERR("XCastImplementation::UpdateApplicationState - Invalid Error Code");
+                    LOGERR("XCastImplementation::SetApplicationState - Invalid Error Code");
                     return Core::ERROR_GENERAL;
                 }
 
@@ -1065,11 +1065,11 @@ void XCastImplementation::dumpDynamicAppCacheList(string strListName, std::vecto
             }
             else
             {
-                LOGERR("XCastImplementation::UpdateApplicationState - m_xcast_manager is NULL");
+                LOGERR("XCastImplementation::SetApplicationState - m_xcast_manager is NULL");
             }
             return status;
         }
-		Core::hresult XCastImplementation::GetProtocolVersion(string &protocolVersion , bool &success) {
+	Core::hresult XCastImplementation::GetProtocolVersion(string &protocolVersion , bool &success) {
             LOGINFO("XCastImplementation::getProtocolVersion");
             success = false;
             if (nullptr != m_xcast_manager)
