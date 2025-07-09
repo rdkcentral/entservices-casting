@@ -46,11 +46,6 @@ add_library(${MODULE_NAME} SHARED
         XCast.cpp
         Module.cpp)
 
-#add_executable(${MODULE_NAME} 
-#        XCast.cpp
-#        Module.cpp)
-
-
 set_target_properties(${MODULE_NAME} PROPERTIES
         CXX_STANDARD 11
         CXX_STANDARD_REQUIRED YES)
@@ -70,11 +65,6 @@ add_library(${PLUGIN_IMPLEMENTATION} SHARED
         XCastImplementation.cpp
         Module.cpp
         XCastManager.cpp)
-
-#add_executable(${PLUGIN_IMPLEMENTATION}
-#        XCastImplementation.cpp
-#        Module.cpp
-#        XCastManager.cpp)
         
 target_link_libraries(${PLUGIN_IMPLEMENTATION}
         PRIVATE
@@ -105,9 +95,6 @@ if (RDK_SERVICE_L2_TEST)
         message ("Require ${TESTMOCKLIB_LIBRARIES} library")
     endif (TESTMOCKLIB_LIBRARIES)
 endif()
-
-
-
 
 target_include_directories(${PLUGIN_IMPLEMENTATION} PRIVATE ${IARMBUS_INCLUDE_DIRS})
 target_include_directories(${PLUGIN_IMPLEMENTATION} PRIVATE ${DS_INCLUDE_DIRS})
