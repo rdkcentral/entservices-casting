@@ -142,15 +142,12 @@ namespace WPEFramework
                 // If this was running in a (container) process...
                 if (nullptr != connection)
                 {
-                    // Lets trigger the cleanup sequence for
-                    // out-of-process code. Which will guard
-                    // that unwilling processes, get shot if
-                    // not stopped friendly :-)
+                    // Lets trigger the cleanup sequence for out-of-process code. Which will guard that unwilling processes, get shot if not stopped friendly :-)
                     connection->Terminate();
                     connection->Release();
                 }
             }
-			_connectionId = 0;
+	     _connectionId = 0;
 
             if (_service != nullptr)
             {
@@ -159,7 +156,7 @@ namespace WPEFramework
             }
             SYSLOG(Logging::Shutdown, (string(_T("XCast de-initialised"))));
         }
-	    string XCast::Information() const
+	string XCast::Information() const
         {
             return ("This XCast Plugin facilitates to persist event data for monitoring applications");
         }
