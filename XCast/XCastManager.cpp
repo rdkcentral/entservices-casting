@@ -569,7 +569,6 @@ void XCastManager::setNetworkStandbyMode(bool nwStandbymode)
 XCastManager * XCastManager::getInstance()
 {
     LOGINFO("Entering ...");
-
     if(XCastManager::_instance == nullptr)
     {
         XCastManager::_instance = new XCastManager();
