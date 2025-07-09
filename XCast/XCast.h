@@ -91,10 +91,10 @@ namespace WPEFramework {
 							LOGINFO("OnApplicationHideRequest: appName=%s, appID=%s", appName.c_str(), appID.c_str());
 							Exchange::JXCast::Event::OnApplicationHideRequest(_parent, appName, appID);
 						}
-						virtual void OnApplicationCurrentStateRequest(const string& appName, const string& appID) override
+						virtual void OnApplicationStateRequest(const string& appName, const string& appID) override
 						{
-							LOGINFO("OnApplicationCurrentStateRequest: appName=%s, appID=%s", appName.c_str(), appID.c_str());
-							Exchange::JXCast::Event::OnApplicationCurrentStateRequest(_parent, appName, appID);
+							LOGINFO("OnApplicationStateRequest: appName=%s, appID=%s", appName.c_str(), appID.c_str());
+							Exchange::JXCast::Event::OnApplicationStateRequest(_parent, appName, appID);
 						}
 						virtual void OnApplicationResumeRequest(const string& appName, const string& appID) override
 						{
