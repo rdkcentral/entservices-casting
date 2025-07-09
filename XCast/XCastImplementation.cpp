@@ -273,7 +273,7 @@ namespace WPEFramework
             }
             else
             {
-                LOGERR("getiSystemFriendlyName call failed E[%u]", ret);
+                LOGERR("getSystemFriendlyName call failed E[%u]", ret);
             }
             return ret;
         }
