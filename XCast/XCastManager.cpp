@@ -20,6 +20,7 @@
 #include "XCastManager.h"
 #include "UtilsJsonRpc.h"
 #include "rfcapi.h"
+#include<interfaces/IConfiguration.h>
 
 using namespace std;
 using namespace WPEFramework;
@@ -49,7 +50,7 @@ void XCastManager::onApplicationLaunchRequestWithLaunchParam(string appName,stri
 {
     if ( nullptr != m_observer )
     {
-        m_observer->onXcastApplicationLaunchRequestWithLaunchParam(appName,strPayLoad,strQuery,strAddDataUrl);
+        m_observer->onXcastApplicationLaunchRequestWithParam(appName,strPayLoad,strQuery,strAddDataUrl);
     }
 }
 
