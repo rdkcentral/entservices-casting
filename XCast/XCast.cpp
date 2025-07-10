@@ -58,7 +58,7 @@ namespace WPEFramework
             SYSLOG(Logging::Shutdown, (string(_T("XCast Destructor"))));
         }
     
-	    const string XCast::Initialize(PluginHost::IShell *service)
+	const string XCast::Initialize(PluginHost::IShell *service)
         {
             string message = "";
 
