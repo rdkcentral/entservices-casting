@@ -17,7 +17,7 @@
  * limitations under the License.
  **/
 
-//Test1
+//Test2
 #include "XCast.h"
 
 #define API_VERSION_NUMBER_MAJOR 2
