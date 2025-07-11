@@ -16,7 +16,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 **/
-#if 0
+
 #include <gtest/gtest.h>
 
 #include "MiracastPlayer.h"
@@ -646,7 +646,7 @@ TEST_F(MiracastPlayerTest, GetInformation)
 {
     EXPECT_EQ("This MiracastPlayer Plugin Facilitates Miracast session like RTSP communication and GStreamer Playback", plugin->Information());
 }
-
+#if 0
 TEST_F(MiracastPlayerEventTest, APP_REQUESTED_TO_STOP)
 {
     std::string rtsp_response = "";
