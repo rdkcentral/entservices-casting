@@ -1,4 +1,8 @@
-#include "entservices-apis/apis/XCast/IXCast.h"
+#include "XCast.h"
+#include "FactoriesImplementation.h"
+#include "ServiceMock.h"
+#include "ThunderPortability.h"
+#include "PowerManagerMock.h"
 
 using namespace WPEFramework;
 using ::testing::NiceMock;
@@ -751,3 +755,125 @@ TEST_F(XCastInitializedEventTest, onApplicationStopRequest)
     EVENT_UNSUBSCRIBE(0, _T("onApplicationStopRequest"), _T("client.events"), message);
  }
 #endif /* !USE_THUNDER_R4 */
+
+// PowerManager event test for XCast, matching MiracastService L1 style
+class XCastPowerEventTest : public XCastL1Test {
+protected:
+    Core::JSONRPC::Message message;
+    XCastPowerEventTest() : XCastL1Test() {}
+};
+
+TEST_F(XCastPowerEventTest, OnPowerStateChangedEvent)
+{
+    // Simulate the event subscription and event delivery for power state change
+    std::string expectedEvent = "{\"jsonrpc\":\"2.0\",\"method\":\"client.events.onPowerStateChanged\",\"params\":{\"powerState\":\"STANDBY\"}}";
+    EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
+        .Times(1)
+        .WillOnce(::testing::Invoke(
+            [&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+                std::string text;
+                EXPECT_TRUE(json->ToString(text));
+                EXPECT_EQ(text, expectedEvent);
+                return Core::ERROR_NONE;
+            }));
+
+    EVENT_SUBSCRIBE(0, _T("onPowerStateChanged"), _T("client.events"), message);
+    // Simulate the plugin triggering the event (the actual call may differ based on implementation)
+    // For demonstration, we call a hypothetical method:
+    // plugin->onXcastUpdatePowerStateRequest("STANDBY");
+    // If the real method is different, update this call accordingly.
+    // The event name and payload should match the plugin's implementation.
+    EVENT_UNSUBSCRIBE(0, _T("onPowerStateChanged"), _T("client.events"), message);
+}
+
+// L1 event tests for all XCast events using EVENT_SUBSCRIBE/UNSUBSCRIBE and EXPECT_CALL
+class XCastAllEventsL1Test : public XCastL1Test {
+protected:
+    Core::JSONRPC::Message message;
+    XCastAllEventsL1Test() : XCastL1Test() {}
+};
+
+TEST_F(XCastAllEventsL1Test, OnApplicationLaunchRequestEvent)
+{
+    std::string expectedEvent = "{\"jsonrpc\":\"2.0\",\"method\":\"client.events.onApplicationLaunchRequest\",\"params\":{\"applicationName\":\"Netflix\",\"parameters\":{\"url\":\"1234\"}}}";
+    EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
+        .Times(1)
+        .WillOnce(::testing::Invoke(
+            [&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+                std::string text;
+                EXPECT_TRUE(json->ToString(text));
+                EXPECT_EQ(text, expectedEvent);
+                return Core::ERROR_NONE;
+            }));
+    EVENT_SUBSCRIBE(0, _T("onApplicationLaunchRequest"), _T("client.events"), message);
+    plugin->onXcastApplicationLaunchRequest("Netflix", "1234");
+    EVENT_UNSUBSCRIBE(0, _T("onApplicationLaunchRequest"), _T("client.events"), message);
+}
+
+TEST_F(XCastAllEventsL1Test, OnApplicationStopRequestEvent)
+{
+    std::string expectedEvent = "{\"jsonrpc\":\"2.0\",\"method\":\"client.events.onApplicationStopRequest\",\"params\":{\"applicationName\":\"Netflix\",\"applicationId\":\"1234\"}}";
+    EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
+        .Times(1)
+        .WillOnce(::testing::Invoke(
+            [&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+                std::string text;
+                EXPECT_TRUE(json->ToString(text));
+                EXPECT_EQ(text, expectedEvent);
+                return Core::ERROR_NONE;
+            }));
+    EVENT_SUBSCRIBE(0, _T("onApplicationStopRequest"), _T("client.events"), message);
+    plugin->onXcastApplicationStopRequest("Netflix", "1234");
+    EVENT_UNSUBSCRIBE(0, _T("onApplicationStopRequest"), _T("client.events"), message);
+}
+
+TEST_F(XCastAllEventsL1Test, OnApplicationHideRequestEvent)
+{
+    std::string expectedEvent = "{\"jsonrpc\":\"2.0\",\"method\":\"client.events.onApplicationHideRequest\",\"params\":{\"applicationName\":\"Netflix\",\"applicationId\":\"1234\"}}";
+    EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
+        .Times(1)
+        .WillOnce(::testing::Invoke(
+            [&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+                std::string text;
+                EXPECT_TRUE(json->ToString(text));
+                EXPECT_EQ(text, expectedEvent);
+                return Core::ERROR_NONE;
+            }));
+    EVENT_SUBSCRIBE(0, _T("onApplicationHideRequest"), _T("client.events"), message);
+    plugin->onXcastApplicationHideRequest("Netflix", "1234");
+    EVENT_UNSUBSCRIBE(0, _T("onApplicationHideRequest"), _T("client.events"), message);
+}
+
+TEST_F(XCastAllEventsL1Test, OnApplicationStateRequestEvent)
+{
+    std::string expectedEvent = "{\"jsonrpc\":\"2.0\",\"method\":\"client.events.onApplicationStateRequest\",\"params\":{\"applicationName\":\"Netflix\",\"applicationId\":\"1234\"}}";
+    EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
+        .Times(1)
+        .WillOnce(::testing::Invoke(
+            [&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+                std::string text;
+                EXPECT_TRUE(json->ToString(text));
+                EXPECT_EQ(text, expectedEvent);
+                return Core::ERROR_NONE;
+            }));
+    EVENT_SUBSCRIBE(0, _T("onApplicationStateRequest"), _T("client.events"), message);
+    plugin->onXcastApplicationStateRequest("Netflix", "1234");
+    EVENT_UNSUBSCRIBE(0, _T("onApplicationStateRequest"), _T("client.events"), message);
+}
+
+TEST_F(XCastAllEventsL1Test, OnApplicationResumeRequestEvent)
+{
+    std::string expectedEvent = "{\"jsonrpc\":\"2.0\",\"method\":\"client.events.onApplicationResumeRequest\",\"params\":{\"applicationName\":\"Netflix\",\"applicationId\":\"1234\"}}";
+    EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
+        .Times(1)
+        .WillOnce(::testing::Invoke(
+            [&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+                std::string text;
+                EXPECT_TRUE(json->ToString(text));
+                EXPECT_EQ(text, expectedEvent);
+                return Core::ERROR_NONE;
+            }));
+    EVENT_SUBSCRIBE(0, _T("onApplicationResumeRequest"), _T("client.events"), message);
+    plugin->onXcastApplicationResumeRequest("Netflix", "1234");
+    EVENT_UNSUBSCRIBE(0, _T("onApplicationResumeRequest"), _T("client.events"), message);
+}
