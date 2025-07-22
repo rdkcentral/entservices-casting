@@ -36,7 +36,6 @@
 #include "MiracastServiceImplementation.h"
 #include <sys/time.h>
 #include <future>
-#include <filesystem>
 
 using namespace WPEFramework;
 using ::testing::NiceMock;
@@ -97,6 +96,12 @@ namespace
 		fileContentStream << "\n";
 		fileContentStream.close();
 	}
+
+	bool fileExists(const std::string& path) {
+            std::ifstream file(path);
+            return file.good();
+        }
+
     void current_time(char *time_str)
     {
         struct timeval tv;
@@ -917,14 +922,14 @@ TEST_F(MiracastServiceEventTest, P2P_GO_NEGOTIATION_FAIL_onClientConnectionError
 
 TEST_F(MiracastServiceEventTest, P2P_GO_FORMATION_FAIL_onClientConnectionError)
 {
-	if (std::filesystem::exists("/etc/device.properties")) {
-                  removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	if (fileExists("/etc/device.properties")) {
+            removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
         } else {
         std::cout << "/etc/device.properties does not exist\n";
         }
  
-        if (std::filesystem::exists("/var/run/wpa_supplicant/p2p0")) {
-               removeFile("/var/run/wpa_supplicant/p2p0");
+        if (fileExists("/var/run/wpa_supplicant/p2p0")) {
+            removeFile("/var/run/wpa_supplicant/p2p0");
         } else {
         std::cout << "/var/run/wpa_supplicant/p2p0 does not exist\n";
         }
