@@ -36,6 +36,7 @@
 #include "MiracastServiceImplementation.h"
 #include <sys/time.h>
 #include <future>
+#include <filesystem>
 
 using namespace WPEFramework;
 using ::testing::NiceMock;
