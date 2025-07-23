@@ -117,7 +117,7 @@ jobs:
         with:
           repository: rdkcentral/entservices-testframework
           path: entservices-testframework
-          ref: develop
+          ref: feature/RDKEMW-3513-yml_12
           token: ${{ secrets.RDKCM_RDKE }}
 
       - name: Checkout entservices-casting
@@ -125,7 +125,7 @@ jobs:
         with:
           repository: rdkcentral/entservices-casting
           path: entservices-casting
-          ref: develop
+          ref: feature/RDKEMW-3513-yml_12
 
       - name: Checkout googletest
         if: steps.cache.outputs.cache-hit != 'true'
