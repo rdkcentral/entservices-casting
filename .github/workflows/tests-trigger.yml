@@ -2,7 +2,7 @@ name: main-workflow
 
 on:
   push:
-    branches: [ main, develop, 'sprint/**', 'release/**' ]
+    branches: [ main, develop, 'sprint/**', 'release/**',feature/RDKEMW-3513-yml_12 ]
   pull_request:
     branches: [ main, develop, 'sprint/**', 'release/**' ]
 
