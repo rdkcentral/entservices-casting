@@ -55,7 +55,8 @@ namespace
 			printf("File %s successfully deleted\n", fileName);
 		}
 	}
-	#if 0
+        # Commented out the functions below because some test cases that use them have also been commented out. Since those test cases are disabled, these functions are now unused.
+	#if 0 
 	static void removeEntryFromFile(const char* fileName, const char* entryToRemove)
 	{
 		std::ifstream inputFile(fileName);
