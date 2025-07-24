@@ -55,6 +55,7 @@ namespace
 			printf("File %s successfully deleted\n", fileName);
 		}
 	}
+	#if 0
 	static void removeEntryFromFile(const char* fileName, const char* entryToRemove)
 	{
 		std::ifstream inputFile(fileName);
@@ -87,6 +88,7 @@ namespace
 
 		printf("Entry removed from file: %s\n",fileName);
 	}
+	
 	static void createFile(const char* fileName, const char* fileContent)
 	{
 		removeFile(fileName);
@@ -96,6 +98,7 @@ namespace
 		fileContentStream << "\n";
 		fileContentStream.close();
 	}
+	#endif
     void current_time(char *time_str)
     {
         struct timeval tv;
