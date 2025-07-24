@@ -43,6 +43,8 @@ namespace
 {
     #define TEST_LOG(FMT, ...) log(__func__, __FILE__, __LINE__, syscall(__NR_gettid),FMT,##__VA_ARGS__)
 
+    //Commented out the functions below because some test cases that use them have also been commented out. Since those test cases are disabled, these functions are now unused.
+	#if 0 
 	static void removeFile(const char* fileName)
 	{
 		if (std::remove(fileName) != 0)
@@ -55,8 +57,7 @@ namespace
 			printf("File %s successfully deleted\n", fileName);
 		}
 	}
-        # Commented out the functions below because some test cases that use them have also been commented out. Since those test cases are disabled, these functions are now unused.
-	#if 0 
+
 	static void removeEntryFromFile(const char* fileName, const char* entryToRemove)
 	{
 		std::ifstream inputFile(fileName);
