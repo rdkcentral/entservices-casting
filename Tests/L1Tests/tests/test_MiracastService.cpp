@@ -96,12 +96,6 @@ namespace
 		fileContentStream << "\n";
 		fileContentStream.close();
 	}
-
-	bool fileExists(const std::string& path) {
-            std::ifstream file(path);
-            return file.good();
-        }
-
     void current_time(char *time_str)
     {
         struct timeval tv;
@@ -922,18 +916,6 @@ TEST_F(MiracastServiceEventTest, P2P_GO_NEGOTIATION_FAIL_onClientConnectionError
 
 TEST_F(MiracastServiceEventTest, P2P_GO_FORMATION_FAIL_onClientConnectionError)
 {
-	if (fileExists("/etc/device.properties")) {
-            removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-        } else {
-        std::cout << "/etc/device.properties does not exist\n";
-        }
- 
-        if (fileExists("/var/run/wpa_supplicant/p2p0")) {
-            removeFile("/var/run/wpa_supplicant/p2p0");
-        } else {
-        std::cout << "/var/run/wpa_supplicant/p2p0 does not exist\n";
-        }
-	
 	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
