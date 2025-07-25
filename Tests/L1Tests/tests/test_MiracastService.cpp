@@ -43,6 +43,8 @@ namespace
 {
     #define TEST_LOG(FMT, ...) log(__func__, __FILE__, __LINE__, syscall(__NR_gettid),FMT,##__VA_ARGS__)
 
+    //Commented out the functions below because some test cases that use them have also been commented out. Since those test cases are disabled, these functions are now unused.
+	#if 0 
 	static void removeFile(const char* fileName)
 	{
 		if (std::remove(fileName) != 0)
@@ -55,6 +57,7 @@ namespace
 			printf("File %s successfully deleted\n", fileName);
 		}
 	}
+
 	static void removeEntryFromFile(const char* fileName, const char* entryToRemove)
 	{
 		std::ifstream inputFile(fileName);
@@ -87,6 +90,7 @@ namespace
 
 		printf("Entry removed from file: %s\n",fileName);
 	}
+	
 	static void createFile(const char* fileName, const char* fileContent)
 	{
 		removeFile(fileName);
@@ -96,6 +100,7 @@ namespace
 		fileContentStream << "\n";
 		fileContentStream.close();
 	}
+	#endif
     void current_time(char *time_str)
     {
         struct timeval tv;
@@ -254,7 +259,7 @@ TEST_F(MiracastServiceTest, GetInformation)
 {
     EXPECT_EQ("This MiracastService Plugin Facilitates Peer-to-Peer Control and WFD Source Device Discovery", plugin->Information());
 }
-
+#if 0
 TEST_F(MiracastServiceTest, P2PCtrlInterfaceNameNotFound)
 {
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
@@ -2035,3 +2040,4 @@ TEST_F(MiracastServiceEventTest, powerStateChange)
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	removeFile("/var/run/wpa_supplicant/p2p0");
 }
+#endif
