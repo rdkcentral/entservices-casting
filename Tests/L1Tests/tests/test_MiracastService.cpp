@@ -621,6 +621,7 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_onClientConnectionAndLaunchRequest)
 
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	removeFile("/var/run/wpa_supplicant/p2p0");
+	sleep(1);
 }
 
 TEST_F(MiracastServiceEventTest, onClientConnectionRequestRejected)
@@ -703,6 +704,7 @@ TEST_F(MiracastServiceEventTest, onClientConnectionRequestRejected)
 
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	removeFile("/var/run/wpa_supplicant/p2p0");
+	sleep(1);
 }
 
 TEST_F(MiracastServiceEventTest, P2P_CONNECT_FAIL_onClientConnectionError)
@@ -800,6 +802,7 @@ TEST_F(MiracastServiceEventTest, P2P_CONNECT_FAIL_onClientConnectionError)
 
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	removeFile("/var/run/wpa_supplicant/p2p0");
+	sleep(1);
 }
 
 TEST_F(MiracastServiceEventTest, P2P_GO_NEGOTIATION_FAIL_onClientConnectionError)
@@ -914,6 +917,7 @@ TEST_F(MiracastServiceEventTest, P2P_GO_NEGOTIATION_FAIL_onClientConnectionError
 
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	removeFile("/var/run/wpa_supplicant/p2p0");
+	sleep(1);
 }
 
 TEST_F(MiracastServiceEventTest, P2P_GO_FORMATION_FAIL_onClientConnectionError)
@@ -1035,6 +1039,7 @@ TEST_F(MiracastServiceEventTest, P2P_GO_FORMATION_FAIL_onClientConnectionError)
 
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	removeFile("/var/run/wpa_supplicant/p2p0");
+	sleep(1);
 }
 
 TEST_F(MiracastServiceEventTest, P2P_ClientMode_onClientConnectionAndLaunchRequest)
@@ -1189,6 +1194,7 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_onClientConnectionAndLaunchReque
 
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	removeFile("/var/run/wpa_supplicant/p2p0");
+	sleep(1);
 }
 
 TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectonClientConnectionAndLaunchRequest)
@@ -1295,6 +1301,7 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectonClientConnectionAndLaunc
 
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	removeFile("/var/run/wpa_supplicant/p2p0");
+	sleep(1);
 }
 
 TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithName)
@@ -1395,6 +1402,7 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithName)
 
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	removeFile("/var/run/wpa_supplicant/p2p0");
+	sleep(1);
 }
 
 TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithoutName)
@@ -1495,6 +1503,7 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithoutName)
 
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	removeFile("/var/run/wpa_supplicant/p2p0");
+	sleep(1);
 }
 
 TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectP2PGoNegotiationGroupStartWithoutName)
@@ -1619,6 +1628,7 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectP2PGoNegotiationGroupStart
 
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	removeFile("/var/run/wpa_supplicant/p2p0");
+	sleep(1);
 }
 
 TEST_F(MiracastServiceEventTest, P2P_ClientMode_GENERIC_FAILURE)
@@ -1775,6 +1785,7 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_GENERIC_FAILURE)
 
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	removeFile("/var/run/wpa_supplicant/p2p0");
+	sleep(1);
 }
 
 TEST_F(MiracastServiceEventTest, P2P_GOMode_GENERIC_FAILURE)
@@ -1914,6 +1925,7 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_GENERIC_FAILURE)
 
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	removeFile("/var/run/wpa_supplicant/p2p0");
+	sleep(1);
 }
 
 TEST_F(MiracastServiceEventTest, P2P_GOMode_AutoConnect)
@@ -2014,6 +2026,7 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_AutoConnect)
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	removeFile("/var/run/wpa_supplicant/p2p0");
 	removeFile("/opt/miracast_autoconnect");
+	sleep(1);
 }
 
 TEST_F(MiracastServiceEventTest, powerStateChange)
@@ -2036,4 +2049,5 @@ TEST_F(MiracastServiceEventTest, powerStateChange)
 
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	removeFile("/var/run/wpa_supplicant/p2p0");
+	sleep(1);
 }
