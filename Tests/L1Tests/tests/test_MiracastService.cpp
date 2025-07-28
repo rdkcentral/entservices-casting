@@ -1615,7 +1615,7 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectP2PGoNegotiationGroupStart
 
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
-	Sleep(5);
+	sleep(5);
 
 	EXPECT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
