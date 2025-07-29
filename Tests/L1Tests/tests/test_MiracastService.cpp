@@ -415,7 +415,7 @@ TEST_F(MiracastServiceEventTest, stopClientConnection)
 
      EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 
-	EXPECT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000));
+	ASSERT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000)) << "connectRequest event not triggered";
 
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Timeout}"), response));
     EXPECT_EQ(response, string("{\"message\":\"Supported 'requestStatus' parameter values are Accept or Reject\",\"success\":false}"));
@@ -590,10 +590,10 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_onClientConnectionAndLaunchRequest)
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
 
-	EXPECT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000));
+	ASSERT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000)) << "connectRequest event not triggered";
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
-	EXPECT_EQ(Core::ERROR_NONE, P2PGrpStart.Lock(10000));
+	ASSERT_EQ(Core::ERROR_NONE, P2PGrpStart.Lock(10000)) << " P2PGrpStart event not triggered";
 
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("stopClientConnection"), _T("{\"name\": \"Sample-Test-Android-2\",\"mac\": \"96:52:44:b6:7d:14\"}"), response));
 	EXPECT_EQ(response, string("{\"message\":\"Invalid state to process stopClientConnection\",\"success\":false}"));
@@ -693,7 +693,7 @@ TEST_F(MiracastServiceEventTest, onClientConnectionRequestRejected)
 
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	
-	EXPECT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000));
+	ASSERT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Reject}"), response));
 
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
@@ -787,10 +787,10 @@ TEST_F(MiracastServiceEventTest, P2P_CONNECT_FAIL_onClientConnectionError)
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
 	
-	EXPECT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000));
+	ASSERT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000)) << "connect req Event not triggered";
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
-	EXPECT_EQ(Core::ERROR_NONE, P2PConnectFail.Lock(10000));
+	ASSERT_EQ(Core::ERROR_NONE, P2PConnectFail.Lock(10000)) << "P2P Event not triggered";
 
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
@@ -901,10 +901,10 @@ TEST_F(MiracastServiceEventTest, P2P_GO_NEGOTIATION_FAIL_onClientConnectionError
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
 
-	EXPECT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000));
+	ASSERT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000)) << " connect req Event not triggered";
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
-	EXPECT_EQ(Core::ERROR_NONE, P2PGoFail.Lock(10000));
+	ASSERT_EQ(Core::ERROR_NONE, P2PGoFail.Lock(10000)) << " P2P Event not triggered";
 
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
@@ -1022,10 +1022,10 @@ TEST_F(MiracastServiceEventTest, P2P_GO_FORMATION_FAIL_onClientConnectionError)
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
 
-	EXPECT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000));
+	ASSERT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000)) << " connect req Event not triggered";
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
-	EXPECT_EQ(Core::ERROR_NONE, P2PGoFail.Lock(10000));
+	ASSERT_EQ(Core::ERROR_NONE, P2PGoFail.Lock(10000)) << " P2P Event not triggered";
 
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
@@ -1176,10 +1176,10 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_onClientConnectionAndLaunchReque
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
 
-	EXPECT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000));
+	ASSERT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000)) << " connect req Event not triggered";
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
-	EXPECT_EQ(Core::ERROR_NONE, P2PGrpStart.Lock(10000));
+	ASSERT_EQ(Core::ERROR_NONE, P2PGrpStart.Lock(10000)) << " P2P Event not triggered";
 
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_UNSUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
@@ -1282,10 +1282,10 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectonClientConnectionAndLaunc
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
 
-	EXPECT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000));
+	ASSERT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000)) << " connect req Event not triggered";
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
-	EXPECT_EQ(Core::ERROR_NONE, P2PGrpStart.Lock(10000));
+	ASSERT_EQ(Core::ERROR_NONE, P2PGrpStart.Lock(10000)) << " P2P Event not triggered";
 
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_UNSUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
@@ -1382,10 +1382,10 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithName)
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
 
-	EXPECT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000));
+	ASSERT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000)) << " connect req Event not triggered";
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
-	EXPECT_EQ(Core::ERROR_NONE, P2PGrpStart.Lock(10000));
+	ASSERT_EQ(Core::ERROR_NONE, P2PGrpStart.Lock(10000)) << " P2P Event not triggered";
 
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_UNSUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
@@ -1482,10 +1482,10 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithoutName)
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
 
-	EXPECT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000));
+	ASSERT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000)) << " connect req Event not triggered";
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
-	EXPECT_EQ(Core::ERROR_NONE, P2PGrpStart.Lock(10000));
+	ASSERT_EQ(Core::ERROR_NONE, P2PGrpStart.Lock(10000)) << " P2P Event not triggered";
 
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_UNSUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
@@ -1606,10 +1606,10 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectP2PGoNegotiationGroupStart
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
 
-	EXPECT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000));
+	ASSERT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000)) << " connect req Event not triggered";
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
-	EXPECT_EQ(Core::ERROR_NONE, P2PGrpStart.Lock(10000));
+	ASSERT_EQ(Core::ERROR_NONE, P2PGrpStart.Lock(10000)) << " P2P Event not triggered";
 
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_UNSUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
@@ -1762,10 +1762,10 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_GENERIC_FAILURE)
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
 
-	EXPECT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000));
+	ASSERT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000)) << " connect req Event not triggered";
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
-	EXPECT_EQ(Core::ERROR_NONE, P2PGenericFail.Lock(10000));
+	ASSERT_EQ(Core::ERROR_NONE, P2PGenericFail.Lock(10000)) << " P2P Event not triggered";
 
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
@@ -1901,10 +1901,10 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_GENERIC_FAILURE)
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
 
-	EXPECT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000));
+	ASSERT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000)) << " connect req Event not triggered";
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
-	EXPECT_EQ(Core::ERROR_NONE, P2PGenericFail.Lock(10000));
+	ASSERT_EQ(Core::ERROR_NONE, P2PGenericFail.Lock(10000)) << " P2P Event not triggered";
 
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
