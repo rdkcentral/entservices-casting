@@ -159,6 +159,7 @@ protected:
         : plugin(Core::ProxyType<Plugin::MiracastService>::Create())
         , handler(*(plugin))
         , INIT_CONX(1, 0)
+	, Core::Event connectRequest(false, true)
         , workerPool(Core::ProxyType<WorkerPoolImplementation>::Create(2, Core::Thread::DefaultStackSize(), 16))
     {
         p_wrapsImplMock = new NiceMock<WrapsImplMock>;
@@ -397,9 +398,10 @@ TEST_F(MiracastServiceEventTest, stopClientConnection)
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
 				return true;
 				}));
-
-	Core::Event connectRequest(false, true);
-	connectRequest.ResetEvent();
+	
+	// Reset events before use
+    	TEST_LOG("Resetting events before test");
+    	connectRequest.ResetEvent();
 	
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(1)
@@ -420,7 +422,14 @@ TEST_F(MiracastServiceEventTest, stopClientConnection)
 
      EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 
-	ASSERT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000)) << "connectRequest event not triggered";
+    TEST_LOG("Waiting for connect request event");
+    auto result = connectRequest.Lock(10000);
+    if (result != Core::ERROR_NONE) {
+        TEST_LOG("Connect request timeout after TIMEOUT");
+    } else {
+        TEST_LOG("Connect request succeeded");
+    }
+    EXPECT_EQ(Core::ERROR_NONE, result);
 
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Timeout}"), response));
     EXPECT_EQ(response, string("{\"message\":\"Supported 'requestStatus' parameter values are Accept or Reject\",\"success\":false}"));
@@ -555,9 +564,11 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_onClientConnectionAndLaunchRequest)
 				return true;
 				}));
 
-	Core::Event connectRequest(false, true);
+	// Reset events before use
+    	TEST_LOG("Resetting events before test");
+    	connectRequest.ResetEvent();
+	
 	Core::Event P2PGrpStart(false, true);
-	connectRequest.ResetEvent();
 
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(2)
@@ -596,7 +607,14 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_onClientConnectionAndLaunchRequest)
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
 
-	ASSERT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000)) << "connectRequest event not triggered";
+	TEST_LOG("Waiting for connect request event");
+        auto result = connectRequest.Lock(10000);
+    	if (result != Core::ERROR_NONE) {
+            TEST_LOG("Connect request timeout");
+  	} else {
+            TEST_LOG("Connect request succeeded");
+    	}
+    	EXPECT_EQ(Core::ERROR_NONE, result);
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
 	ASSERT_EQ(Core::ERROR_NONE, P2PGrpStart.Lock(10000)) << " P2PGrpStart event not triggered";
@@ -678,8 +696,9 @@ TEST_F(MiracastServiceEventTest, onClientConnectionRequestRejected)
 				return true;
 				}));
 
-	Core::Event connectRequest(false, true);
-	connectRequest.ResetEvent();
+	// Reset events before use
+    	TEST_LOG("Resetting events before test");
+    	connectRequest.ResetEvent();
 	
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(1)
@@ -700,7 +719,14 @@ TEST_F(MiracastServiceEventTest, onClientConnectionRequestRejected)
 
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	
-	ASSERT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000));
+	TEST_LOG("Waiting for connect request event");
+    	auto result = connectRequest.Lock(10000);
+    	if (result != Core::ERROR_NONE) {
+    	    TEST_LOG("Connect request timeout");
+    	} else {
+    	    TEST_LOG("Connect request succeeded");
+    	}
+    	EXPECT_EQ(Core::ERROR_NONE, result);
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Reject}"), response));
 
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
@@ -755,9 +781,10 @@ TEST_F(MiracastServiceEventTest, P2P_CONNECT_FAIL_onClientConnectionError)
 				return true;
 				}));
 
-	Core::Event connectRequest(false, true);
+	// Reset events before use
+    	TEST_LOG("Resetting events before test");
+    	connectRequest.ResetEvent();
 	Core::Event P2PConnectFail(false, true);
-	connectRequest.ResetEvent();
 	
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(2)
@@ -795,7 +822,14 @@ TEST_F(MiracastServiceEventTest, P2P_CONNECT_FAIL_onClientConnectionError)
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
 	
-	ASSERT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000)) << "connect req Event not triggered";
+	TEST_LOG("Waiting for connect request event");
+    	auto result = connectRequest.Lock(10000);
+    	if (result != Core::ERROR_NONE) {
+    	    TEST_LOG("Connect request timeout");
+    	} else {
+    	    TEST_LOG("Connect request succeeded");
+    	}
+    	EXPECT_EQ(Core::ERROR_NONE, result);
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
 	ASSERT_EQ(Core::ERROR_NONE, P2PConnectFail.Lock(10000)) << "P2P Event not triggered";
@@ -870,9 +904,10 @@ TEST_F(MiracastServiceEventTest, P2P_GO_NEGOTIATION_FAIL_onClientConnectionError
 				return true;
 				}));
 
-	Core::Event connectRequest(false, true);
+	// Reset events before use
+    	TEST_LOG("Resetting events before test");
+    	connectRequest.ResetEvent();
 	Core::Event P2PGoFail(false, true);
-	connectRequest.ResetEvent();
 	
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(2)
@@ -910,7 +945,14 @@ TEST_F(MiracastServiceEventTest, P2P_GO_NEGOTIATION_FAIL_onClientConnectionError
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
 
-	ASSERT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000)) << " connect req Event not triggered";
+	TEST_LOG("Waiting for connect request event");
+    	auto result = connectRequest.Lock(10000);
+    	if (result != Core::ERROR_NONE) {
+    	    TEST_LOG("Connect request timeout");
+    	} else {
+    	    TEST_LOG("Connect request succeeded");
+    	}
+    	EXPECT_EQ(Core::ERROR_NONE, result);
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
 	ASSERT_EQ(Core::ERROR_NONE, P2PGoFail.Lock(10000)) << " P2P Event not triggered";
@@ -992,10 +1034,12 @@ TEST_F(MiracastServiceEventTest, P2P_GO_FORMATION_FAIL_onClientConnectionError)
 				return true;
 				}));
 
-	Core::Event connectRequest(false, true);
+	// Reset events before use
+    	TEST_LOG("Resetting events before test");
+    	connectRequest.ResetEvent();
+	
 	Core::Event P2PGoFail(false, true);
-	connectRequest.ResetEvent();
-
+	
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(2)
 		.WillOnce(::testing::Invoke(
@@ -1032,7 +1076,14 @@ TEST_F(MiracastServiceEventTest, P2P_GO_FORMATION_FAIL_onClientConnectionError)
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
 
-	ASSERT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000)) << " connect req Event not triggered";
+	TEST_LOG("Waiting for connect request event");
+    	auto result = connectRequest.Lock(10000);
+    	if (result != Core::ERROR_NONE) {
+    	    TEST_LOG("Connect request timeout");
+    	} else {
+    	    TEST_LOG("Connect request succeeded");
+    	}
+    	EXPECT_EQ(Core::ERROR_NONE, result);
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
 	ASSERT_EQ(Core::ERROR_NONE, P2PGoFail.Lock(10000)) << " P2P Event not triggered";
@@ -1146,9 +1197,11 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_onClientConnectionAndLaunchReque
 				return true;
 				}));
 
-	Core::Event connectRequest(false, true);
+	// Reset events before use
+    	TEST_LOG("Resetting events before test");
+    	connectRequest.ResetEvent();
+	
 	Core::Event P2PGrpStart(false, true);
-	connectRequest.ResetEvent();
 
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(2)
@@ -1187,7 +1240,14 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_onClientConnectionAndLaunchReque
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
 
-	ASSERT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000)) << " connect req Event not triggered";
+	TEST_LOG("Waiting for connect request event");
+    	auto result = connectRequest.Lock(10000);
+    	if (result != Core::ERROR_NONE) {
+    	    TEST_LOG("Connect request timeout");
+    	} else {
+    	    TEST_LOG("Connect request succeeded");
+    	}
+    	EXPECT_EQ(Core::ERROR_NONE, result);
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
 	ASSERT_EQ(Core::ERROR_NONE, P2PGrpStart.Lock(10000)) << " P2P Event not triggered";
@@ -1253,9 +1313,10 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectonClientConnectionAndLaunc
 				return true;
 				}));
 
-	Core::Event connectRequest(false, true);
+	// Reset events before use
+    	TEST_LOG("Resetting events before test");
+    	connectRequest.ResetEvent();
 	Core::Event P2PGrpStart(false, true);
-	connectRequest.ResetEvent();
 
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(2)
@@ -1294,7 +1355,14 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectonClientConnectionAndLaunc
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
 
-	ASSERT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000)) << " connect req Event not triggered";
+	TEST_LOG("Waiting for connect request event");
+    	auto result = connectRequest.Lock(10000);
+    	if (result != Core::ERROR_NONE) {
+    	    TEST_LOG("Connect request timeout");
+    	} else {
+    	    TEST_LOG("Connect request succeeded");
+    	}
+    	EXPECT_EQ(Core::ERROR_NONE, result);
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
 	ASSERT_EQ(Core::ERROR_NONE, P2PGrpStart.Lock(10000)) << " P2P Event not triggered";
@@ -1354,9 +1422,10 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithName)
 				return true;
 				}));
 
-	Core::Event connectRequest(false, true);
+	// Reset events before use
+    	TEST_LOG("Resetting events before test");
+    	connectRequest.ResetEvent();
 	Core::Event P2PGrpStart(false, true);
-	connectRequest.ResetEvent();
 
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(2)
@@ -1395,7 +1464,14 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithName)
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
 
-	ASSERT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000)) << " connect req Event not triggered";
+	TEST_LOG("Waiting for connect request event");
+    	auto result = connectRequest.Lock(10000);
+    	if (result != Core::ERROR_NONE) {
+    	    TEST_LOG("Connect request timeout");
+    	} else {
+    	    TEST_LOG("Connect request succeeded");
+    	}
+    	EXPECT_EQ(Core::ERROR_NONE, result);
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
 	ASSERT_EQ(Core::ERROR_NONE, P2PGrpStart.Lock(10000)) << " P2P Event not triggered";
@@ -1455,9 +1531,10 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithoutName)
 				return true;
 				}));
 
-	Core::Event connectRequest(false, true);
+	// Reset events before use
+    	TEST_LOG("Resetting events before test");
+    	connectRequest.ResetEvent();
 	Core::Event P2PGrpStart(false, true);
-	connectRequest.ResetEvent();
 
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(2)
@@ -1496,7 +1573,14 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithoutName)
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
 
-	ASSERT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000)) << " connect req Event not triggered";
+	TEST_LOG("Waiting for connect request event");
+    	auto result = connectRequest.Lock(10000);
+    	if (result != Core::ERROR_NONE) {
+    	    TEST_LOG("Connect request timeout");
+    	} else {
+    	    TEST_LOG("Connect request succeeded");
+    	}
+    	EXPECT_EQ(Core::ERROR_NONE, result);
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
 	ASSERT_EQ(Core::ERROR_NONE, P2PGrpStart.Lock(10000)) << " P2P Event not triggered";
@@ -1580,9 +1664,10 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectP2PGoNegotiationGroupStart
 				return true;
 				}));
 
-	Core::Event connectRequest(false, true);
+	// Reset events before use
+    	TEST_LOG("Resetting events before test");
+    	connectRequest.ResetEvent();
 	Core::Event P2PGrpStart(false, true);
-	connectRequest.ResetEvent();
 
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(2)
@@ -1621,7 +1706,14 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectP2PGoNegotiationGroupStart
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
 
-	ASSERT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000)) << " connect req Event not triggered";
+	TEST_LOG("Waiting for connect request event");
+    	auto result = connectRequest.Lock(10000);
+    	if (result != Core::ERROR_NONE) {
+    	    TEST_LOG("Connect request timeout");
+    	} else {
+    	    TEST_LOG("Connect request succeeded");
+    	}
+    	EXPECT_EQ(Core::ERROR_NONE, result);
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
 	ASSERT_EQ(Core::ERROR_NONE, P2PGrpStart.Lock(10000)) << " P2P Event not triggered";
@@ -1735,9 +1827,10 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_GENERIC_FAILURE)
 				return true;
 				}));
 
-	Core::Event connectRequest(false, true);
+	// Reset events before use
+    	TEST_LOG("Resetting events before test");
+    	connectRequest.ResetEvent();
 	Core::Event P2PGenericFail(false, true);
-	connectRequest.ResetEvent();
 
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(2)
@@ -1778,7 +1871,14 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_GENERIC_FAILURE)
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
 
-	ASSERT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000)) << " connect req Event not triggered";
+	TEST_LOG("Waiting for connect request event");
+    	auto result = connectRequest.Lock(10000);
+    	if (result != Core::ERROR_NONE) {
+    	    TEST_LOG("Connect request timeout");
+    	} else {
+    	    TEST_LOG("Connect request succeeded");
+    	}
+    	EXPECT_EQ(Core::ERROR_NONE, result);
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
 	ASSERT_EQ(Core::ERROR_NONE, P2PGenericFail.Lock(10000)) << " P2P Event not triggered";
@@ -1876,9 +1976,10 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_GENERIC_FAILURE)
 				return true;
 				}));
 
-	Core::Event connectRequest(false, true);
+	// Reset events before use
+    	TEST_LOG("Resetting events before test");
+    	connectRequest.ResetEvent();
 	Core::Event P2PGenericFail(false, true);
-	connectRequest.ResetEvent();
 
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(2)
@@ -1918,7 +2019,14 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_GENERIC_FAILURE)
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
 
-	ASSERT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000)) << " connect req Event not triggered";
+	TEST_LOG("Waiting for connect request event");
+    	auto result = connectRequest.Lock(10000);
+    	if (result != Core::ERROR_NONE) {
+    	    TEST_LOG("Connect request timeout");
+    	} else {
+    	    TEST_LOG("Connect request succeeded");
+    	}
+    	EXPECT_EQ(Core::ERROR_NONE, result);
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
 	ASSERT_EQ(Core::ERROR_NONE, P2PGenericFail.Lock(10000)) << " P2P Event not triggered";
