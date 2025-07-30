@@ -143,6 +143,7 @@ protected:
     Core::JSONRPC::Handler& handler;
     DECL_CORE_JSONRPC_CONX connection;
     Core::JSONRPC::Message message;
+    Core::Event connectRequest;
     string response;
 
     WrapsImplMock *p_wrapsImplMock = nullptr;
