@@ -159,7 +159,7 @@ protected:
         : plugin(Core::ProxyType<Plugin::MiracastService>::Create())
         , handler(*(plugin))
         , INIT_CONX(1, 0)
-	, Core::Event connectRequest(false, true)
+	, connectRequest(false, true)
         , workerPool(Core::ProxyType<WorkerPoolImplementation>::Create(2, Core::Thread::DefaultStackSize(), 16))
     {
         p_wrapsImplMock = new NiceMock<WrapsImplMock>;
