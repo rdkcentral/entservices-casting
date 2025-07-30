@@ -163,10 +163,15 @@ protected:
         : plugin(Core::ProxyType<Plugin::MiracastService>::Create())
         , handler(*(plugin))
         , INIT_CONX(1, 0)
+	, message()
 	, connectRequest(false, true)
 	, P2PGrpStart(false, true)
 	, P2PConnectFail(false, true)
 	, P2PGoFail(false, true)
+        , response()
+        , p_wrapsImplMock(nullptr)
+        , miracastServiceImpl()
+        , dispatcher(nullptr)
         , workerPool(Core::ProxyType<WorkerPoolImplementation>::Create(2, Core::Thread::DefaultStackSize(), 16))
     {
         p_wrapsImplMock = new NiceMock<WrapsImplMock>;
@@ -218,9 +223,20 @@ protected:
     {
         TEST_LOG("MiracastServiceTest Destructor");
 
-        dispatcher->Deactivate();
-        dispatcher->Release();
+        // Give pending events time to complete
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
+        if (dispatcher != nullptr) {
+            TEST_LOG("Deactivating dispatcher");
+            dispatcher->Deactivate();
+            
+            // Allow deactivation to complete
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            
+            TEST_LOG("Releasing dispatcher");
+            dispatcher->Release();
+        }
+	    
         Core::IWorkerPool::Assign(nullptr);
         workerPool.Release();
     
