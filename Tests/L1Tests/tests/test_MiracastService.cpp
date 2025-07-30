@@ -245,8 +245,13 @@ protected:
 
     virtual ~MiracastServiceEventTest() override
     {
-        dispatcher->Deactivate();
-        dispatcher->Release();
+        // Ensure any pending events are processed
+        if (dispatcher != nullptr) {
+            dispatcher->Block();
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+            dispatcher->Deactivate();
+            dispatcher->Release();
+        }
 
         PluginHost::IFactories::Assign(nullptr);
     }
