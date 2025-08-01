@@ -89,7 +89,7 @@ namespace
 			return true;
 		}
 
-		TEST_LOG("Failed to create directory %s: %s", dirPath, strerror(errno));
+		TEST_LOG("Failed to create directory %s", dirPath);
 		return false;
 	}
 
