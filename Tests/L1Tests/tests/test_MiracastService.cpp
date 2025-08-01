@@ -77,25 +77,6 @@ namespace
 		close(fd);
 	}
 
-	static bool ensureDirectoryExists(const char* dirPath) {
-		struct stat st;
-		if (stat(dirPath, &st) == 0) {
-			if (S_ISDIR(st.st_mode)) {
-				return true;  // Directory exists
-			}
-			return false;  // Path exists but is not a directory
-		}
-
-		// Directory doesn't exist, try to create it with full permissions
-		if (mkdir(dirPath, S_IRWXU | S_IRWXG | S_IRWXO) == 0) {
-			printf("Created directory %s", dirPath);
-			return true;
-		}
-
-		printf("Failed to create directory %s", dirPath);
-		return false;
-	}
-
 	static void removeEntryFromFile(const char* fileName, const char* entryToRemove)
 	{
 		std::ifstream inputFile(fileName);
