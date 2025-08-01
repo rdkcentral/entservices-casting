@@ -43,7 +43,6 @@ namespace
 {
     #define TEST_LOG(FMT, ...) log(__func__, __FILE__, __LINE__, syscall(__NR_gettid),FMT,##__VA_ARGS__)
 
-	#if 0
 	static void removeFile(const char* fileName)
 	{
 		if (std::remove(fileName) != 0)
@@ -99,7 +98,6 @@ namespace
 		fileContentStream << "\n";
 		fileContentStream.close();
 	}
-	#endif
     void current_time(char *time_str)
     {
         struct timeval tv;
@@ -287,7 +285,6 @@ TEST_F(MiracastServiceTest, GetInformation)
     EXPECT_EQ("This MiracastService Plugin Facilitates Peer-to-Peer Control and WFD Source Device Discovery", plugin->Information());
 }
 
-#if 0
 TEST_F(MiracastServiceTest, P2PCtrlInterfaceNameNotFound)
 {
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
@@ -340,7 +337,7 @@ TEST_F(MiracastServiceTest, P2P_DiscoveryStatus)
 	EXPECT_EQ(response, string("{\"message\":\"Successfully enabled the WFD Discovery\",\"success\":true}"));
 
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
-    EXPECT_EQ(response, string("{\"message\":\"WFD Discovery already enabled.\",\"success\":false}"));
+        EXPECT_EQ(response, string("{\"message\":\"WFD Discovery already enabled.\",\"success\":false}"));
 
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getEnable"), _T("{}"), response));
 	EXPECT_EQ(response, string("{\"enabled\":true,\"success\":true}"));
@@ -349,7 +346,7 @@ TEST_F(MiracastServiceTest, P2P_DiscoveryStatus)
 	EXPECT_EQ(response, string("{\"message\":\"Successfully disabled the WFD Discovery\",\"success\":true}"));
 
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": false}"), response));
-    EXPECT_EQ(response, string("{\"message\":\"WFD Discovery already disabled.\",\"success\":false}"));
+        EXPECT_EQ(response, string("{\"message\":\"WFD Discovery already disabled.\",\"success\":false}"));
 
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getEnable"), _T("{}"), response));
 	EXPECT_EQ(response, string("{\"enabled\":false,\"success\":true}"));
@@ -446,7 +443,7 @@ TEST_F(MiracastServiceEventTest, stopClientConnection)
 					return Core::ERROR_NONE;
 					}));
 
-     EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
+    EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 
     TEST_LOG("Waiting for connect request event");
     auto result = connectRequest.Lock(10000);
@@ -2232,4 +2229,3 @@ TEST_F(MiracastServiceEventTest, powerStateChange)
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	removeFile("/var/run/wpa_supplicant/p2p0");
 }
-#endif 
