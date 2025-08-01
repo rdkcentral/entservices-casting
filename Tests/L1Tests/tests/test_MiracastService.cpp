@@ -36,6 +36,10 @@
 #include "MiracastServiceImplementation.h"
 #include <sys/time.h>
 #include <future>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <errno.h>
+#include <string.h>
 
 using namespace WPEFramework;
 using ::testing::NiceMock;
@@ -45,15 +49,48 @@ namespace
 
 	static void removeFile(const char* fileName)
 	{
-		if (std::remove(fileName) != 0)
-		{
-			printf("File %s failed to remove\n", fileName);
-			perror("Error deleting file");
+		// First check if file exists
+		if (access(fileName, F_OK) != 0) {
+			// File doesn't exist, no need to remove
+			TEST_LOG("File %s doesn't exist, skipping removal", fileName);
+			return;
 		}
-		else
-		{
-			printf("File %s successfully deleted\n", fileName);
+
+		// Try to remove the file
+		if (std::remove(fileName) != 0) {
+			// If removal fails, try to modify permissions
+			if (errno == EACCES) {
+				TEST_LOG("Permission denied, attempting to change permissions for %s", fileName);
+				if (chmod(fileName, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH) == 0) {
+					if (std::remove(fileName) == 0) {
+						TEST_LOG("File %s successfully deleted after permission change", fileName);
+						return;
+					}
+				}
+			}
+			TEST_LOG("File %s failed to remove: %s", fileName, strerror(errno));
+		} else {
+			TEST_LOG("File %s successfully deleted", fileName);
 		}
+	}
+
+	static bool ensureDirectoryExists(const char* dirPath) {
+		struct stat st;
+		if (stat(dirPath, &st) == 0) {
+			if (S_ISDIR(st.st_mode)) {
+				return true;  // Directory exists
+			}
+			return false;  // Path exists but is not a directory
+		}
+
+		// Directory doesn't exist, try to create it with full permissions
+		if (mkdir(dirPath, S_IRWXU | S_IRWXG | S_IRWXO) == 0) {
+			TEST_LOG("Created directory %s", dirPath);
+			return true;
+		}
+
+		TEST_LOG("Failed to create directory %s: %s", dirPath, strerror(errno));
+		return false;
 	}
 
 	static void removeEntryFromFile(const char* fileName, const char* entryToRemove)
@@ -163,11 +200,11 @@ protected:
         : plugin(Core::ProxyType<Plugin::MiracastService>::Create())
         , handler(*(plugin))
         , INIT_CONX(1, 0)
-	, message()
-	, connectRequest(false, true)
-	, P2PGrpStart(false, true)
-	, P2PConnectFail(false, true)
-	, P2PGoFail(false, true)
+        , message()
+        , connectRequest(false, true)
+        , P2PGrpStart(false, true)
+        , P2PConnectFail(false, true)
+        , P2PGoFail(false, true)
         , response()
         , p_wrapsImplMock(nullptr)
         , miracastServiceImpl()
@@ -221,7 +258,7 @@ protected:
     }
     virtual ~MiracastServiceTest() override
     {
-        TEST_LOG("MiracastServiceTest Destructor");
+        TEST_LOG("MiracastServiceTest Destructor - Starting cleanup");
 
         // Give pending events time to complete
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
@@ -236,7 +273,7 @@ protected:
             TEST_LOG("Releasing dispatcher");
             dispatcher->Release();
         }
-	    
+
         Core::IWorkerPool::Assign(nullptr);
         workerPool.Release();
     
@@ -337,7 +374,7 @@ TEST_F(MiracastServiceTest, P2P_DiscoveryStatus)
 	EXPECT_EQ(response, string("{\"message\":\"Successfully enabled the WFD Discovery\",\"success\":true}"));
 
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
-        EXPECT_EQ(response, string("{\"message\":\"WFD Discovery already enabled.\",\"success\":false}"));
+    EXPECT_EQ(response, string("{\"message\":\"WFD Discovery already enabled.\",\"success\":false}"));
 
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getEnable"), _T("{}"), response));
 	EXPECT_EQ(response, string("{\"enabled\":true,\"success\":true}"));
@@ -346,7 +383,7 @@ TEST_F(MiracastServiceTest, P2P_DiscoveryStatus)
 	EXPECT_EQ(response, string("{\"message\":\"Successfully disabled the WFD Discovery\",\"success\":true}"));
 
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": false}"), response));
-        EXPECT_EQ(response, string("{\"message\":\"WFD Discovery already disabled.\",\"success\":false}"));
+    EXPECT_EQ(response, string("{\"message\":\"WFD Discovery already disabled.\",\"success\":false}"));
 
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getEnable"), _T("{}"), response));
 	EXPECT_EQ(response, string("{\"enabled\":false,\"success\":true}"));
@@ -443,7 +480,7 @@ TEST_F(MiracastServiceEventTest, stopClientConnection)
 					return Core::ERROR_NONE;
 					}));
 
-    EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
+     EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 
     TEST_LOG("Waiting for connect request event");
     auto result = connectRequest.Lock(10000);
@@ -587,8 +624,10 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_onClientConnectionAndLaunchRequest)
 				return true;
 				}));
 
-	Core::Event connectRequest(false,true);
-	Core::Event P2PGrpStart(false,true);
+	// Reset events before use
+    	TEST_LOG("Resetting events before test");
+    	connectRequest.ResetEvent();
+	P2PGrpStart.ResetEvent();
 
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(2)
@@ -627,11 +666,24 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_onClientConnectionAndLaunchRequest)
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
 
-    	
-    	EXPECT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000));
+	TEST_LOG("Waiting for connect request event");
+        auto result = connectRequest.Lock(10000);
+    	if (result != Core::ERROR_NONE) {
+            TEST_LOG("Connect request timeout");
+  	} else {
+            TEST_LOG("Connect request succeeded");
+    	}
+    	EXPECT_EQ(Core::ERROR_NONE, result);
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
-	EXPECT_EQ(Core::ERROR_NONE, P2PGrpStart.Lock(10000));
+	TEST_LOG("Waiting for P2PGrpStart event");
+    	auto start = P2PGrpStart.Lock(10000);
+    	if (start != Core::ERROR_NONE) {
+    	    TEST_LOG("P2PGrpStart timeout");
+    	} else {
+    	    TEST_LOG("P2PGrpStart succeeded");
+    	}
+	EXPECT_EQ(Core::ERROR_NONE, start);
 
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("stopClientConnection"), _T("{\"name\": \"Sample-Test-Android-2\",\"mac\": \"96:52:44:b6:7d:14\"}"), response));
 	EXPECT_EQ(response, string("{\"message\":\"Invalid state to process stopClientConnection\",\"success\":false}"));
