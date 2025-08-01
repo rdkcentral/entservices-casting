@@ -40,6 +40,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
+#include <fcntl.h>
 
 using namespace WPEFramework;
 using ::testing::NiceMock;
@@ -49,29 +50,31 @@ namespace
 
 	static void removeFile(const char* fileName)
 	{
-		// First check if file exists
-		if (access(fileName, F_OK) != 0) {
-			// File doesn't exist, no need to remove
-			TEST_LOG("File %s doesn't exist, skipping removal", fileName);
+		// Open the file with O_WRONLY | O_NOFOLLOW to avoid symlink attacks
+		int fd = open(fileName, O_WRONLY | O_NOFOLLOW);
+		if (fd == -1) {
+			if (errno == ENOENT) {
+				TEST_LOG("File %s doesn't exist, skipping removal", fileName);
+			} else {
+				TEST_LOG("Failed to open file %s: %s", fileName, strerror(errno));
+			}
 			return;
 		}
 
-		// Try to remove the file
-		if (std::remove(fileName) != 0) {
-			// If removal fails, try to modify permissions
-			if (errno == EACCES) {
-				TEST_LOG("Permission denied, attempting to change permissions for %s", fileName);
-				if (chmod(fileName, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH) == 0) {
-					if (std::remove(fileName) == 0) {
-						TEST_LOG("File %s successfully deleted after permission change", fileName);
-						return;
-					}
-				}
-			}
+		// Try to change permissions if needed
+		if (fchmod(fd, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH) != 0) {
+			TEST_LOG("Failed to change permissions for %s: %s", fileName, strerror(errno));
+			close(fd);
+			return;
+		}
+
+		// Unlink the file
+		if (unlink(fileName) != 0) {
 			TEST_LOG("File %s failed to remove: %s", fileName, strerror(errno));
 		} else {
 			TEST_LOG("File %s successfully deleted", fileName);
 		}
+		close(fd);
 	}
 
 	static bool ensureDirectoryExists(const char* dirPath) {
