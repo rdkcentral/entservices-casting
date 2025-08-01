@@ -54,25 +54,25 @@ namespace
 		int fd = open(fileName, O_WRONLY | O_NOFOLLOW);
 		if (fd == -1) {
 			if (errno == ENOENT) {
-				TEST_LOG("File %s doesn't exist, skipping removal", fileName);
+				printf("File %s doesn't exist, skipping removal", fileName);
 			} else {
-				TEST_LOG("Failed to open file %s: %s", fileName, strerror(errno));
+				printf("Failed to open file %s: %s", fileName, strerror(errno));
 			}
 			return;
 		}
 
 		// Try to change permissions if needed
 		if (fchmod(fd, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH) != 0) {
-			TEST_LOG("Failed to change permissions for %s: %s", fileName, strerror(errno));
+			printf("Failed to change permissions for %s: %s", fileName, strerror(errno));
 			close(fd);
 			return;
 		}
 
 		// Unlink the file
 		if (unlink(fileName) != 0) {
-			TEST_LOG("File %s failed to remove: %s", fileName, strerror(errno));
+			printf("File %s failed to remove: %s", fileName, strerror(errno));
 		} else {
-			TEST_LOG("File %s successfully deleted", fileName);
+			printf("File %s successfully deleted", fileName);
 		}
 		close(fd);
 	}
@@ -88,11 +88,11 @@ namespace
 
 		// Directory doesn't exist, try to create it with full permissions
 		if (mkdir(dirPath, S_IRWXU | S_IRWXG | S_IRWXO) == 0) {
-			TEST_LOG("Created directory %s", dirPath);
+			printf("Created directory %s", dirPath);
 			return true;
 		}
 
-		TEST_LOG("Failed to create directory %s", dirPath);
+		printf("Failed to create directory %s", dirPath);
 		return false;
 	}
 
