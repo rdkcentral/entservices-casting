@@ -1124,7 +1124,9 @@ TEST_F(MiracastServiceEventTest, P2P_GO_FORMATION_FAIL_onClientConnectionError)
 		.WillOnce(::testing::Invoke(
 					[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
 					string text;
+					TEST_LOG("Before connectRequest.SetEvent json2string");	
 					EXPECT_TRUE(json->ToString(text));
+					TEST_LOG("Before connectRequest.SetEvent aftr json2string");	
 					EXPECT_EQ(text,string(_T("{"
 									"\"jsonrpc\":\"2.0\","
 									"\"method\":\"client.events.onClientConnectionRequest\","
@@ -1140,7 +1142,9 @@ TEST_F(MiracastServiceEventTest, P2P_GO_FORMATION_FAIL_onClientConnectionError)
 	.WillOnce(::testing::Invoke(
 				[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
 				string text;
+				TEST_LOG("Before P2PGoFail.SetEvent json2string");	
 				EXPECT_TRUE(json->ToString(text));
+				TEST_LOG("Before P2PGoFail.SetEvent after json2string");
 				EXPECT_EQ(text,string(_T("{"
 								"\"jsonrpc\":\"2.0\","
 								"\"method\":\"client.events.onClientConnectionError\","
@@ -1297,7 +1301,9 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_onClientConnectionAndLaunchReque
 		.WillOnce(::testing::Invoke(
 					[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
 					string text;
+					TEST_LOG("Before connectRequest.SetEvent json2string");	
 					EXPECT_TRUE(json->ToString(text));
+					TEST_LOG("Before connectRequest.SetEvent aftr json2str");	
 					EXPECT_EQ(text,string(_T("{"
 									"\"jsonrpc\":\"2.0\","
 									"\"method\":\"client.events.onClientConnectionRequest\","
@@ -1314,7 +1320,9 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_onClientConnectionAndLaunchReque
 	.WillOnce(::testing::Invoke(
 				[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
 				string text;
+				TEST_LOG("Before P2PGrpStart.SetEvent json2str");	
 				EXPECT_TRUE(json->ToString(text));
+				TEST_LOG("Before P2PGrpStart.SetEvent aftr json2str");	
 				EXPECT_EQ(text,string(_T("{"
                                                                 "\"jsonrpc\":\"2.0\","
                                                                 "\"method\":\"client.events.onLaunchRequest\","
@@ -1423,7 +1431,9 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectonClientConnectionAndLaunc
 		.WillOnce(::testing::Invoke(
 					[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
 					string text;
+					TEST_LOG("Before connectRequest.SetEvent json2str");	
 					EXPECT_TRUE(json->ToString(text));
+					TEST_LOG("Before connectRequest.SetEvent aftr json2str");	
 					EXPECT_EQ(text,string(_T("{"
 									"\"jsonrpc\":\"2.0\","
 									"\"method\":\"client.events.onClientConnectionRequest\","
@@ -1440,7 +1450,9 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectonClientConnectionAndLaunc
 	.WillOnce(::testing::Invoke(
 				[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
 				string text;
+				TEST_LOG("Before P2PGrpStart.SetEvent json2str");
 				EXPECT_TRUE(json->ToString(text));
+				TEST_LOG("Before P2PGrpStart.SetEvent aftr json2str");	
 				EXPECT_EQ(text,string(_T("{"
                                                                 "\"jsonrpc\":\"2.0\","
                                                                 "\"method\":\"client.events.onLaunchRequest\","
@@ -1543,7 +1555,9 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithName)
 		.WillOnce(::testing::Invoke(
 					[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
 					string text;
+					TEST_LOG("Before connectRequest.SetEvent json2str");	
 					EXPECT_TRUE(json->ToString(text));
+					TEST_LOG("Before connectRequest.SetEvent aftr json2str ");	
 					EXPECT_EQ(text,string(_T("{"
 									"\"jsonrpc\":\"2.0\","
 									"\"method\":\"client.events.onClientConnectionRequest\","
@@ -1560,7 +1574,9 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithName)
 	.WillOnce(::testing::Invoke(
 				[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
 				string text;
+				TEST_LOG("Before P2PGrpStart.SetEvent jsron2str");	
 				EXPECT_TRUE(json->ToString(text));
+				TEST_LOG("Before P2PGrpStart.SetEvent aftr json2str");	
 				EXPECT_EQ(text,string(_T("{"
                                                                 "\"jsonrpc\":\"2.0\","
                                                                 "\"method\":\"client.events.onLaunchRequest\","
@@ -1663,7 +1679,9 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithoutName)
 		.WillOnce(::testing::Invoke(
 					[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
 					string text;
+					TEST_LOG("Before connectRequest.SetEvent json2str");	
 					EXPECT_TRUE(json->ToString(text));
+					TEST_LOG("Before connectRequest.SetEvent after json2str");	
 					EXPECT_EQ(text,string(_T("{"
 									"\"jsonrpc\":\"2.0\","
 									"\"method\":\"client.events.onClientConnectionRequest\","
@@ -1680,7 +1698,9 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithoutName)
 	.WillOnce(::testing::Invoke(
 				[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
 				string text;
+				TEST_LOG("Before P2PGrpStart.SetEvent json2str");	
 				EXPECT_TRUE(json->ToString(text));
+				TEST_LOG("Before P2PGrpStart.SetEvent aftr json2str");	
 				EXPECT_EQ(text,string(_T("{"
                                                                 "\"jsonrpc\":\"2.0\","
                                                                 "\"method\":\"client.events.onLaunchRequest\","
@@ -1807,7 +1827,9 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectP2PGoNegotiationGroupStart
 		.WillOnce(::testing::Invoke(
 					[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
 					string text;
+					TEST_LOG("Before connectRequest.SetEvent json2str");	
 					EXPECT_TRUE(json->ToString(text));
+					TEST_LOG("Before connectRequest.SetEvent aftr json2str");	
 					EXPECT_EQ(text,string(_T("{"
 									"\"jsonrpc\":\"2.0\","
 									"\"method\":\"client.events.onClientConnectionRequest\","
@@ -1823,8 +1845,10 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectP2PGoNegotiationGroupStart
 
 	.WillOnce(::testing::Invoke(
 				[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
-				string text;
+				string text; 
+				TEST_LOG("Before P2PGrpStart.SetEvent json2str");	
 				EXPECT_TRUE(json->ToString(text));
+				TEST_LOG("Before P2PGrpStart.SetEvent aftr json2str");	
 				EXPECT_EQ(text,string(_T("{"
                                                                 "\"jsonrpc\":\"2.0\","
                                                                 "\"method\":\"client.events.onLaunchRequest\","
@@ -1981,7 +2005,9 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_GENERIC_FAILURE)
 		.WillOnce(::testing::Invoke(
 					[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
 					string text;
+					TEST_LOG("Before connectRequest.SetEvent json2str");	
 					EXPECT_TRUE(json->ToString(text));
+					TEST_LOG("Before connectRequest.SetEvent aftr json2str");	
 					EXPECT_EQ(text,string(_T("{"
 									"\"jsonrpc\":\"2.0\","
 									"\"method\":\"client.events.onClientConnectionRequest\","
@@ -1998,7 +2024,9 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_GENERIC_FAILURE)
 	.WillOnce(::testing::Invoke(
 				[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
 				string text;
+				TEST_LOG("Before P2PGenericFail.SetEvent json2str");	
 				EXPECT_TRUE(json->ToString(text));
+				TEST_LOG("Before P2PGenericFail.SetEvent aftr json2str");	
 				EXPECT_EQ(text,string(_T("{"
                                                                 "\"jsonrpc\":\"2.0\","
                                                                 "\"method\":\"client.events.onClientConnectionError\","
@@ -2133,7 +2161,9 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_GENERIC_FAILURE)
 		.WillOnce(::testing::Invoke(
 					[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
 					string text;
+					TEST_LOG("Before connectRequest.SetEvent json2str");	
 					EXPECT_TRUE(json->ToString(text));
+					TEST_LOG("Before connectRequest.SetEvent aftr json2str");	
 					EXPECT_EQ(text,string(_T("{"
 									"\"jsonrpc\":\"2.0\","
 									"\"method\":\"client.events.onClientConnectionRequest\","
@@ -2150,7 +2180,9 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_GENERIC_FAILURE)
 		.WillOnce(::testing::Invoke(
 					[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
 					string text;
+					TEST_LOG("Before P2PGeneric.SetEvent json2str");		
 					EXPECT_TRUE(json->ToString(text));
+					TEST_LOG("Before P2PGeneric.SetEvent afte json2str");		
 					EXPECT_EQ(text,string(_T("{"
 												"\"jsonrpc\":\"2.0\","
 												"\"method\":\"client.events.onClientConnectionError\","
