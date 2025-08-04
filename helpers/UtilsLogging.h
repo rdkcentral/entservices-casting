@@ -20,6 +20,7 @@
 #pragma once
 
 #include <syscall.h>
+#include "MiracastLogger.h"
 
 //enum LogLevel {FATAL_LEVEL = 0, ERROR_LEVEL, WARNING_LEVEL, INFO_LEVEL, DEBUG_LEVEL};
 
