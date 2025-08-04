@@ -1390,36 +1390,66 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectonClientConnectionAndLaunc
 					return (fmemopen(buffer, strlen(buffer), "r"));
 					}));
 
-	EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_request(::testing::_, ::testing::_, ::testing::_,::testing::_, ::testing::_, ::testing::_))
-		.Times(::testing::AnyNumber())
-		.WillRepeatedly(::testing::Invoke(
-					[&](struct wpa_ctrl *ctrl, const char *cmd, size_t cmd_len, char *reply, size_t *reply_len, void(*msg_cb)(char *msg, size_t len))
-					{
-						if ( 0 == strncmp(cmd,"P2P_CONNECT",strlen("P2P_CONNECT")))
-						{
-							strncpy(reply,"OK",*reply_len);
-						}
-						return false;
-					}));
+    // Mock P2P_CONNECT response
+    EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_request(::testing::_, ::testing::_, ::testing::_,::testing::_, ::testing::_, ::testing::_))
+        .Times(::testing::AnyNumber())
+        .WillRepeatedly(::testing::Invoke(
+            [](struct wpa_ctrl* ctrl, const char* cmd, size_t cmd_len, char* reply, size_t* reply_len, void(*msg_cb)(char* msg, size_t len)) -> bool {
+                if (0 == strncmp(cmd,"P2P_CONNECT",strlen("P2P_CONNECT"))) {
+                    const char* msg = "OK";
+                    if (!reply || !reply_len || *reply_len <= strlen(msg)) {
+                        return true;
+                    }
+                    memcpy(reply, msg, strlen(msg) + 1);
+                    *reply_len = strlen(msg);
+                }
+                return false;
+            }));
 
-	EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_recv(::testing::_, ::testing::_, ::testing::_))
-	.WillOnce(::testing::Invoke(
-				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
-				strncpy(reply, "P2P-DEVICE-FOUND 96:52:44:b6:7d:14 p2p_dev_addr=96:52:44:b6:7d:14 pri_dev_type=10-0050F204-5 name='Sample-Test-Android-2' config_methods=0x188 dev_capab=0x25 group_capab=0x0 wfd_dev_info=0x01101c440032 vendor_elems=1 new=1", *reply_len);
-				return false;
-				}))
-
-	.WillOnce(::testing::Invoke(
-				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
-				// Here using lo to avoid the operation not permitted error for unknown interfaces
-				strncpy(reply, "P2P-GROUP-STARTED lo client ssid=\"DIRECT-UU-Galaxy A23 5G\" freq=2437 psk=12c3ce3d8976152df796e5f42fc646723471bf1aab8d72a546fa3dce60dc14a3 go_dev_addr=96:52:44:b6:7d:14 [PERSISTENT]", *reply_len);
-				return false;
-				}))
-
-	.WillRepeatedly(::testing::Invoke(
-				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
-				return true;
-				}));
+    // Set up the P2P event sequence
+    EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_recv(::testing::_, ::testing::_, ::testing::_))
+        .Times(::testing::AtLeast(4))
+        .WillOnce(::testing::Invoke([](struct wpa_ctrl* ctrl, char* reply, size_t* reply_len) -> bool {
+            // First event: Device discovery
+            const char* msg = "P2P-DEVICE-FOUND 96:52:44:b6:7d:14 p2p_dev_addr=96:52:44:b6:7d:14 pri_dev_type=10-0050F204-5 name='Sample-Test-Android-2' config_methods=0x188 dev_capab=0x25 group_capab=0x0 wfd_dev_info=0x01101c440032 vendor_elems=1 new=1";
+            if (!reply || !reply_len || *reply_len <= strlen(msg)) {
+                return true;
+            }
+            memcpy(reply, msg, strlen(msg) + 1);
+            *reply_len = strlen(msg);
+            return false;
+        }))
+        .WillOnce(::testing::Invoke([](struct wpa_ctrl* ctrl, char* reply, size_t* reply_len) -> bool {
+            // Second event: Negotiation request
+            const char* msg = "P2P-GO-NEG-REQUEST 96:52:44:b6:7d:14 dev_passwd_id=4 go_intent=13";
+            if (!reply || !reply_len || *reply_len <= strlen(msg)) {
+                return true;
+            }
+            memcpy(reply, msg, strlen(msg) + 1);
+            *reply_len = strlen(msg);
+            return false;
+        }))
+        .WillOnce(::testing::Invoke([](struct wpa_ctrl* ctrl, char* reply, size_t* reply_len) -> bool {
+            // Third event: Negotiation success
+            const char* msg = "P2P-GO-NEG-SUCCESS role=client freq=2437 ht40=0 peer_dev=96:52:44:b6:7d:14 peer_iface=96:52:44:b6:fd:14 wps_method=PBC";
+            if (!reply || !reply_len || *reply_len <= strlen(msg)) {
+                return true;
+            }
+            memcpy(reply, msg, strlen(msg) + 1);
+            *reply_len = strlen(msg);
+            return false;
+        }))
+        .WillOnce(::testing::Invoke([](struct wpa_ctrl* ctrl, char* reply, size_t* reply_len) -> bool {
+            // Fourth event: Group formation
+            const char* msg = "P2P-GROUP-STARTED lo client ssid=\"DIRECT-UU Sample-Test-Android-2\" freq=2437 psk=12c3ce3d8976152df796e5f42fc646723471bf1aab8d72a546fa3dce60dc14a3 go_dev_addr=96:52:44:b6:7d:14 [PERSISTENT]";
+            if (!reply || !reply_len || *reply_len <= strlen(msg)) {
+                return true;
+            }
+            memcpy(reply, msg, strlen(msg) + 1);
+            *reply_len = strlen(msg);
+            return false;
+        }))
+        .WillRepeatedly(::testing::Return(true));
 
 	// Reset events before use
     	TEST_LOG("Resetting events before test");
