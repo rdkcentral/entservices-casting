@@ -1263,13 +1263,6 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_onClientConnectionAndLaunchReque
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
 
-    // Setup PowerManager mocks for proper state transitions
-    EXPECT_CALL(*p_powerManagerMock, GetPowerState(::testing::_, ::testing::_))
-        .WillRepeatedly(::testing::DoAll(
-            ::testing::SetArgReferee<0>(1), // POWER_STATE_ON
-            ::testing::SetArgReferee<1>(0),
-            ::testing::Return(0)));
-
     // Mock successful P2P command responses
     EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_request(::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_))
         .WillRepeatedly(::testing::Invoke(
