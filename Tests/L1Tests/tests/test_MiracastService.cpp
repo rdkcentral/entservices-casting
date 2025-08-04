@@ -1533,7 +1533,7 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithName)
 					}));
 
 	EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_recv(::testing::_, ::testing::_, ::testing::_))
-		[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+	.WillOnce(::testing::Invoke([](struct wpa_ctrl* ctrl, char* reply, size_t* reply_len) -> bool {
 				const char* msg = "P2P-DEVICE-FOUND 96:52:44:b6:7d:14 p2p_dev_addr=96:52:44:b6:7d:14 pri_dev_type=10-0050F204-5 name='Galaxy A23 5G' config_methods=0x188 dev_capab=0x25 group_capab=0x0 wfd_dev_info=0x01101c440032 vendor_elems=1 new=1";
 				if (!reply || !reply_len || *reply_len <= strlen(msg)) {
 					return true;
