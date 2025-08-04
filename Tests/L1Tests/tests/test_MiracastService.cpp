@@ -446,6 +446,8 @@ TEST_F(MiracastServiceEventTest, stopClientConnection)
 	// Reset events before use
     	TEST_LOG("Resetting events before test");
     	connectRequest.ResetEvent();
+
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(1)
@@ -463,9 +465,7 @@ TEST_F(MiracastServiceEventTest, stopClientConnection)
 					connectRequest.SetEvent();
 					return Core::ERROR_NONE;
 					}));
-
-     EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
-
+ 
     TEST_LOG("Waiting for connect request event");
     auto result = connectRequest.Lock(10000);
     if (result != Core::ERROR_NONE) {
@@ -475,7 +475,7 @@ TEST_F(MiracastServiceEventTest, stopClientConnection)
     }
     EXPECT_EQ(Core::ERROR_NONE, result);
 
-	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Timeout}"), response));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Timeout}"), response));
     EXPECT_EQ(response, string("{\"message\":\"Supported 'requestStatus' parameter values are Accept or Reject\",\"success\":false}"));
 
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"request\": Accept}"), response));
@@ -613,6 +613,9 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_onClientConnectionAndLaunchRequest)
     	connectRequest.ResetEvent();
 	P2PGrpStart.ResetEvent();
 
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
+	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
+	
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(2)
 		.WillOnce(::testing::Invoke(
@@ -646,9 +649,6 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_onClientConnectionAndLaunchRequest)
 				P2PGrpStart.SetEvent();
 				return Core::ERROR_NONE;
 				}));
-	
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
-	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
 
 	TEST_LOG("Waiting for connect request event");
         auto result = connectRequest.Lock(10000);
@@ -749,6 +749,8 @@ TEST_F(MiracastServiceEventTest, onClientConnectionRequestRejected)
 	// Reset events before use
     	TEST_LOG("Resetting events before test");
     	connectRequest.ResetEvent();
+
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);	
 	
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(1)
@@ -766,8 +768,6 @@ TEST_F(MiracastServiceEventTest, onClientConnectionRequestRejected)
 					connectRequest.SetEvent();
 					return Core::ERROR_NONE;
 					}));
-
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	
 	TEST_LOG("Waiting for connect request event");
     	auto result = connectRequest.Lock(10000);
@@ -835,6 +835,9 @@ TEST_F(MiracastServiceEventTest, P2P_CONNECT_FAIL_onClientConnectionError)
     	TEST_LOG("Resetting events before test");
     	connectRequest.ResetEvent();
 	P2PConnectFail.ResetEvent();
+
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
 	
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(2)
@@ -868,9 +871,6 @@ TEST_F(MiracastServiceEventTest, P2P_CONNECT_FAIL_onClientConnectionError)
 				P2PConnectFail.SetEvent();
 				return Core::ERROR_NONE;
 				}));
-
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
 	
 	TEST_LOG("Waiting for connect request event");
     	auto result = connectRequest.Lock(10000);
@@ -965,6 +965,9 @@ TEST_F(MiracastServiceEventTest, P2P_GO_NEGOTIATION_FAIL_onClientConnectionError
     	TEST_LOG("Resetting events before test");
     	connectRequest.ResetEvent();
 	P2PGoFail.ResetEvent();
+
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
 	
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(2)
@@ -998,9 +1001,6 @@ TEST_F(MiracastServiceEventTest, P2P_GO_NEGOTIATION_FAIL_onClientConnectionError
 				P2PGoFail.SetEvent();
 				return Core::ERROR_NONE;
 				}));
-
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
 
 	TEST_LOG("Waiting for connect request event");
     	auto result = connectRequest.Lock(10000);
@@ -1102,6 +1102,9 @@ TEST_F(MiracastServiceEventTest, P2P_GO_FORMATION_FAIL_onClientConnectionError)
     	TEST_LOG("Resetting events before test");
     	connectRequest.ResetEvent();
 	P2PGoFail.ResetEvent();
+
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
 	
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(2)
@@ -1135,9 +1138,6 @@ TEST_F(MiracastServiceEventTest, P2P_GO_FORMATION_FAIL_onClientConnectionError)
 				P2PGoFail.SetEvent();
 				return Core::ERROR_NONE;
 				}));
-
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
 
 	TEST_LOG("Waiting for connect request event");
     	auto result = connectRequest.Lock(10000);
@@ -1271,6 +1271,9 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_onClientConnectionAndLaunchReque
     	TEST_LOG("Resetting events before test");
     	connectRequest.ResetEvent();
 	P2PGrpStart.ResetEvent();
+	
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
+	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
 
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(2)
@@ -1305,9 +1308,6 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_onClientConnectionAndLaunchReque
                                 P2PGrpStart.SetEvent();
 				return Core::ERROR_NONE;
 				}));
-
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
-	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
 
 	TEST_LOG("Waiting for connect request event");
     	auto result = connectRequest.Lock(10000);
@@ -1394,6 +1394,9 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectonClientConnectionAndLaunc
     	connectRequest.ResetEvent();
 	P2PGrpStart.ResetEvent();
 
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
+	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
+	
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(2)
 		.WillOnce(::testing::Invoke(
@@ -1427,9 +1430,6 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectonClientConnectionAndLaunc
                                 P2PGrpStart.SetEvent();
 				return Core::ERROR_NONE;
 				}));
-
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
-	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
 
 	TEST_LOG("Waiting for connect request event");
     	auto result = connectRequest.Lock(10000);
@@ -1510,6 +1510,9 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithName)
     	connectRequest.ResetEvent();
 	P2PGrpStart.ResetEvent();
 
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
+	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
+	
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(2)
 		.WillOnce(::testing::Invoke(
@@ -1543,9 +1546,6 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithName)
                                 P2PGrpStart.SetEvent();
 				return Core::ERROR_NONE;
 				}));
-
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
-	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
 
 	TEST_LOG("Waiting for connect request event");
     	auto result = connectRequest.Lock(10000);
@@ -1626,6 +1626,9 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithoutName)
     	connectRequest.ResetEvent();
 	P2PGrpStart.ResetEvent();
 
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
+	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
+	
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(2)
 		.WillOnce(::testing::Invoke(
@@ -1659,9 +1662,6 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithoutName)
                                 P2PGrpStart.SetEvent();
 				return Core::ERROR_NONE;
 				}));
-
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
-	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
 
 	TEST_LOG("Waiting for connect request event");
     	auto result = connectRequest.Lock(10000);
@@ -1766,6 +1766,9 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectP2PGoNegotiationGroupStart
     	connectRequest.ResetEvent();
 	P2PGrpStart.ResetEvent();
 
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
+	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
+
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(2)
 		.WillOnce(::testing::Invoke(
@@ -1799,9 +1802,6 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectP2PGoNegotiationGroupStart
                                 P2PGrpStart.SetEvent();
 				return Core::ERROR_NONE;
 				}));
-
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
-	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
 
 	TEST_LOG("Waiting for connect request event");
     	auto result = connectRequest.Lock(10000);
@@ -1936,6 +1936,9 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_GENERIC_FAILURE)
     	connectRequest.ResetEvent();
 	Core::Event P2PGenericFail(false, true);
 
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
+
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(2)
 		.WillOnce(::testing::Invoke(
@@ -1970,10 +1973,6 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_GENERIC_FAILURE)
 				P2PGenericFail.SetEvent();
 				return Core::ERROR_NONE;
 				}));
-
-
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
 
 	TEST_LOG("Waiting for connect request event");
     	auto result = connectRequest.Lock(10000);
@@ -2084,6 +2083,9 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_GENERIC_FAILURE)
     	TEST_LOG("Resetting events before test");
     	connectRequest.ResetEvent();
 	Core::Event P2PGenericFail(false, true);
+	
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
 
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(2)
@@ -2119,9 +2121,6 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_GENERIC_FAILURE)
 					P2PGenericFail.SetEvent();
 					return Core::ERROR_NONE;
 					}));
-
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
 
 	TEST_LOG("Waiting for connect request event");
     	auto result = connectRequest.Lock(10000);
