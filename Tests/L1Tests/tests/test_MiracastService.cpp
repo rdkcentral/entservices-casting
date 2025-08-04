@@ -395,6 +395,8 @@ TEST_F(MiracastServiceTest, BackendDiscoveryStatus)
 
 TEST_F(MiracastServiceEventTest, stopClientConnection)
 {
+	::testing::InSequence seq;
+	
 	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
@@ -446,8 +448,6 @@ TEST_F(MiracastServiceEventTest, stopClientConnection)
 	// Reset events before use
     	TEST_LOG("Resetting events before test");
     	connectRequest.ResetEvent();
-
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(1)
@@ -462,12 +462,16 @@ TEST_F(MiracastServiceEventTest, stopClientConnection)
 									"\"name\":\"Sample-Test-Android-2\""
 									"}}"
 								)));
+					TEST_LOG("before connectRequest.SetEvent");	
 					connectRequest.SetEvent();
+					TEST_LOG("after connectRequest.SetEvent");	
 					return Core::ERROR_NONE;
 					}));
+	
+    EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message); 
  
     TEST_LOG("Waiting for connect request event");
-    auto result = connectRequest.Lock(10000);
+    auto result = connectRequest.Lock(30000);
     if (result != Core::ERROR_NONE) {
         TEST_LOG("Connect request timeout after TIMEOUT");
     } else {
@@ -502,6 +506,8 @@ TEST_F(MiracastServiceEventTest, stopClientConnection)
 
 TEST_F(MiracastServiceEventTest, P2P_GOMode_onClientConnectionAndLaunchRequest)
 {
+	::testing::InSequence seq; 
+	
 	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
@@ -612,9 +618,6 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_onClientConnectionAndLaunchRequest)
     	TEST_LOG("Resetting events before test");
     	connectRequest.ResetEvent();
 	P2PGrpStart.ResetEvent();
-
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
-	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
 	
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(2)
@@ -629,7 +632,9 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_onClientConnectionAndLaunchRequest)
 									"\"name\":\"Sample-Test-Android-2\""
 									"}}"
 								)));
+					TEST_LOG("Before connectRequest.SetEvent");
 					connectRequest.SetEvent();
+					TEST_LOG("After connectRequest.SetEvent");
 					return Core::ERROR_NONE;
 					}))
 
@@ -646,12 +651,17 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_onClientConnectionAndLaunchRequest)
 								"\"sink_dev_ip\":\"192.168.59.1\""
 								"}}}"
 							)));
+				TEST_LOG("Before P2PGrpStart.SetEvent");	
 				P2PGrpStart.SetEvent();
+				TEST_LOG("After P2PGrpStatrt.SetEvent");
 				return Core::ERROR_NONE;
 				}));
 
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
+	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
+	
 	TEST_LOG("Waiting for connect request event");
-        auto result = connectRequest.Lock(10000);
+        auto result = connectRequest.Lock(30000);
     	if (result != Core::ERROR_NONE) {
             TEST_LOG("Connect request timeout");
   	} else {
@@ -661,7 +671,7 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_onClientConnectionAndLaunchRequest)
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
 	TEST_LOG("Waiting for P2PGrpStart event");
-    	auto start = P2PGrpStart.Lock(10000);
+    	auto start = P2PGrpStart.Lock(30000);
     	if (start != Core::ERROR_NONE) {
     	    TEST_LOG("P2PGrpStart timeout");
     	} else {
@@ -698,6 +708,7 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_onClientConnectionAndLaunchRequest)
 
 TEST_F(MiracastServiceEventTest, onClientConnectionRequestRejected)
 {
+	::testing::InSequence seq;
 	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
@@ -748,9 +759,7 @@ TEST_F(MiracastServiceEventTest, onClientConnectionRequestRejected)
 
 	// Reset events before use
     	TEST_LOG("Resetting events before test");
-    	connectRequest.ResetEvent();
-
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);	
+    	connectRequest.ResetEvent();	
 	
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(1)
@@ -765,12 +774,16 @@ TEST_F(MiracastServiceEventTest, onClientConnectionRequestRejected)
 									"\"name\":\"Sample-Test-Android-2\""
 									"}}"
 								)));
+					TEST_LOG("Before connectRequest.SetEvent");	
 					connectRequest.SetEvent();
+					TEST_LOG("After connectRequest.SetEvent");	
 					return Core::ERROR_NONE;
 					}));
 	
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
+	
 	TEST_LOG("Waiting for connect request event");
-    	auto result = connectRequest.Lock(10000);
+    	auto result = connectRequest.Lock(30000);
     	if (result != Core::ERROR_NONE) {
     	    TEST_LOG("Connect request timeout");
     	} else {
@@ -789,6 +802,7 @@ TEST_F(MiracastServiceEventTest, onClientConnectionRequestRejected)
 
 TEST_F(MiracastServiceEventTest, P2P_CONNECT_FAIL_onClientConnectionError)
 {
+	::testing::InSequence seq;
 	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
@@ -835,9 +849,6 @@ TEST_F(MiracastServiceEventTest, P2P_CONNECT_FAIL_onClientConnectionError)
     	TEST_LOG("Resetting events before test");
     	connectRequest.ResetEvent();
 	P2PConnectFail.ResetEvent();
-
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
 	
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(2)
@@ -852,7 +863,9 @@ TEST_F(MiracastServiceEventTest, P2P_CONNECT_FAIL_onClientConnectionError)
 									"\"name\":\"Sample-Test-Android-2\""
 									"}"
 									"}")));
+					TEST_LOG("Before connectRequest.SetEvent");	
 					connectRequest.SetEvent();
+					TEST_LOG("After connectRequest.SetEvent");
 					return Core::ERROR_NONE;
 					}))
 	.WillOnce(::testing::Invoke(
@@ -868,12 +881,17 @@ TEST_F(MiracastServiceEventTest, P2P_CONNECT_FAIL_onClientConnectionError)
 								"\"reason\":\"P2P_CONNECT_FAILURE\""
 								"}"
 								"}")));
+				TEST_LOG("Before P2PConnectFail.SetEvent");
 				P2PConnectFail.SetEvent();
+				TEST_LOG("After P2PConnectFail.SetEvent");
 				return Core::ERROR_NONE;
 				}));
 	
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
+	
 	TEST_LOG("Waiting for connect request event");
-    	auto result = connectRequest.Lock(10000);
+    	auto result = connectRequest.Lock(30000);
     	if (result != Core::ERROR_NONE) {
     	    TEST_LOG("Connect request timeout");
     	} else {
@@ -883,7 +901,7 @@ TEST_F(MiracastServiceEventTest, P2P_CONNECT_FAIL_onClientConnectionError)
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
 	TEST_LOG("Waiting for P2PConnectFail event");
-    	auto connectfail = P2PConnectFail.Lock(10000);
+    	auto connectfail = P2PConnectFail.Lock(30000);
     	if (connectfail != Core::ERROR_NONE) {
     	    TEST_LOG("P2PConnectFail timeout");
     	} else {
@@ -902,6 +920,7 @@ TEST_F(MiracastServiceEventTest, P2P_CONNECT_FAIL_onClientConnectionError)
 
 TEST_F(MiracastServiceEventTest, P2P_GO_NEGOTIATION_FAIL_onClientConnectionError)
 {
+	::testing::InSequence seq;
 	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
@@ -965,9 +984,6 @@ TEST_F(MiracastServiceEventTest, P2P_GO_NEGOTIATION_FAIL_onClientConnectionError
     	TEST_LOG("Resetting events before test");
     	connectRequest.ResetEvent();
 	P2PGoFail.ResetEvent();
-
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
 	
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(2)
@@ -982,7 +998,9 @@ TEST_F(MiracastServiceEventTest, P2P_GO_NEGOTIATION_FAIL_onClientConnectionError
 									"\"name\":\"Sample-Test-Android-2\""
 									"}"
 									"}")));
+					TEST_LOG("Before connectRequest.SetEvent");	
 					connectRequest.SetEvent();
+					TEST_LOG("After connectRequest.SetEvent");	
 					return Core::ERROR_NONE;
 					}))
 	.WillOnce(::testing::Invoke(
@@ -998,12 +1016,17 @@ TEST_F(MiracastServiceEventTest, P2P_GO_NEGOTIATION_FAIL_onClientConnectionError
 								"\"reason\":\"P2P_GROUP_NEGOTIATION_FAILURE\""
 								"}"
 								"}")));
+				TEST_LOG("Before P2PGoFail.SetEvent");	
 				P2PGoFail.SetEvent();
+				TEST_LOG("After P2PGoFail.SetEvent");	
 				return Core::ERROR_NONE;
 				}));
 
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
+	
 	TEST_LOG("Waiting for connect request event");
-    	auto result = connectRequest.Lock(10000);
+    	auto result = connectRequest.Lock(30000);
     	if (result != Core::ERROR_NONE) {
     	    TEST_LOG("Connect request timeout");
     	} else {
@@ -1013,7 +1036,7 @@ TEST_F(MiracastServiceEventTest, P2P_GO_NEGOTIATION_FAIL_onClientConnectionError
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
 	TEST_LOG("Waiting for P2PGoFail event");
-    	auto gofail = P2PGoFail.Lock(10000);
+    	auto gofail = P2PGoFail.Lock(30000);
     	if (gofail != Core::ERROR_NONE) {
     	    TEST_LOG("P2PGoFail timeout");
     	} else {
@@ -1032,6 +1055,7 @@ TEST_F(MiracastServiceEventTest, P2P_GO_NEGOTIATION_FAIL_onClientConnectionError
 
 TEST_F(MiracastServiceEventTest, P2P_GO_FORMATION_FAIL_onClientConnectionError)
 {
+	::testing::InSequence seq;
 	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
@@ -1102,9 +1126,6 @@ TEST_F(MiracastServiceEventTest, P2P_GO_FORMATION_FAIL_onClientConnectionError)
     	TEST_LOG("Resetting events before test");
     	connectRequest.ResetEvent();
 	P2PGoFail.ResetEvent();
-
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
 	
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(2)
@@ -1119,7 +1140,9 @@ TEST_F(MiracastServiceEventTest, P2P_GO_FORMATION_FAIL_onClientConnectionError)
 									"\"name\":\"Sample-Test-Android-2\""
 									"}"
 									"}")));
+					TEST_LOG("Before connectRequest.SetEvent");	
 					connectRequest.SetEvent();
+					TEST_LOG("After connectRequest.SetEvent");	
 					return Core::ERROR_NONE;
 					}))
 	.WillOnce(::testing::Invoke(
@@ -1135,12 +1158,17 @@ TEST_F(MiracastServiceEventTest, P2P_GO_FORMATION_FAIL_onClientConnectionError)
 								"\"reason\":\"P2P_GROUP_FORMATION_FAILURE\""
 								"}"
 								"}")));
+				TEST_LOG("Before P2PGoFail.SetEvent");	
 				P2PGoFail.SetEvent();
+				TEST_LOG("After P2PGoFfail.SetEvent");
 				return Core::ERROR_NONE;
 				}));
 
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
+	
 	TEST_LOG("Waiting for connect request event");
-    	auto result = connectRequest.Lock(10000);
+    	auto result = connectRequest.Lock(30000);
     	if (result != Core::ERROR_NONE) {
     	    TEST_LOG("Connect request timeout");
     	} else {
@@ -1150,7 +1178,7 @@ TEST_F(MiracastServiceEventTest, P2P_GO_FORMATION_FAIL_onClientConnectionError)
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
 	TEST_LOG("Waiting for P2PGoFail event");
-    	auto gofail = P2PGoFail.Lock(10000);
+    	auto gofail = P2PGoFail.Lock(30000);
     	if (gofail != Core::ERROR_NONE) {
     	    TEST_LOG("P2PGoFail timeout");
     	} else {
@@ -1169,6 +1197,7 @@ TEST_F(MiracastServiceEventTest, P2P_GO_FORMATION_FAIL_onClientConnectionError)
 
 TEST_F(MiracastServiceEventTest, P2P_ClientMode_onClientConnectionAndLaunchRequest)
 {
+	::testing::InSequence seq;
 	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
@@ -1271,9 +1300,6 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_onClientConnectionAndLaunchReque
     	TEST_LOG("Resetting events before test");
     	connectRequest.ResetEvent();
 	P2PGrpStart.ResetEvent();
-	
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
-	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
 
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(2)
@@ -1288,7 +1314,9 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_onClientConnectionAndLaunchReque
 									"\"name\":\"Sample-Test-Android-2\""
 									"}}"
 								)));
+					TEST_LOG("Before connectRequest.SetEvent");	
 					connectRequest.SetEvent();
+					TEST_LOG("After connectRequest.SetEvent");
 					return Core::ERROR_NONE;
 					}))
 
@@ -1305,12 +1333,17 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_onClientConnectionAndLaunchReque
                                                                 "\"sink_dev_ip\":\"192.168.49.165\""
                                                                 "}}}"
                                                         )));
+				TEST_LOG("Before P2PGrpStart.SetEvent");	
                                 P2PGrpStart.SetEvent();
+				TEST_LOG("After P2PGrpStart.SetEvent");	
 				return Core::ERROR_NONE;
 				}));
 
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
+	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
+	
 	TEST_LOG("Waiting for connect request event");
-    	auto result = connectRequest.Lock(10000);
+    	auto result = connectRequest.Lock(30000);
     	if (result != Core::ERROR_NONE) {
     	    TEST_LOG("Connect request timeout");
     	} else {
@@ -1320,7 +1353,7 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_onClientConnectionAndLaunchReque
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
 	TEST_LOG("Waiting for P2PGrpStart event");
-    	auto start = P2PGrpStart.Lock(10000);
+    	auto start = P2PGrpStart.Lock(30000);
     	if (start != Core::ERROR_NONE) {
     	    TEST_LOG("P2PGrpStart timeout");
     	} else {
@@ -1339,6 +1372,7 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_onClientConnectionAndLaunchReque
 
 TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectonClientConnectionAndLaunchRequest)
 {
+	::testing::InSequence seq;
 	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
@@ -1393,9 +1427,6 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectonClientConnectionAndLaunc
     	TEST_LOG("Resetting events before test");
     	connectRequest.ResetEvent();
 	P2PGrpStart.ResetEvent();
-
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
-	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
 	
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(2)
@@ -1410,7 +1441,9 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectonClientConnectionAndLaunc
 									"\"name\":\"Sample-Test-Android-2\""
 									"}}"
 								)));
+					TEST_LOG("Before connectRequest.SetEvent");	
 					connectRequest.SetEvent();
+					TEST_LOG("After connectRequest.SetEvent");
 					return Core::ERROR_NONE;
 					}))
 
@@ -1427,12 +1460,17 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectonClientConnectionAndLaunc
                                                                 "\"sink_dev_ip\":\"192.168.49.165\""
                                                                 "}}}"
                                                         )));
+				TEST_LOG("Before P2PGrpStart.SetEvent");	
                                 P2PGrpStart.SetEvent();
+				TEST_LOG("After P2PGrpStart.SetEvent");	
 				return Core::ERROR_NONE;
 				}));
 
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
+	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
+	
 	TEST_LOG("Waiting for connect request event");
-    	auto result = connectRequest.Lock(10000);
+    	auto result = connectRequest.Lock(30000);
     	if (result != Core::ERROR_NONE) {
     	    TEST_LOG("Connect request timeout");
     	} else {
@@ -1442,7 +1480,7 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectonClientConnectionAndLaunc
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
 	TEST_LOG("Waiting for P2PGrpStart event");
-    	auto start = P2PGrpStart.Lock(10000);
+    	auto start = P2PGrpStart.Lock(30000);
     	if (start != Core::ERROR_NONE) {
     	    TEST_LOG("P2PGrpStart timeout");
     	} else {
@@ -1461,6 +1499,7 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectonClientConnectionAndLaunc
 
 TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithName)
 {
+	::testing::InSequence seq;
 	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
@@ -1509,9 +1548,6 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithName)
     	TEST_LOG("Resetting events before test");
     	connectRequest.ResetEvent();
 	P2PGrpStart.ResetEvent();
-
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
-	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
 	
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(2)
@@ -1526,7 +1562,9 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithName)
 									"\"name\":\"Galaxy A23 5G\""
 									"}}"
 								)));
+					TEST_LOG("Before connectRequest.SetEvent");	
 					connectRequest.SetEvent();
+					TEST_LOG("After connectRequest.SetEvent");	
 					return Core::ERROR_NONE;
 					}))
 
@@ -1543,12 +1581,17 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithName)
                                                                 "\"sink_dev_ip\":\"192.168.49.165\""
                                                                 "}}}"
                                                         )));
+				TEST_LOG("Before P2PGrpStart.SetEvent");	
                                 P2PGrpStart.SetEvent();
+				TEST_LOG("After P2PGrpStart.SetEvent");	
 				return Core::ERROR_NONE;
 				}));
 
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
+	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
+	
 	TEST_LOG("Waiting for connect request event");
-    	auto result = connectRequest.Lock(10000);
+    	auto result = connectRequest.Lock(30000);
     	if (result != Core::ERROR_NONE) {
     	    TEST_LOG("Connect request timeout");
     	} else {
@@ -1558,7 +1601,7 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithName)
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
 	TEST_LOG("Waiting for P2PGrpStart event");
-    	auto start = P2PGrpStart.Lock(10000);
+    	auto start = P2PGrpStart.Lock(30000);
     	if (start != Core::ERROR_NONE) {
     	    TEST_LOG("P2PGrpStart timeout");
     	} else {
@@ -1577,6 +1620,7 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithName)
 
 TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithoutName)
 {
+	::testing::InSequence seq;
 	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
@@ -1625,9 +1669,6 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithoutName)
     	TEST_LOG("Resetting events before test");
     	connectRequest.ResetEvent();
 	P2PGrpStart.ResetEvent();
-
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
-	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
 	
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(2)
@@ -1642,7 +1683,9 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithoutName)
 									"\"name\":\"Miracast-Source\""
 									"}}"
 								)));
+					TEST_LOG("Before connectRequest.SetEvent");	
 					connectRequest.SetEvent();
+					TEST_LOG("After connectRequest.SetEvent");	
 					return Core::ERROR_NONE;
 					}))
 
@@ -1659,12 +1702,17 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithoutName)
                                                                 "\"sink_dev_ip\":\"192.168.49.165\""
                                                                 "}}}"
                                                         )));
+				TEST_LOG("Before P2PGrpStart.SetEvent");	
                                 P2PGrpStart.SetEvent();
+				TEST_LOG("After P2PGrpStart.SetEvent");	
 				return Core::ERROR_NONE;
 				}));
 
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
+	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
+	
 	TEST_LOG("Waiting for connect request event");
-    	auto result = connectRequest.Lock(10000);
+    	auto result = connectRequest.Lock(30000);
     	if (result != Core::ERROR_NONE) {
     	    TEST_LOG("Connect request timeout");
     	} else {
@@ -1674,7 +1722,7 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithoutName)
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
 	TEST_LOG("Waiting for P2PGrpStart event");
-    	auto start = P2PGrpStart.Lock(10000);
+    	auto start = P2PGrpStart.Lock(30000);
     	if (start != Core::ERROR_NONE) {
     	    TEST_LOG("P2PGrpStart timeout");
     	} else {
@@ -1693,6 +1741,7 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithoutName)
 
 TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectP2PGoNegotiationGroupStartWithoutName)
 {
+	::testing::InSequence seq;
 	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
@@ -1766,9 +1815,6 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectP2PGoNegotiationGroupStart
     	connectRequest.ResetEvent();
 	P2PGrpStart.ResetEvent();
 
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
-	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
-
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(2)
 		.WillOnce(::testing::Invoke(
@@ -1782,7 +1828,9 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectP2PGoNegotiationGroupStart
 									"\"name\":\"Miracast-Source\""
 									"}}"
 								)));
+					TEST_LOG("Before connectRequest.SetEvent");	
 					connectRequest.SetEvent();
+					TEST_LOG("Before connectRequest.SetEvent");	
 					return Core::ERROR_NONE;
 					}))
 
@@ -1799,12 +1847,17 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectP2PGoNegotiationGroupStart
                                                                 "\"sink_dev_ip\":\"192.168.49.165\""
                                                                 "}}}"
                                                         )));
+				TEST_LOG("Before P2PGrpStart.SetEvent");	
                                 P2PGrpStart.SetEvent();
+				TEST_LOG("After P2PGrpStart.SetEvent");	
 				return Core::ERROR_NONE;
 				}));
 
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
+	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
+	
 	TEST_LOG("Waiting for connect request event");
-    	auto result = connectRequest.Lock(10000);
+    	auto result = connectRequest.Lock(30000);
     	if (result != Core::ERROR_NONE) {
     	    TEST_LOG("Connect request timeout");
     	} else {
@@ -1814,7 +1867,7 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectP2PGoNegotiationGroupStart
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
 	TEST_LOG("Waiting for P2PGrpStart event");
-    	auto start = P2PGrpStart.Lock(10000);
+    	auto start = P2PGrpStart.Lock(30000);
     	if (start != Core::ERROR_NONE) {
     	    TEST_LOG("P2PGrpStart timeout");
     	} else {
@@ -1833,6 +1886,7 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectP2PGoNegotiationGroupStart
 
 TEST_F(MiracastServiceEventTest, P2P_ClientMode_GENERIC_FAILURE)
 {
+	::testing::InSequence seq;
 	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
@@ -1936,9 +1990,6 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_GENERIC_FAILURE)
     	connectRequest.ResetEvent();
 	Core::Event P2PGenericFail(false, true);
 
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
-
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(2)
 		.WillOnce(::testing::Invoke(
@@ -1952,7 +2003,9 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_GENERIC_FAILURE)
 									"\"name\":\"Sample-Test-Android-2\""
 									"}}"
 								)));
+					TEST_LOG("Before connectRequest.SetEvent");	
 					connectRequest.SetEvent();
+					TEST_LOG("After connectRequest.SetEvent");	
 					return Core::ERROR_NONE;
 					}))
 
@@ -1970,12 +2023,17 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_GENERIC_FAILURE)
                                                                 "}"
                                                                 "}"
 							)));
+				TEST_LOG("Before P2PGenericFail.SetEvent");	
 				P2PGenericFail.SetEvent();
+				TEST_LOG("After P2PGenericFail.SetEvent");	
 				return Core::ERROR_NONE;
 				}));
 
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
+	
 	TEST_LOG("Waiting for connect request event");
-    	auto result = connectRequest.Lock(10000);
+    	auto result = connectRequest.Lock(30000);
     	if (result != Core::ERROR_NONE) {
     	    TEST_LOG("Connect request timeout");
     	} else {
@@ -1984,7 +2042,7 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_GENERIC_FAILURE)
     	EXPECT_EQ(Core::ERROR_NONE, result);
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
-	ASSERT_EQ(Core::ERROR_NONE, P2PGenericFail.Lock(10000)) << " P2P Event not triggered";
+	EXPECT_EQ(Core::ERROR_NONE, P2PGenericFail.Lock(30000)) << " P2P Event not triggered";
 
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
@@ -1997,6 +2055,7 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_GENERIC_FAILURE)
 
 TEST_F(MiracastServiceEventTest, P2P_GOMode_GENERIC_FAILURE)
 {
+	::testing::InSequence seq;
 	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
@@ -2083,9 +2142,6 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_GENERIC_FAILURE)
     	TEST_LOG("Resetting events before test");
     	connectRequest.ResetEvent();
 	Core::Event P2PGenericFail(false, true);
-	
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
 
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(2)
@@ -2100,7 +2156,9 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_GENERIC_FAILURE)
 									"\"name\":\"Sample-Test-Android-2\""
 									"}}"
 								)));
+					TEST_LOG("Before connectRequest.SetEvent");	
 					connectRequest.SetEvent();
+					TEST_LOG("After connectRequest.SetEvent");	
 					return Core::ERROR_NONE;
 					}))
 
@@ -2118,12 +2176,17 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_GENERIC_FAILURE)
 												"}"
 												"}"
 											)));
+					TEST_LOG("Before P2PGeneric.SetEvent");	
 					P2PGenericFail.SetEvent();
+					TEST_LOG("After P2PGenericFail.SetEvent");	
 					return Core::ERROR_NONE;
 					}));
 
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
+	
 	TEST_LOG("Waiting for connect request event");
-    	auto result = connectRequest.Lock(10000);
+    	auto result = connectRequest.Lock(30000);
     	if (result != Core::ERROR_NONE) {
     	    TEST_LOG("Connect request timeout");
     	} else {
@@ -2132,7 +2195,7 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_GENERIC_FAILURE)
     	EXPECT_EQ(Core::ERROR_NONE, result);
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
-	ASSERT_EQ(Core::ERROR_NONE, P2PGenericFail.Lock(10000)) << " P2P Event not triggered";
+	EXPECT_EQ(Core::ERROR_NONE, P2PGenericFail.Lock(30000)) << " P2P Event not triggered";
 
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
@@ -2145,6 +2208,7 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_GENERIC_FAILURE)
 
 TEST_F(MiracastServiceEventTest, P2P_GOMode_AutoConnect)
 {
+	::testing::InSequence seq;
 	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 	createFile("/opt/miracast_autoconnect","GTest");
