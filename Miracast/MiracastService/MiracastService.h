@@ -24,7 +24,7 @@
 #include <interfaces/json/JMiracastService.h>
 #include <interfaces/IMiracastService.h>
 #include <interfaces/IConfiguration.h>
-#include "UtilsLogging.h"
+//#include "UtilsLogging.h"
 #include "tracing/Logging.h"
 #include <mutex>
 
