@@ -1213,9 +1213,14 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_onClientConnectionAndLaunchReque
 
     // Mock successful P2P command responses
     EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_request(::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_))
+	.Times(::testing::AtLeast(10))  // We expect multiple P2P command    
         .WillRepeatedly(::testing::Invoke(
             [](struct wpa_ctrl* ctrl, const char* cmd, size_t cmd_len, char* reply, size_t* reply_len, void(*msg_cb)(char* msg, size_t len)) -> bool {
                 const char* response = "OK";
+		    if (strncmp(cmd, "P2P_", 4) == 0 ||           // Any P2P command
+                    strncmp(cmd, "SET ", 4) == 0 ||           // SET commands
+                    strncmp(cmd, "WFD_SUBELEM_SET", 14) == 0) // WFD commands
+                {		    
                 if (reply && reply_len && *reply_len > strlen(response)) {
                     memcpy(reply, response, strlen(response) + 1);
                     *reply_len = strlen(response);
