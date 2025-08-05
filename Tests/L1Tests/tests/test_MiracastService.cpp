@@ -398,6 +398,11 @@ TEST_F(MiracastServiceEventTest, stopClientConnection)
 	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
+	// Reset events before use
+    	TEST_LOG("Resetting events before test");
+    	connectRequest.ResetEvent();
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message); 
+	
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
 	
@@ -443,10 +448,6 @@ TEST_F(MiracastServiceEventTest, stopClientConnection)
 				return true;
 				}));
 	
-	// Reset events before use
-    	TEST_LOG("Resetting events before test");
-    	connectRequest.ResetEvent();
-	
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(1)
 		.WillOnce(::testing::Invoke(
@@ -466,8 +467,6 @@ TEST_F(MiracastServiceEventTest, stopClientConnection)
 					return Core::ERROR_NONE;
 					}));
 	
-    EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message); 
- 
     TEST_LOG("Waiting for connect request event");
     auto result = connectRequest.Lock(10000);
     if (result != Core::ERROR_NONE) {
@@ -506,6 +505,14 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_onClientConnectionAndLaunchRequest)
 {
 	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
+
+	// Reset events before use
+    	TEST_LOG("Resetting events before test");
+    	connectRequest.ResetEvent();
+	P2PGrpStart.ResetEvent();
+	
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
+	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
 
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
@@ -609,11 +616,6 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_onClientConnectionAndLaunchRequest)
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
 				return true;
 				}));
-
-	// Reset events before use
-    	TEST_LOG("Resetting events before test");
-    	connectRequest.ResetEvent();
-	P2PGrpStart.ResetEvent();
 	
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(2)
@@ -652,9 +654,6 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_onClientConnectionAndLaunchRequest)
 				TEST_LOG("After P2PGrpStatrt.SetEvent");
 				return Core::ERROR_NONE;
 				}));
-
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
-	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
 	
 	TEST_LOG("Waiting for connect request event");
         auto result = connectRequest.Lock(10000);
@@ -707,6 +706,11 @@ TEST_F(MiracastServiceEventTest, onClientConnectionRequestRejected)
 	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
+	// Reset events before use
+    	TEST_LOG("Resetting events before test");
+    	connectRequest.ResetEvent();	
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
+
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
 
@@ -752,10 +756,6 @@ TEST_F(MiracastServiceEventTest, onClientConnectionRequestRejected)
 				return true;
 				}));
 
-	// Reset events before use
-    	TEST_LOG("Resetting events before test");
-    	connectRequest.ResetEvent();	
-	
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(1)
 		.WillOnce(::testing::Invoke(
@@ -774,9 +774,7 @@ TEST_F(MiracastServiceEventTest, onClientConnectionRequestRejected)
 					TEST_LOG("After connectRequest.SetEvent");	
 					return Core::ERROR_NONE;
 					}));
-	
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
-	
+		
 	TEST_LOG("Waiting for connect request event");
     	auto result = connectRequest.Lock(10000);
     	if (result != Core::ERROR_NONE) {
@@ -800,6 +798,14 @@ TEST_F(MiracastServiceEventTest, P2P_CONNECT_FAIL_onClientConnectionError)
 	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
+	// Reset events before use
+    	TEST_LOG("Resetting events before test");
+    	connectRequest.ResetEvent();
+	P2PConnectFail.ResetEvent();
+	
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
+	
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
 
@@ -838,11 +844,6 @@ TEST_F(MiracastServiceEventTest, P2P_CONNECT_FAIL_onClientConnectionError)
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
 				return true;
 				}));
-
-	// Reset events before use
-    	TEST_LOG("Resetting events before test");
-    	connectRequest.ResetEvent();
-	P2PConnectFail.ResetEvent();
 	
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(2)
@@ -881,9 +882,6 @@ TEST_F(MiracastServiceEventTest, P2P_CONNECT_FAIL_onClientConnectionError)
 				return Core::ERROR_NONE;
 				}));
 	
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
-	
 	TEST_LOG("Waiting for connect request event");
     	auto result = connectRequest.Lock(10000);
     	if (result != Core::ERROR_NONE) {
@@ -916,6 +914,14 @@ TEST_F(MiracastServiceEventTest, P2P_GO_NEGOTIATION_FAIL_onClientConnectionError
 {
 	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
+
+	// Reset events before use
+    	TEST_LOG("Resetting events before test");
+    	connectRequest.ResetEvent();
+	P2PGoFail.ResetEvent();
+	
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
 
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
@@ -973,11 +979,6 @@ TEST_F(MiracastServiceEventTest, P2P_GO_NEGOTIATION_FAIL_onClientConnectionError
 				return true;
 				}));
 
-	// Reset events before use
-    	TEST_LOG("Resetting events before test");
-    	connectRequest.ResetEvent();
-	P2PGoFail.ResetEvent();
-	
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(2)
 		.WillOnce(::testing::Invoke(
@@ -1014,9 +1015,6 @@ TEST_F(MiracastServiceEventTest, P2P_GO_NEGOTIATION_FAIL_onClientConnectionError
 				TEST_LOG("After P2PGoFail.SetEvent");	
 				return Core::ERROR_NONE;
 				}));
-
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
 	
 	TEST_LOG("Waiting for connect request event");
     	auto result = connectRequest.Lock(10000);
@@ -1051,6 +1049,14 @@ TEST_F(MiracastServiceEventTest, P2P_GO_FORMATION_FAIL_onClientConnectionError)
 	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
+	// Reset events before use
+    	TEST_LOG("Resetting events before test");
+    	connectRequest.ResetEvent();
+	P2PGoFail.ResetEvent();
+
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
+	
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
 
@@ -1058,7 +1064,7 @@ TEST_F(MiracastServiceEventTest, P2P_GO_FORMATION_FAIL_onClientConnectionError)
     EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_request(::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_))
         .WillRepeatedly(::testing::Invoke(
             [](struct wpa_ctrl* ctrl, const char* cmd, size_t cmd_len, char* reply, size_t* reply_len, void(*msg_cb)(char* msg, size_t len)) -> bool {
-                const char* response = "OK";
+            const char* response = "OK";
                 if (reply && reply_len && *reply_len > strlen(response)) {
                     memcpy(reply, response, strlen(response) + 1);
                     *reply_len = strlen(response);
@@ -1094,11 +1100,6 @@ TEST_F(MiracastServiceEventTest, P2P_GO_FORMATION_FAIL_onClientConnectionError)
             return false;
         }))
         .WillRepeatedly(::testing::Return(true));
-
-	// Reset events before use
-    	TEST_LOG("Resetting events before test");
-    	connectRequest.ResetEvent();
-	P2PGoFail.ResetEvent();
 	
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(2)
@@ -1141,9 +1142,6 @@ TEST_F(MiracastServiceEventTest, P2P_GO_FORMATION_FAIL_onClientConnectionError)
 				return Core::ERROR_NONE;
 				}));
 
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
-	
 	TEST_LOG("Waiting for connect request event");
     	auto result = connectRequest.Lock(10000);
     	if (result != Core::ERROR_NONE) {
@@ -1177,20 +1175,17 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_onClientConnectionAndLaunchReque
 	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
+	// Reset events before use
+    	TEST_LOG("Resetting events before test");
+    	connectRequest.ResetEvent();
+	P2PGrpStart.ResetEvent();
+
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
+	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
+
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
 
-    // Mock successful P2P command responses
-    EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_request(::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_))
-        .WillRepeatedly(::testing::Invoke(
-            [](struct wpa_ctrl* ctrl, const char* cmd, size_t cmd_len, char* reply, size_t* reply_len, void(*msg_cb)(char* msg, size_t len)) -> bool {
-                const char* response = "OK";
-                if (reply && reply_len && *reply_len > strlen(response)) {
-                    memcpy(reply, response, strlen(response) + 1);
-                    *reply_len = strlen(response);
-                }
-                return false;
-            }));
 
     // Setup udhcpc response mock
     EXPECT_CALL(*p_wrapsImplMock, popen(::testing::_, ::testing::_))
@@ -1203,6 +1198,18 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_onClientConnectionAndLaunchReque
                     strncpy(buffer, msg, sizeof(buffer) - 1);
                 }
                 return fmemopen(buffer, strlen(buffer), "r");
+            }));
+
+    // Mock successful P2P command responses
+    EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_request(::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_))
+        .WillRepeatedly(::testing::Invoke(
+            [](struct wpa_ctrl* ctrl, const char* cmd, size_t cmd_len, char* reply, size_t* reply_len, void(*msg_cb)(char* msg, size_t len)) -> bool {
+                const char* response = "OK";
+                if (reply && reply_len && *reply_len > strlen(response)) {
+                    memcpy(reply, response, strlen(response) + 1);
+                    *reply_len = strlen(response);
+                }
+                return false;
             }));
 
     // Set up P2P event sequence
@@ -1237,11 +1244,6 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_onClientConnectionAndLaunchReque
             return false;
         }))
         .WillRepeatedly(::testing::Return(true));
-
-	// Reset events before use
-    	TEST_LOG("Resetting events before test");
-    	connectRequest.ResetEvent();
-	P2PGrpStart.ResetEvent();
 
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(2)
@@ -1284,9 +1286,6 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_onClientConnectionAndLaunchReque
 				TEST_LOG("After P2PGrpStart.SetEvent");	
 				return Core::ERROR_NONE;
 				}));
-
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
-	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
 	
 	TEST_LOG("Waiting for connect request event");
     	auto result = connectRequest.Lock(10000);
@@ -1320,6 +1319,15 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectonClientConnectionAndLaunc
 {
 	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
+	
+	// Reset events before use
+    	TEST_LOG("Resetting events before test");
+    	connectRequest.ResetEvent();
+	P2PGrpStart.ResetEvent();
+
+	// Subscribe to events before enabling the service
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
+	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
 
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
@@ -1397,15 +1405,6 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectonClientConnectionAndLaunc
             return false;
         }))
         .WillRepeatedly(::testing::Return(true));
-
-	// Subscribe to events before enabling the service
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
-	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
-	
-	// Reset events before use
-    	TEST_LOG("Resetting events before test");
-    	connectRequest.ResetEvent();
-	P2PGrpStart.ResetEvent();
 	
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(2)
@@ -1482,6 +1481,14 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithName)
 	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
+	// Reset events before use
+    	TEST_LOG("Resetting events before test");
+    	connectRequest.ResetEvent();
+	P2PGrpStart.ResetEvent();
+
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
+	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
+
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
 
@@ -1548,11 +1555,6 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithName)
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
 				return true;
 				}));
-
-	// Reset events before use
-    	TEST_LOG("Resetting events before test");
-    	connectRequest.ResetEvent();
-	P2PGrpStart.ResetEvent();
 	
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(2)
@@ -1595,9 +1597,6 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithName)
 				TEST_LOG("After P2PGrpStart.SetEvent");	
 				return Core::ERROR_NONE;
 				}));
-
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
-	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
 	
 	TEST_LOG("Waiting for connect request event");
     	auto result = connectRequest.Lock(10000);
@@ -1631,6 +1630,14 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithoutName)
 {
 	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
+
+	// Reset events before use
+    	TEST_LOG("Resetting events before test");
+    	connectRequest.ResetEvent();
+	P2PGrpStart.ResetEvent();
+
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
+	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
 
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
@@ -1672,11 +1679,6 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithoutName)
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
 				return true;
 				}));
-
-	// Reset events before use
-    	TEST_LOG("Resetting events before test");
-    	connectRequest.ResetEvent();
-	P2PGrpStart.ResetEvent();
 	
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(2)
@@ -1719,9 +1721,6 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithoutName)
 				TEST_LOG("After P2PGrpStart.SetEvent");	
 				return Core::ERROR_NONE;
 				}));
-
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
-	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
 	
 	TEST_LOG("Waiting for connect request event");
     	auto result = connectRequest.Lock(10000);
@@ -1755,6 +1754,14 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectP2PGoNegotiationGroupStart
 {
 	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
+
+	// Reset events before use
+    	TEST_LOG("Resetting events before test");
+    	connectRequest.ResetEvent();
+	P2PGrpStart.ResetEvent();
+
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
+	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
 
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
@@ -1821,11 +1828,6 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectP2PGoNegotiationGroupStart
 				return true;
 				}));
 
-	// Reset events before use
-    	TEST_LOG("Resetting events before test");
-    	connectRequest.ResetEvent();
-	P2PGrpStart.ResetEvent();
-
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(2)
 		.WillOnce(::testing::Invoke(
@@ -1867,9 +1869,6 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectP2PGoNegotiationGroupStart
 				TEST_LOG("After P2PGrpStart.SetEvent");	
 				return Core::ERROR_NONE;
 				}));
-
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
-	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
 	
 	TEST_LOG("Waiting for connect request event");
     	auto result = connectRequest.Lock(10000);
@@ -1904,8 +1903,6 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_GENERIC_FAILURE)
 	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
-	EXPECT_EQ(string(""), plugin->Initialize(&service));
-
 	// Reset events before use
     	TEST_LOG("Resetting events before test");
 	Core::Event P2PGenericFail(false, true);
@@ -1913,6 +1910,8 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_GENERIC_FAILURE)
 
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
+	
+	EXPECT_EQ(string(""), plugin->Initialize(&service));
 	
 	EXPECT_CALL(*p_wrapsImplMock, popen(::testing::_, ::testing::_))
 		.Times(::testing::AnyNumber())
@@ -2077,6 +2076,14 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_GENERIC_FAILURE)
 	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
+	// Reset events before use
+    	TEST_LOG("Resetting events before test");
+	Core::Event P2PGenericFail(false, true);	
+    	connectRequest.ResetEvent();
+
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
+	
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
 
@@ -2156,11 +2163,6 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_GENERIC_FAILURE)
 				return true;
 				}));
 
-	// Reset events before use
-    	TEST_LOG("Resetting events before test");
-    	connectRequest.ResetEvent();
-	Core::Event P2PGenericFail(false, true);
-
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(2)
 		.WillOnce(::testing::Invoke(
@@ -2203,9 +2205,6 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_GENERIC_FAILURE)
 					TEST_LOG("After P2PGenericFail.SetEvent");	
 					return Core::ERROR_NONE;
 					}));
-
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
 	
 	TEST_LOG("Waiting for connect request event");
     	auto result = connectRequest.Lock(10000);
