@@ -5,71 +5,7 @@
 * Copyright 2024 RDK Management
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License. // Setup PowerManager mocks for proper state transitions
-    EXPECT_CALL(*p_powerManagerMock, GetPowerState(::testing::_, ::testing::_))
-        .WillRepeatedly(::testing::DoAll(
-            ::testing::SetArgReferee<0>(1), // POWER_STATE_ON
-            ::testing::SetArgReferee<1>(0),
-            ::testing::Return(0)));
-
-    // Mock successful P2P command responses
-    EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_request(::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_))
-        .WillRepeatedly(::testing::Invoke(
-            [](struct wpa_ctrl* ctrl, const char* cmd, size_t cmd_len, char* reply, size_t* reply_len, void(*msg_cb)(char* msg, size_t len)) -> bool {
-                const char* response = "OK";
-                if (reply && reply_len && *reply_len > strlen(response)) {
-                    memcpy(reply, response, strlen(response) + 1);
-                    *reply_len = strlen(response);
-                }
-                return false;
-            }));
-
-    // Setup udhcpc response mock
-    EXPECT_CALL(*p_wrapsImplMock, popen(::testing::_, ::testing::_))
-        .Times(::testing::AnyNumber())
-        .WillRepeatedly(::testing::Invoke(
-            [](const char* command, const char* type) -> FILE* {
-                char buffer[1024] = {0};
-                if (0 == strncmp(command,"/sbin/udhcpc -v -i",strlen("/sbin/udhcpc -v -i"))) {
-                    const char* msg = "udhcpc: sending select for 192.168.49.165\tudhcpc: lease of 192.168.49.165 obtained, lease time 3599\tdeleting routers\troute add default gw 192.168.49.1 dev lo\tadding dns 192.168.49.1";
-                    strncpy(buffer, msg, sizeof(buffer) - 1);
-                }
-                return fmemopen(buffer, strlen(buffer), "r");
-            }));
-
-    // Set up P2P event sequence
-    EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_recv(::testing::_, ::testing::_, ::testing::_))
-        .Times(::testing::AtLeast(4))
-        .WillOnce(::testing::Invoke([](struct wpa_ctrl* ctrl, char* reply, size_t* reply_len) -> bool {
-            const char* msg = "P2P-DEVICE-FOUND 96:52:44:b6:7d:14 p2p_dev_addr=96:52:44:b6:7d:14 pri_dev_type=10-0050F204-5 name='Sample-Test-Android-2' config_methods=0x188 dev_capab=0x25 group_capab=0x0 wfd_dev_info=0x01101c440032 vendor_elems=1 new=1";
-            if (!reply || !reply_len || *reply_len <= strlen(msg)) return true;
-            memcpy(reply, msg, strlen(msg) + 1);
-            *reply_len = strlen(msg);
-            return false;
-        }))
-        .WillOnce(::testing::Invoke([](struct wpa_ctrl* ctrl, char* reply, size_t* reply_len) -> bool {
-            const char* msg = "P2P-GO-NEG-REQUEST 96:52:44:b6:7d:14 dev_passwd_id=4 go_intent=13";
-            if (!reply || !reply_len || *reply_len <= strlen(msg)) return true;
-            memcpy(reply, msg, strlen(msg) + 1);
-            *reply_len = strlen(msg);
-            return false;
-        }))
-        .WillOnce(::testing::Invoke([](struct wpa_ctrl* ctrl, char* reply, size_t* reply_len) -> bool {
-            const char* msg = "P2P-GO-NEG-SUCCESS role=client freq=2437 ht40=0 peer_dev=96:52:44:b6:7d:14 peer_iface=96:52:44:b6:fd:14 wps_method=PBC";
-            if (!reply || !reply_len || *reply_len <= strlen(msg)) return true;
-            memcpy(reply, msg, strlen(msg) + 1);
-            *reply_len = strlen(msg);
-            return false;
-        }))
-        .WillOnce(::testing::Invoke([](struct wpa_ctrl* ctrl, char* reply, size_t* reply_len) -> bool {
-            const char* msg = "P2P-GROUP-STARTED lo client ssid=\"DIRECT-UU Sample-Test-Android-2\" freq=2437 psk=12c3ce3d8976152df796e5f42fc646723471bf1aab8d72a546fa3dce60dc14a3 go_dev_addr=96:52:44:b6:7d:14 [PERSISTENT]";
-            if (!reply || !reply_len || *reply_len <= strlen(msg)) return true;
-            memcpy(reply, msg, strlen(msg) + 1);
-            *reply_len = strlen(msg);
-            return false;
-        }))
-        .WillRepeatedly(::testing::Return(true));
-
+* you may not use this file except in compliance with the License. 
 * You may obtain a copy of the License at
 *
 * http://www.apache.org/licenses/LICENSE-2.0
@@ -1462,6 +1398,10 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectonClientConnectionAndLaunc
         }))
         .WillRepeatedly(::testing::Return(true));
 
+	// Subscribe to events before enabling the service
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
+	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
+	
 	// Reset events before use
     	TEST_LOG("Resetting events before test");
     	connectRequest.ResetEvent();
@@ -1508,9 +1448,6 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectonClientConnectionAndLaunc
 				TEST_LOG("After P2PGrpStart.SetEvent");	
 				return Core::ERROR_NONE;
 				}));
-
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
-	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
 	
 	TEST_LOG("Waiting for connect request event");
     	auto result = connectRequest.Lock(10000);
@@ -1968,8 +1905,15 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_GENERIC_FAILURE)
 	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
-	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
 
+	// Reset events before use
+    	TEST_LOG("Resetting events before test");
+	Core::Event P2PGenericFail(false, true);
+    	connectRequest.ResetEvent();
+
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
+	
 	EXPECT_CALL(*p_wrapsImplMock, popen(::testing::_, ::testing::_))
 		.Times(::testing::AnyNumber())
 		.WillRepeatedly(::testing::Invoke(
@@ -2062,11 +2006,6 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_GENERIC_FAILURE)
 				return true;
 				}));
 
-	// Reset events before use
-    	TEST_LOG("Resetting events before test");
-    	connectRequest.ResetEvent();
-	Core::Event P2PGenericFail(false, true);
-
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(2)
 		.WillOnce(::testing::Invoke(
@@ -2110,9 +2049,8 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_GENERIC_FAILURE)
 				return Core::ERROR_NONE;
 				}));
 
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
-	
+	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
+
 	TEST_LOG("Waiting for connect request event");
     	auto result = connectRequest.Lock(10000);
     	if (result != Core::ERROR_NONE) {
