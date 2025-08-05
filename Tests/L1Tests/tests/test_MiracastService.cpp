@@ -1118,65 +1118,46 @@ TEST_F(MiracastServiceEventTest, P2P_GO_FORMATION_FAIL_onClientConnectionError)
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
 
-	EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_request(::testing::_, ::testing::_, ::testing::_,::testing::_, ::testing::_, ::testing::_))
-		.Times(::testing::AnyNumber())
-		.WillRepeatedly(::testing::Invoke(
-					[&](struct wpa_ctrl *ctrl, const char *cmd, size_t cmd_len, char *reply, size_t *reply_len, void(*msg_cb)(char *msg, size_t len))
-					{
-						if ( 0 == strncmp(cmd,"P2P_CONNECT",strlen("P2P_CONNECT")))
-						{
-							strncpy(reply,"OK",*reply_len);
-						}
-						return false;
-					}));
+	// Mock successful P2P command responses
+    EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_request(::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_))
+        .WillRepeatedly(::testing::Invoke(
+            [](struct wpa_ctrl* ctrl, const char* cmd, size_t cmd_len, char* reply, size_t* reply_len, void(*msg_cb)(char* msg, size_t len)) -> bool {
+                const char* response = "OK";
+                if (reply && reply_len && *reply_len > strlen(response)) {
+                    memcpy(reply, response, strlen(response) + 1);
+                    *reply_len = strlen(response);
+                }
+                return false;
+            }));
 
-	EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_recv(::testing::_, ::testing::_, ::testing::_))
-		.WillOnce(::testing::Invoke(
-					[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
-					strncpy(reply, "P2P-DEVICE-FOUND 2c:33:58:9c:73:2d p2p_dev_addr=2c:33:58:9c:73:2d pri_dev_type=1-0050F200-0 name='Sample-Test-Android-1' config_methods=0x11e8 dev_capab=0x25 group_capab=0x82 wfd_dev_info=0x01101c440006 new=0", *reply_len);
-					return false;
-					}))
-
-	.WillOnce(::testing::Invoke(
-				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
-				strncpy(reply, "P2P-DEVICE-FOUND 96:52:44:b6:7d:14 p2p_dev_addr=96:52:44:b6:7d:14 pri_dev_type=10-0050F204-5 name='Sample-Test-Android-2' config_methods=0x188 dev_capab=0x25 group_capab=0x0 wfd_dev_info=0x01101c440032 vendor_elems=1 new=1", *reply_len);
-				return false;
-				}))
-
-	.WillOnce(::testing::Invoke(
-				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
-				strncpy(reply, "P2P-PROV-DISC-PBC-REQ 96:52:44:b6:7d:14 p2p_dev_addr=96:52:44:b6:7d:14 pri_dev_type=10-0050F204-5 name='Sample-Test-Android-2' config_methods=0x188 dev_capab=0x25 group_capab=0x0", *reply_len);
-				return false;
-				}))
-
-	.WillOnce(::testing::Invoke(
-				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
-				strncpy(reply, "P2P-PROV-DISC-PBC-REQ 96:52:44:b6:7d:14 p2p_dev_addr=96:52:44:b6:7d:14 pri_dev_type=10-0050F204-5 name='Sample-Test-Android-2' config_methods=0x188 dev_capab=0x25 group_capab=0x0", *reply_len);
-				return false;
-				}))
-
-	.WillOnce(::testing::Invoke(
-				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
-				strncpy(reply, "P2P-GO-NEG-REQUEST 96:52:44:b6:7d:14 dev_passwd_id=4 go_intent=13", *reply_len);
-				return false;
-				}))
-
-	.WillOnce(::testing::Invoke(
-				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
-				strncpy(reply, "P2P-GO-NEG-SUCCESS role=client freq=2437 ht40=0 x=96:52:44:b6:7d:14 peer_iface=96:52:44:b6:fd:14 wps_method=PBC", *reply_len);
-				return false;
-				}))
-
-	.WillOnce(::testing::Invoke(
-				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
-				strncpy(reply, "P2P-GROUP-FORMATION-FAILURE", *reply_len);
-				return false;
-				}))
-
-	.WillRepeatedly(::testing::Invoke(
-				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
-				return true;
-				}));
+    // Set up P2P event sequence for failure case
+    EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_recv(::testing::_, ::testing::_, ::testing::_))
+        .Times(::testing::AtLeast(3))
+        .WillOnce(::testing::Invoke([](struct wpa_ctrl* ctrl, char* reply, size_t* reply_len) -> bool {
+            // First event: Device discovery
+            const char* msg = "P2P-DEVICE-FOUND 96:52:44:b6:7d:14 p2p_dev_addr=96:52:44:b6:7d:14 pri_dev_type=10-0050F204-5 name='Sample-Test-Android-2' config_methods=0x188 dev_capab=0x25 group_capab=0x0 wfd_dev_info=0x01101c440032 vendor_elems=1 new=1";
+            if (!reply || !reply_len || *reply_len <= strlen(msg)) return true;
+            memcpy(reply, msg, strlen(msg) + 1);
+            *reply_len = strlen(msg);
+            return false;
+        }))
+        .WillOnce(::testing::Invoke([](struct wpa_ctrl* ctrl, char* reply, size_t* reply_len) -> bool {
+            // Second event: GO Negotiation Request
+            const char* msg = "P2P-GO-NEG-REQUEST 96:52:44:b6:7d:14 dev_passwd_id=4 go_intent=13";
+            if (!reply || !reply_len || *reply_len <= strlen(msg)) return true;
+            memcpy(reply, msg, strlen(msg) + 1);
+            *reply_len = strlen(msg);
+            return false;
+        }))
+        .WillOnce(::testing::Invoke([](struct wpa_ctrl* ctrl, char* reply, size_t* reply_len) -> bool {
+            // Third event: Group Formation Failure
+            const char* msg = "P2P-GROUP-FORMATION-FAILURE";
+            if (!reply || !reply_len || *reply_len <= strlen(msg)) return true;
+            memcpy(reply, msg, strlen(msg) + 1);
+            *reply_len = strlen(msg);
+            return false;
+        }))
+        .WillRepeatedly(::testing::Return(true));
 
 	// Reset events before use
     	TEST_LOG("Resetting events before test");
