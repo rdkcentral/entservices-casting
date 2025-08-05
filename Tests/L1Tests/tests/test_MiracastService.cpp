@@ -452,6 +452,7 @@ TEST_F(MiracastServiceEventTest, stopClientConnection)
 		.Times(1)
 		.WillOnce(::testing::Invoke(
 					[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+					std::thread thread1([&]() {
 					string text;
 					EXPECT_TRUE(json->ToString(text));
 					EXPECT_EQ(text,string(_T("{"
@@ -465,6 +466,7 @@ TEST_F(MiracastServiceEventTest, stopClientConnection)
 					connectRequest.SetEvent();
 					TEST_LOG("after connectRequest.SetEvent");	
 					return Core::ERROR_NONE;
+					})
 					}));
 	
     TEST_LOG("Waiting for connect request event");
@@ -621,6 +623,7 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_onClientConnectionAndLaunchRequest)
 		.Times(2)
 		.WillOnce(::testing::Invoke(
 					[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+					std::thread thread1([&]() {	
 					string text;
 					EXPECT_TRUE(json->ToString(text));
 					EXPECT_EQ(text,string(_T("{"
@@ -634,7 +637,6 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_onClientConnectionAndLaunchRequest)
 					connectRequest.SetEvent();
 					TEST_LOG("After connectRequest.SetEvent");
 					return Core::ERROR_NONE;
-					}))
 
 	.WillOnce(::testing::Invoke(
 				[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
@@ -653,7 +655,8 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_onClientConnectionAndLaunchRequest)
 				P2PGrpStart.SetEvent();
 				TEST_LOG("After P2PGrpStatrt.SetEvent");
 				return Core::ERROR_NONE;
-				}));
+				})
+		}));
 	
 	TEST_LOG("Waiting for connect request event");
         auto result = connectRequest.Lock(10000);
