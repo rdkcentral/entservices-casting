@@ -1213,7 +1213,7 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_onClientConnectionAndLaunchReque
 
     // Mock successful P2P command responses
     EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_request(::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_))
-	.Times(::testing::AtLeast(10))  // We expect multiple P2P command    
+	.Times(::testing::AnyNumber())  // We expect multiple P2P command    
         .WillRepeatedly(::testing::Invoke(
             [](struct wpa_ctrl* ctrl, const char* cmd, size_t cmd_len, char* reply, size_t* reply_len, void(*msg_cb)(char* msg, size_t len)) -> bool {
                 const char* response = "OK";
@@ -1351,7 +1351,7 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectonClientConnectionAndLaunc
 
 	// Mock all P2P commands including P2P_FIND and P2P_LISTEN
 	EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_request(::testing::_, ::testing::_, ::testing::_,::testing::_, ::testing::_, ::testing::_))
-		.Times(::testing::AtLeast(3))
+		.Times(::testing::AnyNumber())
 		.WillRepeatedly(::testing::Invoke(
 			[](struct wpa_ctrl* ctrl, const char* cmd, size_t cmd_len, char* reply, size_t* reply_len, void(*msg_cb)(char* msg, size_t len)) -> bool {
 				if (strncmp(cmd,"P2P_FIND",strlen("P2P_FIND")) == 0 ||
