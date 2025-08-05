@@ -1221,10 +1221,11 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_onClientConnectionAndLaunchReque
                     strncmp(cmd, "SET ", 4) == 0 ||           // SET commands
                     strncmp(cmd, "WFD_SUBELEM_SET", 14) == 0) // WFD commands
                 {		    
-                if (reply && reply_len && *reply_len > strlen(response)) {
-                    memcpy(reply, response, strlen(response) + 1);
-                    *reply_len = strlen(response);
-                }
+                    if (reply && reply_len && *reply_len > strlen(response)) {
+                        memcpy(reply, response, strlen(response) + 1);
+                        *reply_len = strlen(response);
+                    }
+		}	
                 return false;
             }));
 
