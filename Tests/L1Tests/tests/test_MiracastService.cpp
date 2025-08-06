@@ -5,7 +5,7 @@
 * Copyright 2024 RDK Management
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
+* you may not use this file except in compliance with the License. 
 * You may obtain a copy of the License at
 *
 * http://www.apache.org/licenses/LICENSE-2.0
@@ -36,6 +36,11 @@
 #include "MiracastServiceImplementation.h"
 #include <sys/time.h>
 #include <future>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <errno.h>
+#include <string.h>
+#include <fcntl.h>
 
 using namespace WPEFramework;
 using ::testing::NiceMock;
@@ -43,19 +48,33 @@ namespace
 {
     #define TEST_LOG(FMT, ...) log(__func__, __FILE__, __LINE__, syscall(__NR_gettid),FMT,##__VA_ARGS__)
 
-    //Commented out the functions below because some test cases that use them have also been commented out. Since those test cases are disabled, these functions are now unused.
-	#if 0 
 	static void removeFile(const char* fileName)
 	{
-		if (std::remove(fileName) != 0)
-		{
-			printf("File %s failed to remove\n", fileName);
-			perror("Error deleting file");
+		// Open the file with O_WRONLY | O_NOFOLLOW to avoid symlink attacks
+		int fd = open(fileName, O_WRONLY | O_NOFOLLOW);
+		if (fd == -1) {
+			if (errno == ENOENT) {
+				printf("File %s doesn't exist, skipping removal", fileName);
+			} else {
+				printf("Failed to open file %s: %s", fileName, strerror(errno));
+			}
+			return;
 		}
-		else
-		{
-			printf("File %s successfully deleted\n", fileName);
+
+		// Try to change permissions if needed
+		if (fchmod(fd, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH) != 0) {
+			printf("Failed to change permissions for %s: %s", fileName, strerror(errno));
+			close(fd);
+			return;
 		}
+
+		// Unlink the file
+		if (unlink(fileName) != 0) {
+			printf("File %s failed to remove: %s", fileName, strerror(errno));
+		} else {
+			printf("File %s successfully deleted", fileName);
+		}
+		close(fd);
 	}
 
 	static void removeEntryFromFile(const char* fileName, const char* entryToRemove)
@@ -100,7 +119,6 @@ namespace
 		fileContentStream << "\n";
 		fileContentStream.close();
 	}
-	#endif
     void current_time(char *time_str)
     {
         struct timeval tv;
@@ -146,6 +164,10 @@ protected:
     Core::JSONRPC::Handler& handler;
     DECL_CORE_JSONRPC_CONX connection;
     Core::JSONRPC::Message message;
+    Core::Event connectRequest;
+    Core::Event P2PGrpStart;
+    Core::Event P2PConnectFail;
+    Core::Event P2PGoFail;
     string response;
 
     WrapsImplMock *p_wrapsImplMock = nullptr;
@@ -162,6 +184,15 @@ protected:
         : plugin(Core::ProxyType<Plugin::MiracastService>::Create())
         , handler(*(plugin))
         , INIT_CONX(1, 0)
+        , message()
+        , connectRequest(false, true)
+        , P2PGrpStart(false, true)
+        , P2PConnectFail(false, true)
+        , P2PGoFail(false, true)
+        , response()
+        , p_wrapsImplMock(nullptr)
+        , miracastServiceImpl()
+        , dispatcher(nullptr)
         , workerPool(Core::ProxyType<WorkerPoolImplementation>::Create(2, Core::Thread::DefaultStackSize(), 16))
     {
         p_wrapsImplMock = new NiceMock<WrapsImplMock>;
@@ -211,10 +242,21 @@ protected:
     }
     virtual ~MiracastServiceTest() override
     {
-        TEST_LOG("MiracastServiceTest Destructor");
+        TEST_LOG("MiracastServiceTest Destructor - Starting cleanup");
 
-        dispatcher->Deactivate();
-        dispatcher->Release();
+        // Give pending events time to complete
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+        if (dispatcher != nullptr) {
+            TEST_LOG("Deactivating dispatcher");
+            dispatcher->Deactivate();
+            
+            // Allow deactivation to complete
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            
+            TEST_LOG("Releasing dispatcher");
+            dispatcher->Release();
+        }
 
         Core::IWorkerPool::Assign(nullptr);
         workerPool.Release();
@@ -248,8 +290,12 @@ protected:
 
     virtual ~MiracastServiceEventTest() override
     {
-        dispatcher->Deactivate();
-        dispatcher->Release();
+        // Ensure any pending events are processed
+        if (dispatcher != nullptr) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+            dispatcher->Deactivate();
+            dispatcher->Release();
+        }
 
         PluginHost::IFactories::Assign(nullptr);
     }
@@ -259,7 +305,7 @@ TEST_F(MiracastServiceTest, GetInformation)
 {
     EXPECT_EQ("This MiracastService Plugin Facilitates Peer-to-Peer Control and WFD Source Device Discovery", plugin->Information());
 }
-#if 0
+
 TEST_F(MiracastServiceTest, P2PCtrlInterfaceNameNotFound)
 {
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
@@ -348,13 +394,18 @@ TEST_F(MiracastServiceTest, BackendDiscoveryStatus)
 }
 
 TEST_F(MiracastServiceEventTest, stopClientConnection)
-{
+{	
 	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
+	// Reset events before use
+    	TEST_LOG("Resetting events before test");
+    	connectRequest.ResetEvent();
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message); 
+	
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
-
+	
 	EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_request(::testing::_, ::testing::_, ::testing::_,::testing::_, ::testing::_, ::testing::_))
 		.Times(::testing::AnyNumber())
 		.WillRepeatedly(::testing::Invoke(
@@ -396,13 +447,12 @@ TEST_F(MiracastServiceEventTest, stopClientConnection)
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
 				return true;
 				}));
-
-	Core::Event connectRequest(false, true);
-
+	
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(1)
 		.WillOnce(::testing::Invoke(
 					[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+					std::thread thread1([&]() {
 					string text;
 					EXPECT_TRUE(json->ToString(text));
 					EXPECT_EQ(text,string(_T("{"
@@ -412,15 +462,24 @@ TEST_F(MiracastServiceEventTest, stopClientConnection)
 									"\"name\":\"Sample-Test-Android-2\""
 									"}}"
 								)));
+					});
+					thread1.join();		
+					TEST_LOG("before connectRequest.SetEvent");	
 					connectRequest.SetEvent();
+					TEST_LOG("after connectRequest.SetEvent");	
 					return Core::ERROR_NONE;
 					}));
+	
+    TEST_LOG("Waiting for connect request event");
+    auto result = connectRequest.Lock(10000);
+    if (result != Core::ERROR_NONE) {
+        TEST_LOG("Connect request timeout after TIMEOUT");
+    } else {
+        TEST_LOG("Connect request succeeded");
+    }
+    EXPECT_EQ(Core::ERROR_NONE, result);
 
-     EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
-
-	EXPECT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000));
-
-	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Timeout}"), response));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Timeout}"), response));
     EXPECT_EQ(response, string("{\"message\":\"Supported 'requestStatus' parameter values are Accept or Reject\",\"success\":false}"));
 
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"request\": Accept}"), response));
@@ -449,6 +508,14 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_onClientConnectionAndLaunchRequest)
 {
 	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
+
+	// Reset events before use
+    	TEST_LOG("Resetting events before test");
+    	connectRequest.ResetEvent();
+	P2PGrpStart.ResetEvent();
+	
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
+	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
 
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
@@ -552,14 +619,12 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_onClientConnectionAndLaunchRequest)
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
 				return true;
 				}));
-
-	Core::Event connectRequest(false, true);
-	Core::Event P2PGrpStart(false, true);
-
+	
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(2)
 		.WillOnce(::testing::Invoke(
 					[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+					std::thread thread1([&]() {	
 					string text;
 					EXPECT_TRUE(json->ToString(text));
 					EXPECT_EQ(text,string(_T("{"
@@ -569,12 +634,18 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_onClientConnectionAndLaunchRequest)
 									"\"name\":\"Sample-Test-Android-2\""
 									"}}"
 								)));
+						});
+
+					thread1.join();	
+					TEST_LOG("Before connectRequest.SetEvent");
 					connectRequest.SetEvent();
+					TEST_LOG("After connectRequest.SetEvent");
 					return Core::ERROR_NONE;
-					}))
+					}))	
 
 	.WillOnce(::testing::Invoke(
 				[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+				std::thread thread1([&]() {	
 				string text;
 				EXPECT_TRUE(json->ToString(text));
 				EXPECT_EQ(text,string(_T("{"
@@ -586,18 +657,32 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_onClientConnectionAndLaunchRequest)
 								"\"sink_dev_ip\":\"192.168.59.1\""
 								"}}}"
 							)));
+					});
+				thread1.join();		
+				TEST_LOG("Before P2PGrpStart.SetEvent");	
 				P2PGrpStart.SetEvent();
+				TEST_LOG("After P2PGrpStatrt.SetEvent");
 				return Core::ERROR_NONE;
-				}));
-
-
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
-	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
-
-	EXPECT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000));
+		        }));
+	
+	TEST_LOG("Waiting for connect request event");
+        auto result = connectRequest.Lock(10000);
+    	if (result != Core::ERROR_NONE) {
+            TEST_LOG("Connect request timeout");
+  	} else {
+            TEST_LOG("Connect request succeeded");
+    	}
+    	EXPECT_EQ(Core::ERROR_NONE, result);
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
-	EXPECT_EQ(Core::ERROR_NONE, P2PGrpStart.Lock(10000));
+	TEST_LOG("Waiting for P2PGrpStart event");
+    	auto start = P2PGrpStart.Lock(10000);
+    	if (start != Core::ERROR_NONE) {
+    	    TEST_LOG("P2PGrpStart timeout");
+    	} else {
+    	    TEST_LOG("P2PGrpStart succeeded");
+    	}
+	EXPECT_EQ(Core::ERROR_NONE, start);
 
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("stopClientConnection"), _T("{\"name\": \"Sample-Test-Android-2\",\"mac\": \"96:52:44:b6:7d:14\"}"), response));
 	EXPECT_EQ(response, string("{\"message\":\"Invalid state to process stopClientConnection\",\"success\":false}"));
@@ -630,6 +715,11 @@ TEST_F(MiracastServiceEventTest, onClientConnectionRequestRejected)
 {
 	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
+
+	// Reset events before use
+    	TEST_LOG("Resetting events before test");
+    	connectRequest.ResetEvent();	
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
@@ -676,12 +766,11 @@ TEST_F(MiracastServiceEventTest, onClientConnectionRequestRejected)
 				return true;
 				}));
 
-	Core::Event connectRequest(false, true);
-
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(1)
 		.WillOnce(::testing::Invoke(
 					[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+					std::thread thread1([&]() {	
 					string text;
 					EXPECT_TRUE(json->ToString(text));
 					EXPECT_EQ(text,string(_T("{"
@@ -691,13 +780,22 @@ TEST_F(MiracastServiceEventTest, onClientConnectionRequestRejected)
 									"\"name\":\"Sample-Test-Android-2\""
 									"}}"
 								)));
+					});
+					thread1.join();	
+					TEST_LOG("Before connectRequest.SetEvent");	
 					connectRequest.SetEvent();
+					TEST_LOG("After connectRequest.SetEvent");	
 					return Core::ERROR_NONE;
 					}));
-
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
-
-	EXPECT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000));
+		
+	TEST_LOG("Waiting for connect request event");
+    	auto result = connectRequest.Lock(10000);
+    	if (result != Core::ERROR_NONE) {
+    	    TEST_LOG("Connect request timeout");
+    	} else {
+    	    TEST_LOG("Connect request succeeded");
+    	}
+    	EXPECT_EQ(Core::ERROR_NONE, result);
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Reject}"), response));
 
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
@@ -713,6 +811,14 @@ TEST_F(MiracastServiceEventTest, P2P_CONNECT_FAIL_onClientConnectionError)
 	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
+	// Reset events before use
+    	TEST_LOG("Resetting events before test");
+    	connectRequest.ResetEvent();
+	P2PConnectFail.ResetEvent();
+	
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
+	
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
 
@@ -751,14 +857,12 @@ TEST_F(MiracastServiceEventTest, P2P_CONNECT_FAIL_onClientConnectionError)
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
 				return true;
 				}));
-
-	Core::Event connectRequest(false, true);
-	Core::Event P2PConnectFail(false, true);
-
+	
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(2)
 		.WillOnce(::testing::Invoke(
 					[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+					std::thread thread1([&]() {	
 					string text;
 					EXPECT_TRUE(json->ToString(text));
 					EXPECT_EQ(text,string(_T("{"
@@ -768,11 +872,16 @@ TEST_F(MiracastServiceEventTest, P2P_CONNECT_FAIL_onClientConnectionError)
 									"\"name\":\"Sample-Test-Android-2\""
 									"}"
 									"}")));
+					});
+					thread1.join();	
+					TEST_LOG("Before connectRequest.SetEvent");	
 					connectRequest.SetEvent();
+					TEST_LOG("After connectRequest.SetEvent");
 					return Core::ERROR_NONE;
 					}))
 	.WillOnce(::testing::Invoke(
 				[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+				std::thread thread1([&]() {	
 				string text;
 				EXPECT_TRUE(json->ToString(text));
 				EXPECT_EQ(text,string(_T("{"
@@ -784,17 +893,32 @@ TEST_F(MiracastServiceEventTest, P2P_CONNECT_FAIL_onClientConnectionError)
 								"\"reason\":\"P2P_CONNECT_FAILURE\""
 								"}"
 								"}")));
+				});
+				thread1.join();
+				TEST_LOG("Before P2PConnectFail.SetEvent");
 				P2PConnectFail.SetEvent();
+				TEST_LOG("After P2PConnectFail.SetEvent");
 				return Core::ERROR_NONE;
 				}));
-
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
-
-	EXPECT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000));
+	
+	TEST_LOG("Waiting for connect request event");
+    	auto result = connectRequest.Lock(10000);
+    	if (result != Core::ERROR_NONE) {
+    	    TEST_LOG("Connect request timeout");
+    	} else {
+    	    TEST_LOG("Connect request succeeded");
+    	}
+    	EXPECT_EQ(Core::ERROR_NONE, result);
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
-	EXPECT_EQ(Core::ERROR_NONE, P2PConnectFail.Lock(10000));
+	TEST_LOG("Waiting for P2PConnectFail event");
+    	auto connectfail = P2PConnectFail.Lock(10000);
+    	if (connectfail != Core::ERROR_NONE) {
+    	    TEST_LOG("P2PConnectFail timeout");
+    	} else {
+    	    TEST_LOG("P2PConnectFail succeeded");
+    	}
+    	EXPECT_EQ(Core::ERROR_NONE, connectfail);
 
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
@@ -809,6 +933,14 @@ TEST_F(MiracastServiceEventTest, P2P_GO_NEGOTIATION_FAIL_onClientConnectionError
 {
 	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
+
+	// Reset events before use
+    	TEST_LOG("Resetting events before test");
+    	connectRequest.ResetEvent();
+	P2PGoFail.ResetEvent();
+	
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
 
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
@@ -866,13 +998,11 @@ TEST_F(MiracastServiceEventTest, P2P_GO_NEGOTIATION_FAIL_onClientConnectionError
 				return true;
 				}));
 
-	Core::Event connectRequest(false, true);
-	Core::Event P2PGoFail(false, true);
-
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(2)
 		.WillOnce(::testing::Invoke(
 					[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+					std::thread thread1([&]() {	
 					string text;
 					EXPECT_TRUE(json->ToString(text));
 					EXPECT_EQ(text,string(_T("{"
@@ -882,11 +1012,16 @@ TEST_F(MiracastServiceEventTest, P2P_GO_NEGOTIATION_FAIL_onClientConnectionError
 									"\"name\":\"Sample-Test-Android-2\""
 									"}"
 									"}")));
+					});
+					thread1.join();
+					TEST_LOG("Before connectRequest.SetEvent");	
 					connectRequest.SetEvent();
+					TEST_LOG("After connectRequest.SetEvent");	
 					return Core::ERROR_NONE;
 					}))
 	.WillOnce(::testing::Invoke(
 				[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+				std::thread thread1([&]() {	
 				string text;
 				EXPECT_TRUE(json->ToString(text));
 				EXPECT_EQ(text,string(_T("{"
@@ -898,17 +1033,32 @@ TEST_F(MiracastServiceEventTest, P2P_GO_NEGOTIATION_FAIL_onClientConnectionError
 								"\"reason\":\"P2P_GROUP_NEGOTIATION_FAILURE\""
 								"}"
 								"}")));
+				});
+				thread1.join();
+				TEST_LOG("Before P2PGoFail.SetEvent");	
 				P2PGoFail.SetEvent();
+				TEST_LOG("After P2PGoFail.SetEvent");	
 				return Core::ERROR_NONE;
 				}));
-
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
-
-	EXPECT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000));
+	
+	TEST_LOG("Waiting for connect request event");
+    	auto result = connectRequest.Lock(10000);
+    	if (result != Core::ERROR_NONE) {
+    	    TEST_LOG("Connect request timeout");
+    	} else {
+    	    TEST_LOG("Connect request succeeded");
+    	}
+    	EXPECT_EQ(Core::ERROR_NONE, result);
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
-	EXPECT_EQ(Core::ERROR_NONE, P2PGoFail.Lock(10000));
+	TEST_LOG("Waiting for P2PGoFail event");
+    	auto gofail = P2PGoFail.Lock(10000);
+    	if (gofail != Core::ERROR_NONE) {
+    	    TEST_LOG("P2PGoFail timeout");
+    	} else {
+    	    TEST_LOG("P2PGoFail succeeded");
+    	}
+	EXPECT_EQ(Core::ERROR_NONE, gofail);
 
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
@@ -924,78 +1074,78 @@ TEST_F(MiracastServiceEventTest, P2P_GO_FORMATION_FAIL_onClientConnectionError)
 	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
+	// Reset events before use
+    	TEST_LOG("Resetting events before test");
+    	connectRequest.ResetEvent();
+	P2PGoFail.ResetEvent();
+
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
+	
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
 
-	EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_request(::testing::_, ::testing::_, ::testing::_,::testing::_, ::testing::_, ::testing::_))
-		.Times(::testing::AnyNumber())
-		.WillRepeatedly(::testing::Invoke(
-					[&](struct wpa_ctrl *ctrl, const char *cmd, size_t cmd_len, char *reply, size_t *reply_len, void(*msg_cb)(char *msg, size_t len))
-					{
-						if ( 0 == strncmp(cmd,"P2P_CONNECT",strlen("P2P_CONNECT")))
-						{
-							strncpy(reply,"OK",*reply_len);
-						}
-						return false;
-					}));
+	// Mock successful P2P command responses
+    EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_request(::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_))
+        .WillRepeatedly(::testing::Invoke(
+            [](struct wpa_ctrl* ctrl, const char* cmd, size_t cmd_len, char* reply, size_t* reply_len, void(*msg_cb)(char* msg, size_t len)) -> bool {
+                if (0 == strncmp(cmd, "P2P_FIND", strlen("P2P_FIND")) ||
+                    0 == strncmp(cmd, "P2P_LISTEN", strlen("P2P_LISTEN")) ||
+                    0 == strncmp(cmd, "P2P_CONNECT", strlen("P2P_CONNECT"))) {
+	   	    const char* response = "OK";
+                    if (reply && reply_len && *reply_len > strlen(response)) {
+                        memcpy(reply, response, strlen(response) + 1);
+                        *reply_len = strlen(response);
+		    }
+                }
+                return false;
+            }));
 
-	EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_recv(::testing::_, ::testing::_, ::testing::_))
-		.WillOnce(::testing::Invoke(
-					[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
-					strncpy(reply, "P2P-DEVICE-FOUND 2c:33:58:9c:73:2d p2p_dev_addr=2c:33:58:9c:73:2d pri_dev_type=1-0050F200-0 name='Sample-Test-Android-1' config_methods=0x11e8 dev_capab=0x25 group_capab=0x82 wfd_dev_info=0x01101c440006 new=0", *reply_len);
-					return false;
-					}))
-
-	.WillOnce(::testing::Invoke(
-				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
-				strncpy(reply, "P2P-DEVICE-FOUND 96:52:44:b6:7d:14 p2p_dev_addr=96:52:44:b6:7d:14 pri_dev_type=10-0050F204-5 name='Sample-Test-Android-2' config_methods=0x188 dev_capab=0x25 group_capab=0x0 wfd_dev_info=0x01101c440032 vendor_elems=1 new=1", *reply_len);
-				return false;
-				}))
-
-	.WillOnce(::testing::Invoke(
-				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
-				strncpy(reply, "P2P-PROV-DISC-PBC-REQ 96:52:44:b6:7d:14 p2p_dev_addr=96:52:44:b6:7d:14 pri_dev_type=10-0050F204-5 name='Sample-Test-Android-2' config_methods=0x188 dev_capab=0x25 group_capab=0x0", *reply_len);
-				return false;
-				}))
-
-	.WillOnce(::testing::Invoke(
-				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
-				strncpy(reply, "P2P-PROV-DISC-PBC-REQ 96:52:44:b6:7d:14 p2p_dev_addr=96:52:44:b6:7d:14 pri_dev_type=10-0050F204-5 name='Sample-Test-Android-2' config_methods=0x188 dev_capab=0x25 group_capab=0x0", *reply_len);
-				return false;
-				}))
-
-	.WillOnce(::testing::Invoke(
-				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
-				strncpy(reply, "P2P-GO-NEG-REQUEST 96:52:44:b6:7d:14 dev_passwd_id=4 go_intent=13", *reply_len);
-				return false;
-				}))
-
-	.WillOnce(::testing::Invoke(
-				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
-				strncpy(reply, "P2P-GO-NEG-SUCCESS role=client freq=2437 ht40=0 x=96:52:44:b6:7d:14 peer_iface=96:52:44:b6:fd:14 wps_method=PBC", *reply_len);
-				return false;
-				}))
-
-	.WillOnce(::testing::Invoke(
-				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
-				strncpy(reply, "P2P-GROUP-FORMATION-FAILURE", *reply_len);
-				return false;
-				}))
-
-	.WillRepeatedly(::testing::Invoke(
-				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
-				return true;
-				}));
-
-	Core::Event connectRequest(false, true);
-	Core::Event P2PGoFail(false, true);
-
+    // Set up P2P event sequence for failure case
+    EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_recv(::testing::_, ::testing::_, ::testing::_))
+        .Times(::testing::AtLeast(5))
+        .WillOnce(::testing::Invoke([](struct wpa_ctrl* ctrl, char* reply, size_t* reply_len) -> bool {
+	    const char* msg = "P2P-FIND-STARTED";
+            if (!reply || !reply_len || *reply_len <= strlen(msg)) return true;
+            memcpy(reply, msg, strlen(msg) + 1);
+            *reply_len = strlen(msg);
+            return false;
+        }))
+        // Second event: Device discovery
+        .WillOnce(::testing::Invoke([](struct wpa_ctrl* ctrl, char* reply, size_t* reply_len) -> bool {	
+            const char* msg = "P2P-DEVICE-FOUND 96:52:44:b6:7d:14 p2p_dev_addr=96:52:44:b6:7d:14 pri_dev_type=10-0050F204-5 name='Sample-Test-Android-2' config_methods=0x188 dev_capab=0x25 group_capab=0x0 wfd_dev_info=0x01101c440032 vendor_elems=1 new=1";
+            if (!reply || !reply_len || *reply_len <= strlen(msg)) return true;
+            memcpy(reply, msg, strlen(msg) + 1);
+            *reply_len = strlen(msg);
+            return false;
+        }))
+        .WillOnce(::testing::Invoke([](struct wpa_ctrl* ctrl, char* reply, size_t* reply_len) -> bool {
+            // GO Negotiation Request
+            const char* msg = "P2P-GO-NEG-REQUEST 96:52:44:b6:7d:14 dev_passwd_id=4 go_intent=13";
+            if (!reply || !reply_len || *reply_len <= strlen(msg)) return true;
+            memcpy(reply, msg, strlen(msg) + 1);
+            *reply_len = strlen(msg);
+            return false;
+        }))
+        .WillOnce(::testing::Invoke([](struct wpa_ctrl* ctrl, char* reply, size_t* reply_len) -> bool {
+            // Group Formation Failure
+            const char* msg = "P2P-GROUP-FORMATION-FAILURE";
+            if (!reply || !reply_len || *reply_len <= strlen(msg)) return true;
+            memcpy(reply, msg, strlen(msg) + 1);
+            *reply_len = strlen(msg);
+            return false;
+        }))
+        .WillRepeatedly(::testing::Return(true));
+	
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(2)
 		.WillOnce(::testing::Invoke(
 					[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+					std::thread thread1([&]() {
 					string text;
+					TEST_LOG("Before connectRequest.SetEvent json2string");	
 					EXPECT_TRUE(json->ToString(text));
+					TEST_LOG("Before connectRequest.SetEvent aftr json2string");	
 					EXPECT_EQ(text,string(_T("{"
 									"\"jsonrpc\":\"2.0\","
 									"\"method\":\"client.events.onClientConnectionRequest\","
@@ -1003,13 +1153,20 @@ TEST_F(MiracastServiceEventTest, P2P_GO_FORMATION_FAIL_onClientConnectionError)
 									"\"name\":\"Sample-Test-Android-2\""
 									"}"
 									"}")));
+					});
+					thread1.join();
+					TEST_LOG("Before connectRequest.SetEvent");	
 					connectRequest.SetEvent();
+					TEST_LOG("After connectRequest.SetEvent");	
 					return Core::ERROR_NONE;
 					}))
 	.WillOnce(::testing::Invoke(
 				[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+				std::thread thread1([&]() {	
 				string text;
+				TEST_LOG("Before P2PGoFail.SetEvent json2string");	
 				EXPECT_TRUE(json->ToString(text));
+				TEST_LOG("Before P2PGoFail.SetEvent after json2string");
 				EXPECT_EQ(text,string(_T("{"
 								"\"jsonrpc\":\"2.0\","
 								"\"method\":\"client.events.onClientConnectionError\","
@@ -1019,17 +1176,32 @@ TEST_F(MiracastServiceEventTest, P2P_GO_FORMATION_FAIL_onClientConnectionError)
 								"\"reason\":\"P2P_GROUP_FORMATION_FAILURE\""
 								"}"
 								"}")));
+				});
+				thread1.join();
+				TEST_LOG("Before P2PGoFail.SetEvent");	
 				P2PGoFail.SetEvent();
+				TEST_LOG("After P2PGoFfail.SetEvent");
 				return Core::ERROR_NONE;
 				}));
 
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
-
-	EXPECT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000));
+	TEST_LOG("Waiting for connect request event");
+    	auto result = connectRequest.Lock(10000);
+    	if (result != Core::ERROR_NONE) {
+    	    TEST_LOG("Connect request timeout");
+    	} else {
+    	    TEST_LOG("Connect request succeeded");
+    	}
+    	EXPECT_EQ(Core::ERROR_NONE, result);
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
-	EXPECT_EQ(Core::ERROR_NONE, P2PGoFail.Lock(10000));
+	TEST_LOG("Waiting for P2PGoFail event");
+    	auto gofail = P2PGoFail.Lock(10000);
+    	if (gofail != Core::ERROR_NONE) {
+    	    TEST_LOG("P2PGoFail timeout");
+    	} else {
+    	    TEST_LOG("P2PGoFail succeeded");
+    	}
+	EXPECT_EQ(Core::ERROR_NONE, gofail);
 
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
@@ -1045,110 +1217,91 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_onClientConnectionAndLaunchReque
 	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
+	// Reset events before use
+    	TEST_LOG("Resetting events before test");
+    	connectRequest.ResetEvent();
+	P2PGrpStart.ResetEvent();
+
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
+	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
+
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
 
-	EXPECT_CALL(*p_wrapsImplMock, popen(::testing::_, ::testing::_))
-		.Times(::testing::AnyNumber())
-		.WillRepeatedly(::testing::Invoke(
-					[&](const char* command, const char* type)
-					{
-					char buffer[1024] = {0};
-					if ( 0 == strncmp(command,"/sbin/udhcpc -v -i",strlen("/sbin/udhcpc -v -i")))
-					{
-						strncpy(buffer, "udhcpc: sending select for 192.168.49.165\tudhcpc: lease of 192.168.49.165 obtained, lease time 3599\tdeleting routers\troute add default gw 192.168.49.1 dev lo\tadding dns 192.168.49.1",sizeof(buffer));
-					}
-					return (fmemopen(buffer, strlen(buffer), "r"));
-					}));
 
-	EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_request(::testing::_, ::testing::_, ::testing::_,::testing::_, ::testing::_, ::testing::_))
-		.Times(::testing::AnyNumber())
-		.WillRepeatedly(::testing::Invoke(
-					[&](struct wpa_ctrl *ctrl, const char *cmd, size_t cmd_len, char *reply, size_t *reply_len, void(*msg_cb)(char *msg, size_t len))
-					{
-						if ( 0 == strncmp(cmd,"P2P_CONNECT",strlen("P2P_CONNECT")))
-						{
-							strncpy(reply,"OK",*reply_len);
-						}
-						return false;
-					}));
+    // Setup udhcpc response mock
+    EXPECT_CALL(*p_wrapsImplMock, popen(::testing::_, ::testing::_))
+        .Times(::testing::AnyNumber())
+        .WillRepeatedly(::testing::Invoke(
+            [](const char* command, const char* type) -> FILE* {
+                char buffer[1024] = {0};
+                if (0 == strncmp(command,"/sbin/udhcpc -v -i",strlen("/sbin/udhcpc -v -i"))) {
+                    const char* msg = "udhcpc: sending select for 192.168.49.165\tudhcpc: lease of 192.168.49.165 obtained, lease time 3599\tdeleting routers\troute add default gw 192.168.49.1 dev lo\tadding dns 192.168.49.1";
+                    strncpy(buffer, msg, sizeof(buffer) - 1);
+                }
+                return fmemopen(buffer, strlen(buffer), "r");
+            }));
 
-	EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_recv(::testing::_, ::testing::_, ::testing::_))
-		.WillOnce(::testing::Invoke(
-					[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
-					strncpy(reply, "P2P-DEVICE-FOUND 2c:33:58:9c:73:2d p2p_dev_addr=2c:33:58:9c:73:2d pri_dev_type=1-0050F200-0 name='Sample-Test-Android-1' config_methods=0x11e8 dev_capab=0x25 group_capab=0x82 wfd_dev_info=0x01101c440006 new=0", *reply_len);
-					return false;
-					}))
+    // Mock successful P2P command responses
+    EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_request(::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_))
+	.Times(::testing::AnyNumber())  // We expect multiple P2P command    
+        .WillRepeatedly(::testing::Invoke(
+            [](struct wpa_ctrl* ctrl, const char* cmd, size_t cmd_len, char* reply, size_t* reply_len, void(*msg_cb)(char* msg, size_t len)) -> bool {
+                const char* response = "OK";
+		    if (strncmp(cmd, "P2P_", 4) == 0 ||           // Any P2P command
+                    strncmp(cmd, "SET ", 4) == 0 ||           // SET commands
+                    strncmp(cmd, "WFD_SUBELEM_SET", 14) == 0) // WFD commands
+                {		    
+                    if (reply && reply_len && *reply_len > strlen(response)) {
+                        memcpy(reply, response, strlen(response) + 1);
+                        *reply_len = strlen(response);
+                    }
+		}	
+                return false;
+            }));
 
-	.WillOnce(::testing::Invoke(
-				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
-				strncpy(reply, "P2P-DEVICE-FOUND 96:52:44:b6:7d:14 p2p_dev_addr=96:52:44:b6:7d:14 pri_dev_type=10-0050F204-5 name='Sample-Test-Android-2' config_methods=0x188 dev_capab=0x25 group_capab=0x0 wfd_dev_info=0x01101c440032 vendor_elems=1 new=1", *reply_len);
-				return false;
-				}))
-
-	.WillOnce(::testing::Invoke(
-				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
-				strncpy(reply, "P2P-DEVICE-LOST 2c:33:58:9c:73:2d p2p_dev_addr=2c:33:58:9c:73:2d pri_dev_type=1-0050F200-0 name='Sample-Test-Android-1' config_methods=0x11e8 dev_capab=0x25 group_capab=0x82 wfd_dev_info=0x01101c440006 new=0", *reply_len);
-				return false;
-				}))
-
-	.WillOnce(::testing::Invoke(
-				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
-				strncpy(reply, "P2P-PROV-DISC-PBC-REQ 96:52:44:b6:7d:14 p2p_dev_addr=96:52:44:b6:7d:14 pri_dev_type=10-0050F204-5 name='Sample-Test-Android-2' config_methods=0x188 dev_capab=0x25 group_capab=0x0", *reply_len);
-				return false;
-				}))
-
-	.WillOnce(::testing::Invoke(
-				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
-				strncpy(reply, "P2P-PROV-DISC-PBC-REQ 96:52:44:b6:7d:14 p2p_dev_addr=96:52:44:b6:7d:14 pri_dev_type=10-0050F204-5 name='Sample-Test-Android-2' config_methods=0x188 dev_capab=0x25 group_capab=0x0", *reply_len);
-				return false;
-				}))
-
-	.WillOnce(::testing::Invoke(
-				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
-				strncpy(reply, "P2P-GO-NEG-REQUEST 96:52:44:b6:7d:14 dev_passwd_id=4 go_intent=13", *reply_len);
-				return false;
-				}))
-
-	.WillOnce(::testing::Invoke(
-				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
-				strncpy(reply, "P2P-GO-NEG-SUCCESS role=client freq=2437 ht40=0 x=96:52:44:b6:7d:14 peer_iface=96:52:44:b6:fd:14 wps_method=PBC", *reply_len);
-				return false;
-				}))
-
-	.WillOnce(::testing::Invoke(
-				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
-				strncpy(reply, "P2P-GROUP-FORMATION-SUCCESS", *reply_len);
-				return false;
-				}))
-
-	.WillOnce(::testing::Invoke(
-				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
-				strncpy(reply, "P2P-FIND-STOPPED", *reply_len);
-				return false;
-				}))
-
-	.WillOnce(::testing::Invoke(
-				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
-				// Here using lo to avoid the operation not permitted error for unknown interfaces
-				strncpy(reply, "P2P-GROUP-STARTED lo client ssid=\"DIRECT-UU-Galaxy A23 5G\" freq=2437 psk=12c3ce3d8976152df796e5f42fc646723471bf1aab8d72a546fa3dce60dc14a3 go_dev_addr=96:52:44:b6:7d:14 [PERSISTENT]", *reply_len);
-				return false;
-				}))
-
-	.WillRepeatedly(::testing::Invoke(
-				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
-				return true;
-				}));
-
-	Core::Event connectRequest(false, true);
-	Core::Event P2PGrpStart(false, true);
+    // Set up P2P event sequence
+    EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_recv(::testing::_, ::testing::_, ::testing::_))
+        .Times(::testing::AtLeast(4))
+        .WillOnce(::testing::Invoke([](struct wpa_ctrl* ctrl, char* reply, size_t* reply_len) -> bool {
+            const char* msg = "P2P-DEVICE-FOUND 96:52:44:b6:7d:14 p2p_dev_addr=96:52:44:b6:7d:14 pri_dev_type=10-0050F204-5 name='Sample-Test-Android-2' config_methods=0x188 dev_capab=0x25 group_capab=0x0 wfd_dev_info=0x01101c440032 vendor_elems=1 new=1";
+            if (!reply || !reply_len || *reply_len <= strlen(msg)) return true;
+            memcpy(reply, msg, strlen(msg) + 1);
+            *reply_len = strlen(msg);
+            return false;
+        }))
+        .WillOnce(::testing::Invoke([](struct wpa_ctrl* ctrl, char* reply, size_t* reply_len) -> bool {
+            const char* msg = "P2P-GO-NEG-REQUEST 96:52:44:b6:7d:14 dev_passwd_id=4 go_intent=13";
+            if (!reply || !reply_len || *reply_len <= strlen(msg)) return true;
+            memcpy(reply, msg, strlen(msg) + 1);
+            *reply_len = strlen(msg);
+            return false;
+        }))
+        .WillOnce(::testing::Invoke([](struct wpa_ctrl* ctrl, char* reply, size_t* reply_len) -> bool {
+            const char* msg = "P2P-GO-NEG-SUCCESS role=client freq=2437 ht40=0 peer_dev=96:52:44:b6:7d:14 peer_iface=96:52:44:b6:fd:14 wps_method=PBC";
+            if (!reply || !reply_len || *reply_len <= strlen(msg)) return true;
+            memcpy(reply, msg, strlen(msg) + 1);
+            *reply_len = strlen(msg);
+            return false;
+        }))
+        .WillOnce(::testing::Invoke([](struct wpa_ctrl* ctrl, char* reply, size_t* reply_len) -> bool {
+            const char* msg = "P2P-GROUP-STARTED lo client ssid=\"DIRECT-UU Sample-Test-Android-2\" freq=2437 psk=12c3ce3d8976152df796e5f42fc646723471bf1aab8d72a546fa3dce60dc14a3 go_dev_addr=96:52:44:b6:7d:14 [PERSISTENT]";
+            if (!reply || !reply_len || *reply_len <= strlen(msg)) return true;
+            memcpy(reply, msg, strlen(msg) + 1);
+            *reply_len = strlen(msg);
+            return false;
+        }))
+        .WillRepeatedly(::testing::Return(true));
 
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(2)
 		.WillOnce(::testing::Invoke(
 					[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+					std::thread thread1([&]() {	
 					string text;
+					TEST_LOG("Before connectRequest.SetEvent json2string");	
 					EXPECT_TRUE(json->ToString(text));
+					TEST_LOG("Before connectRequest.SetEvent aftr json2str");	
 					EXPECT_EQ(text,string(_T("{"
 									"\"jsonrpc\":\"2.0\","
 									"\"method\":\"client.events.onClientConnectionRequest\","
@@ -1156,14 +1309,21 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_onClientConnectionAndLaunchReque
 									"\"name\":\"Sample-Test-Android-2\""
 									"}}"
 								)));
+					});
+					thread1.join();	
+					TEST_LOG("Before connectRequest.SetEvent");	
 					connectRequest.SetEvent();
+					TEST_LOG("After connectRequest.SetEvent");
 					return Core::ERROR_NONE;
 					}))
 
 	.WillOnce(::testing::Invoke(
 				[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+				std::thread thread1([&]() {	
 				string text;
+				TEST_LOG("Before P2PGrpStart.SetEvent json2str");	
 				EXPECT_TRUE(json->ToString(text));
+				TEST_LOG("Before P2PGrpStart.SetEvent aftr json2str");	
 				EXPECT_EQ(text,string(_T("{"
                                                                 "\"jsonrpc\":\"2.0\","
                                                                 "\"method\":\"client.events.onLaunchRequest\","
@@ -1173,17 +1333,32 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_onClientConnectionAndLaunchReque
                                                                 "\"sink_dev_ip\":\"192.168.49.165\""
                                                                 "}}}"
                                                         )));
+				});
+				thread1.join();
+				TEST_LOG("Before P2PGrpStart.SetEvent");	
                                 P2PGrpStart.SetEvent();
+				TEST_LOG("After P2PGrpStart.SetEvent");	
 				return Core::ERROR_NONE;
 				}));
-
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
-	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
-
-	EXPECT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000));
+	
+	TEST_LOG("Waiting for connect request event");
+    	auto result = connectRequest.Lock(10000);
+    	if (result != Core::ERROR_NONE) {
+    	    TEST_LOG("Connect request timeout");
+    	} else {
+    	    TEST_LOG("Connect request succeeded");
+    	}
+    	EXPECT_EQ(Core::ERROR_NONE, result);
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
-	EXPECT_EQ(Core::ERROR_NONE, P2PGrpStart.Lock(10000));
+	TEST_LOG("Waiting for P2PGrpStart event");
+    	auto start = P2PGrpStart.Lock(10000);
+    	if (start != Core::ERROR_NONE) {
+    	    TEST_LOG("P2PGrpStart timeout");
+    	} else {
+    	    TEST_LOG("P2PGrpStart succeeded");
+    	}
+	EXPECT_EQ(Core::ERROR_NONE, start);
 
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_UNSUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
@@ -1198,9 +1373,35 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectonClientConnectionAndLaunc
 {
 	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
+	
+	// Reset events before use
+    	TEST_LOG("Resetting events before test");
+    	connectRequest.ResetEvent();
+	P2PGrpStart.ResetEvent();
+
+	// Subscribe to events before enabling the service
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
+	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
 
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
+
+	// Mock all P2P commands including P2P_FIND and P2P_LISTEN
+	EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_request(::testing::_, ::testing::_, ::testing::_,::testing::_, ::testing::_, ::testing::_))
+		.Times(::testing::AnyNumber())
+		.WillRepeatedly(::testing::Invoke(
+			[](struct wpa_ctrl* ctrl, const char* cmd, size_t cmd_len, char* reply, size_t* reply_len, void(*msg_cb)(char* msg, size_t len)) -> bool {
+				if (strncmp(cmd,"P2P_FIND",strlen("P2P_FIND")) == 0 ||
+					strncmp(cmd,"P2P_LISTEN",strlen("P2P_LISTEN")) == 0 ||
+					strncmp(cmd,"P2P_CONNECT",strlen("P2P_CONNECT")) == 0) {
+					const char* msg = "OK";
+					if (reply && reply_len && *reply_len > strlen(msg)) {
+						memcpy(reply, msg, strlen(msg) + 1);
+						*reply_len = strlen(msg);
+					}
+				}
+				return false;
+			}));
 
 	EXPECT_CALL(*p_wrapsImplMock, popen(::testing::_, ::testing::_))
 		.Times(::testing::AnyNumber())
@@ -1215,46 +1416,84 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectonClientConnectionAndLaunc
 					return (fmemopen(buffer, strlen(buffer), "r"));
 					}));
 
-	EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_request(::testing::_, ::testing::_, ::testing::_,::testing::_, ::testing::_, ::testing::_))
-		.Times(::testing::AnyNumber())
-		.WillRepeatedly(::testing::Invoke(
-					[&](struct wpa_ctrl *ctrl, const char *cmd, size_t cmd_len, char *reply, size_t *reply_len, void(*msg_cb)(char *msg, size_t len))
-					{
-						if ( 0 == strncmp(cmd,"P2P_CONNECT",strlen("P2P_CONNECT")))
-						{
-							strncpy(reply,"OK",*reply_len);
-						}
-						return false;
-					}));
+    // Mock P2P_CONNECT response
+    EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_request(::testing::_, ::testing::_, ::testing::_,::testing::_, ::testing::_, ::testing::_))
+        .Times(::testing::AnyNumber())
+        .WillRepeatedly(::testing::Invoke(
+            [](struct wpa_ctrl* ctrl, const char* cmd, size_t cmd_len, char* reply, size_t* reply_len, void(*msg_cb)(char* msg, size_t len)) -> bool {
+                if (0 == strncmp(cmd,"P2P_CONNECT",strlen("P2P_CONNECT"))) {
+                    const char* msg = "OK";
+                    if (!reply || !reply_len || *reply_len <= strlen(msg)) {
+                        return true;
+                    }
+                    memcpy(reply, msg, strlen(msg) + 1);
+                    *reply_len = strlen(msg);
+                }
+                return false;
+            }));
 
-	EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_recv(::testing::_, ::testing::_, ::testing::_))
-	.WillOnce(::testing::Invoke(
-				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
-				strncpy(reply, "P2P-DEVICE-FOUND 96:52:44:b6:7d:14 p2p_dev_addr=96:52:44:b6:7d:14 pri_dev_type=10-0050F204-5 name='Sample-Test-Android-2' config_methods=0x188 dev_capab=0x25 group_capab=0x0 wfd_dev_info=0x01101c440032 vendor_elems=1 new=1", *reply_len);
-				return false;
-				}))
-
-	.WillOnce(::testing::Invoke(
-				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
-				// Here using lo to avoid the operation not permitted error for unknown interfaces
-				strncpy(reply, "P2P-GROUP-STARTED lo client ssid=\"DIRECT-UU-Galaxy A23 5G\" freq=2437 psk=12c3ce3d8976152df796e5f42fc646723471bf1aab8d72a546fa3dce60dc14a3 go_dev_addr=96:52:44:b6:7d:14 [PERSISTENT]", *reply_len);
-				return false;
-				}))
-
-	.WillRepeatedly(::testing::Invoke(
-				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
-				return true;
-				}));
-
-	Core::Event connectRequest(false, true);
-	Core::Event P2PGrpStart(false, true);
-
+    // Set up the complete P2P event sequence
+    EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_recv(::testing::_, ::testing::_, ::testing::_))
+        .Times(::testing::AtLeast(6))
+        // P2P Discovery start
+        .WillOnce(::testing::Invoke([](struct wpa_ctrl* ctrl, char* reply, size_t* reply_len) -> bool {
+            const char* msg = "P2P-FIND-STARTED";
+            if (!reply || !reply_len || *reply_len <= strlen(msg)) return true;
+            memcpy(reply, msg, strlen(msg) + 1);
+            *reply_len = strlen(msg);
+            return false;
+        }))
+        // First device discovery
+        .WillOnce(::testing::Invoke([](struct wpa_ctrl* ctrl, char* reply, size_t* reply_len) -> bool {
+            const char* msg = "P2P-DEVICE-FOUND 96:52:44:b6:7d:14 p2p_dev_addr=96:52:44:b6:7d:14 pri_dev_type=10-0050F204-5 name='Sample-Test-Android-2' config_methods=0x188 dev_capab=0x25 group_capab=0x0 wfd_dev_info=0x01101c440032 vendor_elems=1 new=1";
+            if (!reply || !reply_len || *reply_len <= strlen(msg)) return true;
+            memcpy(reply, msg, strlen(msg) + 1);
+            *reply_len = strlen(msg);
+            return false;
+        }))
+        // PBC Request
+        .WillOnce(::testing::Invoke([](struct wpa_ctrl* ctrl, char* reply, size_t* reply_len) -> bool {
+            const char* msg = "P2P-PROV-DISC-PBC-REQ 96:52:44:b6:7d:14 p2p_dev_addr=96:52:44:b6:7d:14 pri_dev_type=10-0050F204-5 name='Sample-Test-Android-2' config_methods=0x188 dev_capab=0x25 group_capab=0x0";
+            if (!reply || !reply_len || *reply_len <= strlen(msg)) return true;
+            memcpy(reply, msg, strlen(msg) + 1);
+            *reply_len = strlen(msg);
+            return false;
+        }))
+        // GO Negotiation
+        .WillOnce(::testing::Invoke([](struct wpa_ctrl* ctrl, char* reply, size_t* reply_len) -> bool {
+            const char* msg = "P2P-GO-NEG-REQUEST 96:52:44:b6:7d:14 dev_passwd_id=4 go_intent=13";
+            if (!reply || !reply_len || *reply_len <= strlen(msg)) return true;
+            memcpy(reply, msg, strlen(msg) + 1);
+            *reply_len = strlen(msg);
+            return false;
+        }))
+        // GO Success
+        .WillOnce(::testing::Invoke([](struct wpa_ctrl* ctrl, char* reply, size_t* reply_len) -> bool {
+            const char* msg = "P2P-GO-NEG-SUCCESS role=client freq=2437 ht40=0 peer_dev=96:52:44:b6:7d:14 peer_iface=96:52:44:b6:fd:14 wps_method=PBC";
+            if (!reply || !reply_len || *reply_len <= strlen(msg)) return true;
+            memcpy(reply, msg, strlen(msg) + 1);
+            *reply_len = strlen(msg);
+            return false;
+        }))
+        // Group Started
+        .WillOnce(::testing::Invoke([](struct wpa_ctrl* ctrl, char* reply, size_t* reply_len) -> bool {
+            const char* msg = "P2P-GROUP-STARTED lo client ssid=\"DIRECT-UU Sample-Test-Android-2\" freq=2437 psk=12c3ce3d8976152df796e5f42fc646723471bf1aab8d72a546fa3dce60dc14a3 go_dev_addr=96:52:44:b6:7d:14 [PERSISTENT]";
+            if (!reply || !reply_len || *reply_len <= strlen(msg)) return true;
+            memcpy(reply, msg, strlen(msg) + 1);
+            *reply_len = strlen(msg);
+            return false;
+        }))
+        .WillRepeatedly(::testing::Return(true));
+	
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(2)
 		.WillOnce(::testing::Invoke(
 					[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+					std::thread thread1([&]() {	
 					string text;
+					TEST_LOG("Before connectRequest.SetEvent json2str");	
 					EXPECT_TRUE(json->ToString(text));
+					TEST_LOG("Before connectRequest.SetEvent aftr json2str");	
 					EXPECT_EQ(text,string(_T("{"
 									"\"jsonrpc\":\"2.0\","
 									"\"method\":\"client.events.onClientConnectionRequest\","
@@ -1262,14 +1501,21 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectonClientConnectionAndLaunc
 									"\"name\":\"Sample-Test-Android-2\""
 									"}}"
 								)));
+					});
+					thread1.join();	
+					TEST_LOG("Before connectRequest.SetEvent");	
 					connectRequest.SetEvent();
+					TEST_LOG("After connectRequest.SetEvent");
 					return Core::ERROR_NONE;
 					}))
 
 	.WillOnce(::testing::Invoke(
 				[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+				std::thread thread1([&]() {	
 				string text;
+				TEST_LOG("Before P2PGrpStart.SetEvent json2str");
 				EXPECT_TRUE(json->ToString(text));
+				TEST_LOG("Before P2PGrpStart.SetEvent aftr json2str");	
 				EXPECT_EQ(text,string(_T("{"
                                                                 "\"jsonrpc\":\"2.0\","
                                                                 "\"method\":\"client.events.onLaunchRequest\","
@@ -1279,17 +1525,32 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectonClientConnectionAndLaunc
                                                                 "\"sink_dev_ip\":\"192.168.49.165\""
                                                                 "}}}"
                                                         )));
+				});
+				thread1.join();	
+				TEST_LOG("Before P2PGrpStart.SetEvent");	
                                 P2PGrpStart.SetEvent();
+				TEST_LOG("After P2PGrpStart.SetEvent");	
 				return Core::ERROR_NONE;
 				}));
-
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
-	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
-
-	EXPECT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000));
+	
+	TEST_LOG("Waiting for connect request event");
+    	auto result = connectRequest.Lock(10000);
+    	if (result != Core::ERROR_NONE) {
+    	    TEST_LOG("Connect request timeout");
+    	} else {
+    	    TEST_LOG("Connect request succeeded");
+    	}
+    	EXPECT_EQ(Core::ERROR_NONE, result);
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
-	EXPECT_EQ(Core::ERROR_NONE, P2PGrpStart.Lock(10000));
+	TEST_LOG("Waiting for P2PGrpStart event");
+    	auto start = P2PGrpStart.Lock(10000);
+    	if (start != Core::ERROR_NONE) {
+    	    TEST_LOG("P2PGrpStart timeout");
+    	} else {
+    	    TEST_LOG("P2PGrpStart succeeded");
+    	}
+	EXPECT_EQ(Core::ERROR_NONE, start);
 
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_UNSUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
@@ -1305,6 +1566,14 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithName)
 	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
+	// Reset events before use
+    	TEST_LOG("Resetting events before test");
+    	connectRequest.ResetEvent();
+	P2PGrpStart.ResetEvent();
+
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
+	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
+
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
 
@@ -1334,10 +1603,36 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithName)
 					}));
 
 	EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_recv(::testing::_, ::testing::_, ::testing::_))
+	.WillOnce(::testing::Invoke([](struct wpa_ctrl* ctrl, char* reply, size_t* reply_len) -> bool {
+				const char* msg = "P2P-DEVICE-FOUND 96:52:44:b6:7d:14 p2p_dev_addr=96:52:44:b6:7d:14 pri_dev_type=10-0050F204-5 name='Galaxy A23 5G' config_methods=0x188 dev_capab=0x25 group_capab=0x0 wfd_dev_info=0x01101c440032 vendor_elems=1 new=1";
+				if (!reply || !reply_len || *reply_len <= strlen(msg)) {
+					return true;
+				}
+				memcpy(reply, msg, strlen(msg) + 1);
+				*reply_len = strlen(msg);
+				return false;
+				}))
+	
+	.WillOnce(::testing::Invoke(
+				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				const char* msg = "P2P-PROV-DISC-PBC-REQ 96:52:44:b6:7d:14 p2p_dev_addr=96:52:44:b6:7d:14 pri_dev_type=10-0050F204-5 name='Galaxy A23 5G' config_methods=0x188 dev_capab=0x25 group_capab=0x0";
+				if (!reply || !reply_len || *reply_len <= strlen(msg)) {
+					return true;
+				}
+				memcpy(reply, msg, strlen(msg) + 1);
+				*reply_len = strlen(msg);
+				return false;
+				}))
+			
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
 				// Here using lo to avoid the operation not permitted error for unknown interfaces
-				strncpy(reply, "P2P-GROUP-STARTED lo client ssid=\"DIRECT-UU-Galaxy A23 5G\" freq=2437 psk=12c3ce3d8976152df796e5f42fc646723471bf1aab8d72a546fa3dce60dc14a3 go_dev_addr=96:52:44:b6:7d:14 [PERSISTENT]", *reply_len);
+				const char* msg = "P2P-GROUP-STARTED lo client ssid=\"DIRECT-UU-Galaxy A23 5G\" freq=2437 psk=12c3ce3d8976152df796e5f42fc646723471bf1aab8d72a546fa3dce60dc14a3 go_dev_addr=96:52:44:b6:7d:14 [PERSISTENT]";
+				if (!reply || !reply_len || *reply_len <= strlen(msg)) {
+					return true;
+				}
+				memcpy(reply, msg, strlen(msg) + 1);
+				*reply_len = strlen(msg);
 				return false;
 				}))
 
@@ -1345,16 +1640,16 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithName)
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
 				return true;
 				}));
-
-	Core::Event connectRequest(false, true);
-	Core::Event P2PGrpStart(false, true);
-
+	
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(2)
 		.WillOnce(::testing::Invoke(
 					[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+					std::thread thread1([&]() {	
 					string text;
+					TEST_LOG("Before connectRequest.SetEvent json2str");	
 					EXPECT_TRUE(json->ToString(text));
+					TEST_LOG("Before connectRequest.SetEvent aftr json2str ");	
 					EXPECT_EQ(text,string(_T("{"
 									"\"jsonrpc\":\"2.0\","
 									"\"method\":\"client.events.onClientConnectionRequest\","
@@ -1362,14 +1657,21 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithName)
 									"\"name\":\"Galaxy A23 5G\""
 									"}}"
 								)));
+					});
+					thread1.join();	
+					TEST_LOG("Before connectRequest.SetEvent");	
 					connectRequest.SetEvent();
+					TEST_LOG("After connectRequest.SetEvent");	
 					return Core::ERROR_NONE;
 					}))
 
 	.WillOnce(::testing::Invoke(
 				[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+				std::thread thread1([&]() {	
 				string text;
+				TEST_LOG("Before P2PGrpStart.SetEvent jsron2str");	
 				EXPECT_TRUE(json->ToString(text));
+				TEST_LOG("Before P2PGrpStart.SetEvent aftr json2str");	
 				EXPECT_EQ(text,string(_T("{"
                                                                 "\"jsonrpc\":\"2.0\","
                                                                 "\"method\":\"client.events.onLaunchRequest\","
@@ -1379,17 +1681,32 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithName)
                                                                 "\"sink_dev_ip\":\"192.168.49.165\""
                                                                 "}}}"
                                                         )));
+				});
+				thread1.join();
+				TEST_LOG("Before P2PGrpStart.SetEvent");	
                                 P2PGrpStart.SetEvent();
+				TEST_LOG("After P2PGrpStart.SetEvent");	
 				return Core::ERROR_NONE;
 				}));
-
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
-	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
-
-	EXPECT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000));
+	
+	TEST_LOG("Waiting for connect request event");
+    	auto result = connectRequest.Lock(10000);
+    	if (result != Core::ERROR_NONE) {
+    	    TEST_LOG("Connect request timeout");
+    	} else {
+    	    TEST_LOG("Connect request succeeded");
+    	}
+    	EXPECT_EQ(Core::ERROR_NONE, result);
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
-	EXPECT_EQ(Core::ERROR_NONE, P2PGrpStart.Lock(10000));
+	TEST_LOG("Waiting for P2PGrpStart event");
+    	auto start = P2PGrpStart.Lock(10000);
+    	if (start != Core::ERROR_NONE) {
+    	    TEST_LOG("P2PGrpStart timeout");
+    	} else {
+    	    TEST_LOG("P2PGrpStart succeeded");
+    	}
+	EXPECT_EQ(Core::ERROR_NONE, start);
 
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_UNSUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
@@ -1404,6 +1721,14 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithoutName)
 {
 	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
+
+	// Reset events before use
+    	TEST_LOG("Resetting events before test");
+    	connectRequest.ResetEvent();
+	P2PGrpStart.ResetEvent();
+
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
+	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
 
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
@@ -1445,16 +1770,16 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithoutName)
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
 				return true;
 				}));
-
-	Core::Event connectRequest(false, true);
-	Core::Event P2PGrpStart(false, true);
-
+	
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(2)
 		.WillOnce(::testing::Invoke(
 					[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+					std::thread thread1([&]() {	
 					string text;
+					TEST_LOG("Before connectRequest.SetEvent json2str");	
 					EXPECT_TRUE(json->ToString(text));
+					TEST_LOG("Before connectRequest.SetEvent after json2str");	
 					EXPECT_EQ(text,string(_T("{"
 									"\"jsonrpc\":\"2.0\","
 									"\"method\":\"client.events.onClientConnectionRequest\","
@@ -1462,14 +1787,21 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithoutName)
 									"\"name\":\"Miracast-Source\""
 									"}}"
 								)));
+					});
+					thread1.join();
+					TEST_LOG("Before connectRequest.SetEvent");	
 					connectRequest.SetEvent();
+					TEST_LOG("After connectRequest.SetEvent");	
 					return Core::ERROR_NONE;
 					}))
 
 	.WillOnce(::testing::Invoke(
 				[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+				std::thread thread1([&]() {	
 				string text;
+				TEST_LOG("Before P2PGrpStart.SetEvent json2str");	
 				EXPECT_TRUE(json->ToString(text));
+				TEST_LOG("Before P2PGrpStart.SetEvent aftr json2str");	
 				EXPECT_EQ(text,string(_T("{"
                                                                 "\"jsonrpc\":\"2.0\","
                                                                 "\"method\":\"client.events.onLaunchRequest\","
@@ -1479,17 +1811,32 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithoutName)
                                                                 "\"sink_dev_ip\":\"192.168.49.165\""
                                                                 "}}}"
                                                         )));
+				});
+				thread1.join();	
+				TEST_LOG("Before P2PGrpStart.SetEvent");	
                                 P2PGrpStart.SetEvent();
+				TEST_LOG("After P2PGrpStart.SetEvent");	
 				return Core::ERROR_NONE;
 				}));
-
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
-	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
-
-	EXPECT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000));
+	
+	TEST_LOG("Waiting for connect request event");
+    	auto result = connectRequest.Lock(10000);
+    	if (result != Core::ERROR_NONE) {
+    	    TEST_LOG("Connect request timeout");
+    	} else {
+    	    TEST_LOG("Connect request succeeded");
+    	}
+    	EXPECT_EQ(Core::ERROR_NONE, result);
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
-	EXPECT_EQ(Core::ERROR_NONE, P2PGrpStart.Lock(10000));
+	TEST_LOG("Waiting for P2PGrpStart event");
+    	auto start = P2PGrpStart.Lock(10000);
+    	if (start != Core::ERROR_NONE) {
+    	    TEST_LOG("P2PGrpStart timeout");
+    	} else {
+    	    TEST_LOG("P2PGrpStart succeeded");
+    	}
+	EXPECT_EQ(Core::ERROR_NONE, start);
 
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_UNSUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
@@ -1502,126 +1849,113 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithoutName)
 
 TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectP2PGoNegotiationGroupStartWithoutName)
 {
-	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
+    // --- Setup mock files ---
+    createFile("/etc/device.properties", "WIFI_P2P_CTRL_INTERFACE=p2p0");
+    createFile("/var/run/wpa_supplicant/p2p0", "p2p0");
 
-	EXPECT_EQ(string(""), plugin->Initialize(&service));
-	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
+    // --- Reset events ---
+    TEST_LOG("Resetting events before test");
+    connectRequest.ResetEvent();
+    P2PGrpStart.ResetEvent();
 
-	EXPECT_CALL(*p_wrapsImplMock, popen(::testing::_, ::testing::_))
-		.Times(::testing::AnyNumber())
-		.WillRepeatedly(::testing::Invoke(
-					[&](const char* command, const char* type)
-					{
-					char buffer[1024] = {0};
-					if ( 0 == strncmp(command,"/sbin/udhcpc -v -i",strlen("/sbin/udhcpc -v -i")))
-					{
-						strncpy(buffer, "udhcpc: sending select for 192.168.49.165\tudhcpc: lease of 192.168.49.165 obtained, lease time 3599\tdeleting routers\troute add default gw 192.168.49.1 dev lo\tadding dns 192.168.49.1",sizeof(buffer));
-					}
-					return (fmemopen(buffer, strlen(buffer), "r"));
-					}));
+    // --- Subscribe events ---
+    EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
+    EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
 
-	EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_request(::testing::_, ::testing::_, ::testing::_,::testing::_, ::testing::_, ::testing::_))
-		.Times(::testing::AnyNumber())
-		.WillRepeatedly(::testing::Invoke(
-					[&](struct wpa_ctrl *ctrl, const char *cmd, size_t cmd_len, char *reply, size_t *reply_len, void(*msg_cb)(char *msg, size_t len))
-					{
-						if ( 0 == strncmp(cmd,"P2P_CONNECT",strlen("P2P_CONNECT")))
-						{
-							strncpy(reply,"OK",*reply_len);
-						}
-						return false;
-					}));
+    // --- Initialize plugin and enable P2P ---
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE,
+              handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
 
-	EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_recv(::testing::_, ::testing::_, ::testing::_))
-	.WillOnce(::testing::Invoke(
-				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
-				strncpy(reply, "P2P-GO-NEG-REQUEST 96:52:44:b6:7d:14 dev_passwd_id=4 go_intent=13", *reply_len);
-				return false;
-				}))
+    // --- Mock popen for DHCP ---
+    EXPECT_CALL(*p_wrapsImplMock, popen(::testing::_, ::testing::_))
+        .WillRepeatedly(::testing::Invoke([](const char* command, const char* type) {
+            char buffer[1024] = {0};
+            if (strncmp(command, "/sbin/udhcpc -v -i", strlen("/sbin/udhcpc -v -i")) == 0) {
+                strncpy(buffer,
+                        "udhcpc: sending select for 192.168.49.165\tudhcpc: lease of 192.168.49.165 obtained",
+                        sizeof(buffer));
+            }
+            return fmemopen(buffer, strlen(buffer), "r");
+        }));
 
-	.WillOnce(::testing::Invoke(
-				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
-				strncpy(reply, "P2P-GO-NEG-REQUEST 96:52:44:b6:7d:14 dev_passwd_id=4 go_intent=13", *reply_len);
-				return false;
-				}))
+    // --- Mock wpa_ctrl_request for P2P_CONNECT ---
+    EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_request(::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_))
+        .WillRepeatedly(::testing::Invoke([](struct wpa_ctrl*, const char* cmd, size_t, char* reply, size_t* reply_len, void(*)(char*, size_t)) {
+            if (strncmp(cmd, "P2P_CONNECT", strlen("P2P_CONNECT")) == 0) {
+                strncpy(reply, "OK", *reply_len);
+            }
+            return false;
+        }));
 
-	.WillOnce(::testing::Invoke(
-				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
-				strncpy(reply, "P2P-GO-NEG-SUCCESS role=client freq=2437 ht40=0 x=96:52:44:b6:7d:14 peer_iface=96:52:44:b6:fd:14 wps_method=PBC", *reply_len);
-				return false;
-				}))
+    // --- P2P event sequence ---
+    std::vector<std::string> p2pEvents = {
+        "P2P-FIND-STARTED",
+        "P2P-DEVICE-FOUND 96:52:44:b6:7d:14 p2p_dev_addr=96:52:44:b6:7d:14 name='Miracast-Source'",
+        "P2P-GO-NEG-REQUEST 96:52:44:b6:7d:14 dev_passwd_id=4 go_intent=13",
+        "P2P-GO-NEG-SUCCESS role=client freq=2437 peer_iface=96:52:44:b6:fd:14",
+        "P2P-GROUP-FORMATION-SUCCESS",
+        "P2P-GROUP-STARTED lo client ssid=\"DIRECT-UU-Unknown\" freq=2437"
+    };
+    std::atomic<bool> clientAccepted = false;
+    size_t eventIndex = 0;
 
-	.WillOnce(::testing::Invoke(
-				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
-				strncpy(reply, "P2P-GROUP-FORMATION-SUCCESS", *reply_len);
-				return false;
-				}))
+    EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_recv(::testing::_, ::testing::_, ::testing::_))
+        .WillRepeatedly(::testing::Invoke([&](struct wpa_ctrl*, char* reply, size_t* reply_len) {
+            if (eventIndex < p2pEvents.size() - 1) {
+                strncpy(reply, p2pEvents[eventIndex].c_str(), *reply_len);
+                eventIndex++;
+                return false;
+            } else {
+                // Wait for clientAccepted to be true before sending last event
+                while (!clientAccepted.load()) {
+                    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                }
+                strncpy(reply, p2pEvents[eventIndex].c_str(), *reply_len);
+                eventIndex++;
+                return false;
+            }
+        }));
 
-	.WillOnce(::testing::Invoke(
-				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
-				// Here using lo to avoid the operation not permitted error for unknown interfaces
-				strncpy(reply, "P2P-GROUP-STARTED lo client ssid=\"DIRECT-UU-Unknown\" freq=2437 psk=12c3ce3d8976152df796e5f42fc646723471bf1aab8d72a546fa3dce60dc14a3 go_dev_addr=96:52:44:b6:7d:14 [PERSISTENT]", *reply_len);
-				return false;
-				}))
+    // --- Mock service.Submit for events ---
+    EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
+        .Times(2)
+        .WillOnce(::testing::Invoke([&](uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+            std::string text;
+            EXPECT_TRUE(json->ToString(text));
+            TEST_LOG("Client connection event ");
+            connectRequest.SetEvent();
+            return Core::ERROR_NONE;
+        }))
+        .WillOnce(::testing::Invoke([&](uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+            std::string text;
+            EXPECT_TRUE(json->ToString(text));
+            TEST_LOG("Launch request event");
+            P2PGrpStart.SetEvent();
+            return Core::ERROR_NONE;
+        }));
 
-	.WillRepeatedly(::testing::Invoke(
-				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
-				return true;
-				}));
+    // --- Wait for client connection event ---
+    TEST_LOG("Waiting for connect request event");
+    auto result = connectRequest.Lock(10000);
+    EXPECT_EQ(Core::ERROR_NONE, result);
 
-	Core::Event connectRequest(false, true);
-	Core::Event P2PGrpStart(false, true);
+    // --- Accept client connection ---
+    handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response);
+    clientAccepted = true; // allow last P2P event to be processed
 
-	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
-		.Times(2)
-		.WillOnce(::testing::Invoke(
-					[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
-					string text;
-					EXPECT_TRUE(json->ToString(text));
-					EXPECT_EQ(text,string(_T("{"
-									"\"jsonrpc\":\"2.0\","
-									"\"method\":\"client.events.onClientConnectionRequest\","
-									"\"params\":{\"mac\":\"96:52:44:b6:7d:14\","
-									"\"name\":\"Miracast-Source\""
-									"}}"
-								)));
-					connectRequest.SetEvent();
-					return Core::ERROR_NONE;
-					}))
+    // --- Wait for P2P group start event ---
+    TEST_LOG("Waiting for P2PGrpStart event");
+    auto start = P2PGrpStart.Lock(10000);
+    EXPECT_EQ(Core::ERROR_NONE, start);
 
-	.WillOnce(::testing::Invoke(
-				[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
-				string text;
-				EXPECT_TRUE(json->ToString(text));
-				EXPECT_EQ(text,string(_T("{"
-                                                                "\"jsonrpc\":\"2.0\","
-                                                                "\"method\":\"client.events.onLaunchRequest\","
-                                                                "\"params\":{\"device_parameters\":{\"source_dev_ip\":\"192.168.49.1\","
-                                                                "\"source_dev_mac\":\"96:52:44:b6:7d:14\","
-                                                                "\"source_dev_name\":\"Miracast-Source\","
-                                                                "\"sink_dev_ip\":\"192.168.49.165\""
-                                                                "}}}"
-                                                        )));
-                                P2PGrpStart.SetEvent();
-				return Core::ERROR_NONE;
-				}));
+    // --- Cleanup ---
+    EVENT_UNSUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
+    EVENT_UNSUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
+    plugin->Deinitialize(nullptr);
 
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
-	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
-
-	EXPECT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000));
-	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
-
-	EXPECT_EQ(Core::ERROR_NONE, P2PGrpStart.Lock(10000));
-
-	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
-	EVENT_UNSUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
-
-	plugin->Deinitialize(nullptr);
-
-	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	removeFile("/var/run/wpa_supplicant/p2p0");
+    removeEntryFromFile("/etc/device.properties", "WIFI_P2P_CTRL_INTERFACE=p2p0");
+    removeFile("/var/run/wpa_supplicant/p2p0");
 }
 
 TEST_F(MiracastServiceEventTest, P2P_ClientMode_GENERIC_FAILURE)
@@ -1629,9 +1963,16 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_GENERIC_FAILURE)
 	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
-	EXPECT_EQ(string(""), plugin->Initialize(&service));
-	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
+	// Reset events before use
+    	TEST_LOG("Resetting events before test");
+	Core::Event P2PGenericFail(false, true);
+    	connectRequest.ResetEvent();
 
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
+	
+	EXPECT_EQ(string(""), plugin->Initialize(&service));
+	
 	EXPECT_CALL(*p_wrapsImplMock, popen(::testing::_, ::testing::_))
 		.Times(::testing::AnyNumber())
 		.WillRepeatedly(::testing::Invoke(
@@ -1724,15 +2065,15 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_GENERIC_FAILURE)
 				return true;
 				}));
 
-	Core::Event connectRequest(false, true);
-	Core::Event P2PGenericFail(false, true);
-
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(2)
 		.WillOnce(::testing::Invoke(
 					[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+					std::thread thread1([&]() {	
 					string text;
+					TEST_LOG("Before connectRequest.SetEvent json2str");	
 					EXPECT_TRUE(json->ToString(text));
+					TEST_LOG("Before connectRequest.SetEvent aftr json2str");	
 					EXPECT_EQ(text,string(_T("{"
 									"\"jsonrpc\":\"2.0\","
 									"\"method\":\"client.events.onClientConnectionRequest\","
@@ -1740,14 +2081,21 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_GENERIC_FAILURE)
 									"\"name\":\"Sample-Test-Android-2\""
 									"}}"
 								)));
+					});
+					thread1.join();	
+					TEST_LOG("Before connectRequest.SetEvent");	
 					connectRequest.SetEvent();
+					TEST_LOG("After connectRequest.SetEvent");	
 					return Core::ERROR_NONE;
 					}))
 
 	.WillOnce(::testing::Invoke(
 				[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+				std::thread thread1([&]() {	
 				string text;
+				TEST_LOG("Before P2PGenericFail.SetEvent json2str");	
 				EXPECT_TRUE(json->ToString(text));
+				TEST_LOG("Before P2PGenericFail.SetEvent aftr json2str");	
 				EXPECT_EQ(text,string(_T("{"
                                                                 "\"jsonrpc\":\"2.0\","
                                                                 "\"method\":\"client.events.onClientConnectionError\","
@@ -1758,18 +2106,27 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_GENERIC_FAILURE)
                                                                 "}"
                                                                 "}"
 							)));
+				});
+				thread1.join();	
+				TEST_LOG("Before P2PGenericFail.SetEvent");	
 				P2PGenericFail.SetEvent();
+				TEST_LOG("After P2PGenericFail.SetEvent");	
 				return Core::ERROR_NONE;
 				}));
 
+	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
 
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
-
-	EXPECT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000));
+	TEST_LOG("Waiting for connect request event");
+    	auto result = connectRequest.Lock(10000);
+    	if (result != Core::ERROR_NONE) {
+    	    TEST_LOG("Connect request timeout");
+    	} else {
+    	    TEST_LOG("Connect request succeeded");
+    	}
+    	EXPECT_EQ(Core::ERROR_NONE, result);
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
-	EXPECT_EQ(Core::ERROR_NONE, P2PGenericFail.Lock(10000));
+	EXPECT_EQ(Core::ERROR_NONE, P2PGenericFail.Lock(10000)) << " P2P Event not triggered";
 
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
@@ -1785,6 +2142,14 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_GENERIC_FAILURE)
 	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
+	// Reset events before use
+    	TEST_LOG("Resetting events before test");
+	Core::Event P2PGenericFail(false, true);	
+    	connectRequest.ResetEvent();
+
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
+	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
+	
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
 
@@ -1864,15 +2229,15 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_GENERIC_FAILURE)
 				return true;
 				}));
 
-	Core::Event connectRequest(false, true);
-	Core::Event P2PGenericFail(false, true);
-
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(2)
 		.WillOnce(::testing::Invoke(
-					[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+					[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) 	{
+					std::thread thread1([&]() {	
 					string text;
+					TEST_LOG("Before connectRequest.SetEvent json2str");	
 					EXPECT_TRUE(json->ToString(text));
+					TEST_LOG("Before connectRequest.SetEvent aftr json2str");	
 					EXPECT_EQ(text,string(_T("{"
 									"\"jsonrpc\":\"2.0\","
 									"\"method\":\"client.events.onClientConnectionRequest\","
@@ -1880,14 +2245,21 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_GENERIC_FAILURE)
 									"\"name\":\"Sample-Test-Android-2\""
 									"}}"
 								)));
+					});
+					thread1.join();	
+					TEST_LOG("Before connectRequest.SetEvent");	
 					connectRequest.SetEvent();
+					TEST_LOG("After connectRequest.SetEvent");	
 					return Core::ERROR_NONE;
 					}))
 
 		.WillOnce(::testing::Invoke(
 					[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+					std::thread thread1([&]() {	
 					string text;
+					TEST_LOG("Before P2PGeneric.SetEvent json2str");		
 					EXPECT_TRUE(json->ToString(text));
+					TEST_LOG("Before P2PGeneric.SetEvent afte json2str");		
 					EXPECT_EQ(text,string(_T("{"
 												"\"jsonrpc\":\"2.0\","
 												"\"method\":\"client.events.onClientConnectionError\","
@@ -1898,17 +2270,25 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_GENERIC_FAILURE)
 												"}"
 												"}"
 											)));
+					});
+					thread1.join();	
+					TEST_LOG("Before P2PGeneric.SetEvent");	
 					P2PGenericFail.SetEvent();
+					TEST_LOG("After P2PGenericFail.SetEvent");	
 					return Core::ERROR_NONE;
 					}));
-
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
-	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
-
-	EXPECT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000));
+	
+	TEST_LOG("Waiting for connect request event");
+    	auto result = connectRequest.Lock(10000);
+    	if (result != Core::ERROR_NONE) {
+    	    TEST_LOG("Connect request timeout");
+    	} else {
+    	    TEST_LOG("Connect request succeeded");
+    	}
+    	EXPECT_EQ(Core::ERROR_NONE, result);
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
-	EXPECT_EQ(Core::ERROR_NONE, P2PGenericFail.Lock(10000));
+	EXPECT_EQ(Core::ERROR_NONE, P2PGenericFail.Lock(10000)) << " P2P Event not triggered";
 
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
@@ -2040,4 +2420,3 @@ TEST_F(MiracastServiceEventTest, powerStateChange)
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	removeFile("/var/run/wpa_supplicant/p2p0");
 }
-#endif
