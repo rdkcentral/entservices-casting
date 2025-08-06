@@ -1888,7 +1888,7 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectP2PGoNegotiationGroupStart
             return false;
         }));
 
-    // --- Mock wpa_ctrl_recv to simulate P2P events ---
+    // --- P2P event sequence ---
     std::vector<std::string> p2pEvents = {
         "P2P-FIND-STARTED",
         "P2P-DEVICE-FOUND 96:52:44:b6:7d:14 p2p_dev_addr=96:52:44:b6:7d:14 name='Miracast-Source'",
@@ -1897,45 +1897,54 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectP2PGoNegotiationGroupStart
         "P2P-GROUP-FORMATION-SUCCESS",
         "P2P-GROUP-STARTED lo client ssid=\"DIRECT-UU-Unknown\" freq=2437"
     };
+    std::atomic<bool> clientAccepted = false;
     size_t eventIndex = 0;
 
     EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_recv(::testing::_, ::testing::_, ::testing::_))
         .WillRepeatedly(::testing::Invoke([&](struct wpa_ctrl*, char* reply, size_t* reply_len) {
-            if (eventIndex < p2pEvents.size()) {
+            if (eventIndex < p2pEvents.size() - 1) {
                 strncpy(reply, p2pEvents[eventIndex].c_str(), *reply_len);
                 eventIndex++;
-                return false; // event processed
+                return false;
+            } else {
+                // Wait for clientAccepted to be true before sending last event
+                while (!clientAccepted.load()) {
+                    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                }
+                strncpy(reply, p2pEvents[eventIndex].c_str(), *reply_len);
+                eventIndex++;
+                return false;
             }
-            std::this_thread::sleep_for(std::chrono::milliseconds(50));
-            return true; // no more events
         }));
 
-    // --- Mock service.Submit to trigger events ---
+    // --- Mock service.Submit for events ---
     EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
         .Times(2)
         .WillOnce(::testing::Invoke([&](uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
             std::string text;
             EXPECT_TRUE(json->ToString(text));
-            TEST_LOG("Client connection event: ");
+            TEST_LOG("Client connection event: " << text);
             connectRequest.SetEvent();
             return Core::ERROR_NONE;
         }))
         .WillOnce(::testing::Invoke([&](uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
             std::string text;
             EXPECT_TRUE(json->ToString(text));
-            TEST_LOG("Launch request event: ");
+            TEST_LOG("Launch request event: " << text);
             P2PGrpStart.SetEvent();
             return Core::ERROR_NONE;
         }));
 
-    // --- Wait for connect request ---
+    // --- Wait for client connection event ---
     TEST_LOG("Waiting for connect request event");
     auto result = connectRequest.Lock(10000);
     EXPECT_EQ(Core::ERROR_NONE, result);
 
+    // --- Accept client connection ---
     handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response);
+    clientAccepted = true; // allow last P2P event to be processed
 
-    // --- Wait for P2P group start ---
+    // --- Wait for P2P group start event ---
     TEST_LOG("Waiting for P2PGrpStart event");
     auto start = P2PGrpStart.Lock(10000);
     EXPECT_EQ(Core::ERROR_NONE, start);
