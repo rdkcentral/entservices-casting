@@ -770,6 +770,7 @@ TEST_F(MiracastServiceEventTest, onClientConnectionRequestRejected)
 		.Times(1)
 		.WillOnce(::testing::Invoke(
 					[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+					std::thread thread1([&]() {	
 					string text;
 					EXPECT_TRUE(json->ToString(text));
 					EXPECT_EQ(text,string(_T("{"
@@ -779,6 +780,8 @@ TEST_F(MiracastServiceEventTest, onClientConnectionRequestRejected)
 									"\"name\":\"Sample-Test-Android-2\""
 									"}}"
 								)));
+					});
+					thread1.join();	
 					TEST_LOG("Before connectRequest.SetEvent");	
 					connectRequest.SetEvent();
 					TEST_LOG("After connectRequest.SetEvent");	
@@ -859,6 +862,7 @@ TEST_F(MiracastServiceEventTest, P2P_CONNECT_FAIL_onClientConnectionError)
 		.Times(2)
 		.WillOnce(::testing::Invoke(
 					[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+					std::thread thread1([&]() {	
 					string text;
 					EXPECT_TRUE(json->ToString(text));
 					EXPECT_EQ(text,string(_T("{"
@@ -868,6 +872,8 @@ TEST_F(MiracastServiceEventTest, P2P_CONNECT_FAIL_onClientConnectionError)
 									"\"name\":\"Sample-Test-Android-2\""
 									"}"
 									"}")));
+					});
+					thread1.join();	
 					TEST_LOG("Before connectRequest.SetEvent");	
 					connectRequest.SetEvent();
 					TEST_LOG("After connectRequest.SetEvent");
@@ -875,6 +881,7 @@ TEST_F(MiracastServiceEventTest, P2P_CONNECT_FAIL_onClientConnectionError)
 					}))
 	.WillOnce(::testing::Invoke(
 				[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+				std::thread thread1([&]() {	
 				string text;
 				EXPECT_TRUE(json->ToString(text));
 				EXPECT_EQ(text,string(_T("{"
@@ -886,6 +893,8 @@ TEST_F(MiracastServiceEventTest, P2P_CONNECT_FAIL_onClientConnectionError)
 								"\"reason\":\"P2P_CONNECT_FAILURE\""
 								"}"
 								"}")));
+				});
+				thread1.join();
 				TEST_LOG("Before P2PConnectFail.SetEvent");
 				P2PConnectFail.SetEvent();
 				TEST_LOG("After P2PConnectFail.SetEvent");
@@ -993,6 +1002,7 @@ TEST_F(MiracastServiceEventTest, P2P_GO_NEGOTIATION_FAIL_onClientConnectionError
 		.Times(2)
 		.WillOnce(::testing::Invoke(
 					[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+					std::thread thread1([&]() {	
 					string text;
 					EXPECT_TRUE(json->ToString(text));
 					EXPECT_EQ(text,string(_T("{"
@@ -1002,6 +1012,8 @@ TEST_F(MiracastServiceEventTest, P2P_GO_NEGOTIATION_FAIL_onClientConnectionError
 									"\"name\":\"Sample-Test-Android-2\""
 									"}"
 									"}")));
+					});
+					thread1.join();
 					TEST_LOG("Before connectRequest.SetEvent");	
 					connectRequest.SetEvent();
 					TEST_LOG("After connectRequest.SetEvent");	
@@ -1009,6 +1021,7 @@ TEST_F(MiracastServiceEventTest, P2P_GO_NEGOTIATION_FAIL_onClientConnectionError
 					}))
 	.WillOnce(::testing::Invoke(
 				[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+				std::thread thread1([&]() {	
 				string text;
 				EXPECT_TRUE(json->ToString(text));
 				EXPECT_EQ(text,string(_T("{"
@@ -1020,6 +1033,8 @@ TEST_F(MiracastServiceEventTest, P2P_GO_NEGOTIATION_FAIL_onClientConnectionError
 								"\"reason\":\"P2P_GROUP_NEGOTIATION_FAILURE\""
 								"}"
 								"}")));
+				});
+				thread1.join();
 				TEST_LOG("Before P2PGoFail.SetEvent");	
 				P2PGoFail.SetEvent();
 				TEST_LOG("After P2PGoFail.SetEvent");	
@@ -1126,6 +1141,7 @@ TEST_F(MiracastServiceEventTest, P2P_GO_FORMATION_FAIL_onClientConnectionError)
 		.Times(2)
 		.WillOnce(::testing::Invoke(
 					[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+					std::thread thread1([&]() {
 					string text;
 					TEST_LOG("Before connectRequest.SetEvent json2string");	
 					EXPECT_TRUE(json->ToString(text));
@@ -1137,6 +1153,8 @@ TEST_F(MiracastServiceEventTest, P2P_GO_FORMATION_FAIL_onClientConnectionError)
 									"\"name\":\"Sample-Test-Android-2\""
 									"}"
 									"}")));
+					});
+					thread1.join();
 					TEST_LOG("Before connectRequest.SetEvent");	
 					connectRequest.SetEvent();
 					TEST_LOG("After connectRequest.SetEvent");	
@@ -1144,6 +1162,7 @@ TEST_F(MiracastServiceEventTest, P2P_GO_FORMATION_FAIL_onClientConnectionError)
 					}))
 	.WillOnce(::testing::Invoke(
 				[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+				std::thread thread1([&]() {	
 				string text;
 				TEST_LOG("Before P2PGoFail.SetEvent json2string");	
 				EXPECT_TRUE(json->ToString(text));
@@ -1157,6 +1176,8 @@ TEST_F(MiracastServiceEventTest, P2P_GO_FORMATION_FAIL_onClientConnectionError)
 								"\"reason\":\"P2P_GROUP_FORMATION_FAILURE\""
 								"}"
 								"}")));
+				});
+				thread1.join();
 				TEST_LOG("Before P2PGoFail.SetEvent");	
 				P2PGoFail.SetEvent();
 				TEST_LOG("After P2PGoFfail.SetEvent");
@@ -1276,6 +1297,7 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_onClientConnectionAndLaunchReque
 		.Times(2)
 		.WillOnce(::testing::Invoke(
 					[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+					std::thread thread1([&]() {	
 					string text;
 					TEST_LOG("Before connectRequest.SetEvent json2string");	
 					EXPECT_TRUE(json->ToString(text));
@@ -1287,6 +1309,8 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_onClientConnectionAndLaunchReque
 									"\"name\":\"Sample-Test-Android-2\""
 									"}}"
 								)));
+					});
+					thread1.join();	
 					TEST_LOG("Before connectRequest.SetEvent");	
 					connectRequest.SetEvent();
 					TEST_LOG("After connectRequest.SetEvent");
@@ -1295,6 +1319,7 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_onClientConnectionAndLaunchReque
 
 	.WillOnce(::testing::Invoke(
 				[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+				std::thread thread1([&]() {	
 				string text;
 				TEST_LOG("Before P2PGrpStart.SetEvent json2str");	
 				EXPECT_TRUE(json->ToString(text));
@@ -1308,6 +1333,8 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_onClientConnectionAndLaunchReque
                                                                 "\"sink_dev_ip\":\"192.168.49.165\""
                                                                 "}}}"
                                                         )));
+				});
+				thread1.join();
 				TEST_LOG("Before P2PGrpStart.SetEvent");	
                                 P2PGrpStart.SetEvent();
 				TEST_LOG("After P2PGrpStart.SetEvent");	
@@ -1462,6 +1489,7 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectonClientConnectionAndLaunc
 		.Times(2)
 		.WillOnce(::testing::Invoke(
 					[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+					std::thread thread1([&]() {	
 					string text;
 					TEST_LOG("Before connectRequest.SetEvent json2str");	
 					EXPECT_TRUE(json->ToString(text));
@@ -1473,6 +1501,8 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectonClientConnectionAndLaunc
 									"\"name\":\"Sample-Test-Android-2\""
 									"}}"
 								)));
+					});
+					thread1.join();	
 					TEST_LOG("Before connectRequest.SetEvent");	
 					connectRequest.SetEvent();
 					TEST_LOG("After connectRequest.SetEvent");
@@ -1481,6 +1511,7 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectonClientConnectionAndLaunc
 
 	.WillOnce(::testing::Invoke(
 				[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+				std::thread thread1([&]() {	
 				string text;
 				TEST_LOG("Before P2PGrpStart.SetEvent json2str");
 				EXPECT_TRUE(json->ToString(text));
@@ -1494,6 +1525,8 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectonClientConnectionAndLaunc
                                                                 "\"sink_dev_ip\":\"192.168.49.165\""
                                                                 "}}}"
                                                         )));
+				});
+				thread1.join();	
 				TEST_LOG("Before P2PGrpStart.SetEvent");	
                                 P2PGrpStart.SetEvent();
 				TEST_LOG("After P2PGrpStart.SetEvent");	
@@ -1612,6 +1645,7 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithName)
 		.Times(2)
 		.WillOnce(::testing::Invoke(
 					[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+					std::thread thread1([&]() {	
 					string text;
 					TEST_LOG("Before connectRequest.SetEvent json2str");	
 					EXPECT_TRUE(json->ToString(text));
@@ -1623,6 +1657,8 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithName)
 									"\"name\":\"Galaxy A23 5G\""
 									"}}"
 								)));
+					});
+					thread1.join();	
 					TEST_LOG("Before connectRequest.SetEvent");	
 					connectRequest.SetEvent();
 					TEST_LOG("After connectRequest.SetEvent");	
@@ -1631,6 +1667,7 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithName)
 
 	.WillOnce(::testing::Invoke(
 				[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+				std::thread thread1([&]() {	
 				string text;
 				TEST_LOG("Before P2PGrpStart.SetEvent jsron2str");	
 				EXPECT_TRUE(json->ToString(text));
@@ -1644,6 +1681,8 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithName)
                                                                 "\"sink_dev_ip\":\"192.168.49.165\""
                                                                 "}}}"
                                                         )));
+				});
+				thread1.join();
 				TEST_LOG("Before P2PGrpStart.SetEvent");	
                                 P2PGrpStart.SetEvent();
 				TEST_LOG("After P2PGrpStart.SetEvent");	
@@ -1736,6 +1775,7 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithoutName)
 		.Times(2)
 		.WillOnce(::testing::Invoke(
 					[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+					std::thread thread1([&]() {	
 					string text;
 					TEST_LOG("Before connectRequest.SetEvent json2str");	
 					EXPECT_TRUE(json->ToString(text));
@@ -1747,6 +1787,8 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithoutName)
 									"\"name\":\"Miracast-Source\""
 									"}}"
 								)));
+					});
+					thread1.join();
 					TEST_LOG("Before connectRequest.SetEvent");	
 					connectRequest.SetEvent();
 					TEST_LOG("After connectRequest.SetEvent");	
@@ -1755,6 +1797,7 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithoutName)
 
 	.WillOnce(::testing::Invoke(
 				[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+				std::thread thread1([&]() {	
 				string text;
 				TEST_LOG("Before P2PGrpStart.SetEvent json2str");	
 				EXPECT_TRUE(json->ToString(text));
@@ -1768,6 +1811,8 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithoutName)
                                                                 "\"sink_dev_ip\":\"192.168.49.165\""
                                                                 "}}}"
                                                         )));
+				});
+				thread1.join();	
 				TEST_LOG("Before P2PGrpStart.SetEvent");	
                                 P2PGrpStart.SetEvent();
 				TEST_LOG("After P2PGrpStart.SetEvent");	
@@ -1890,6 +1935,7 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectP2PGoNegotiationGroupStart
 		.Times(2)
 		.WillOnce(::testing::Invoke(
 					[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+					std::thread thread1([&]() {	
 					string text;
 					TEST_LOG("Before connectRequest.SetEvent json2str");	
 					EXPECT_TRUE(json->ToString(text));
@@ -1901,6 +1947,8 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectP2PGoNegotiationGroupStart
 									"\"name\":\"Miracast-Source\""
 									"}}"
 								)));
+					});
+					thread1.join();	
 					TEST_LOG("Before connectRequest.SetEvent");	
 					connectRequest.SetEvent();
 					TEST_LOG("Before connectRequest.SetEvent");	
@@ -1909,6 +1957,7 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectP2PGoNegotiationGroupStart
 
 	.WillOnce(::testing::Invoke(
 				[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+				std::thread thread1([&]() {	
 				string text; 
 				TEST_LOG("Before P2PGrpStart.SetEvent json2str");	
 				EXPECT_TRUE(json->ToString(text));
@@ -1922,6 +1971,8 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectP2PGoNegotiationGroupStart
                                                                 "\"sink_dev_ip\":\"192.168.49.165\""
                                                                 "}}}"
                                                         )));
+				});
+				thread1.join();	
 				TEST_LOG("Before P2PGrpStart.SetEvent");	
                                 P2PGrpStart.SetEvent();
 				TEST_LOG("After P2PGrpStart.SetEvent");	
@@ -2067,6 +2118,7 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_GENERIC_FAILURE)
 		.Times(2)
 		.WillOnce(::testing::Invoke(
 					[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+					std::thread thread1([&]() {	
 					string text;
 					TEST_LOG("Before connectRequest.SetEvent json2str");	
 					EXPECT_TRUE(json->ToString(text));
@@ -2078,6 +2130,8 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_GENERIC_FAILURE)
 									"\"name\":\"Sample-Test-Android-2\""
 									"}}"
 								)));
+					});
+					thread1.join();	
 					TEST_LOG("Before connectRequest.SetEvent");	
 					connectRequest.SetEvent();
 					TEST_LOG("After connectRequest.SetEvent");	
@@ -2086,6 +2140,7 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_GENERIC_FAILURE)
 
 	.WillOnce(::testing::Invoke(
 				[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+				std::thread thread1([&]() {	
 				string text;
 				TEST_LOG("Before P2PGenericFail.SetEvent json2str");	
 				EXPECT_TRUE(json->ToString(text));
@@ -2100,6 +2155,8 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_GENERIC_FAILURE)
                                                                 "}"
                                                                 "}"
 							)));
+				});
+				thread1.join();	
 				TEST_LOG("Before P2PGenericFail.SetEvent");	
 				P2PGenericFail.SetEvent();
 				TEST_LOG("After P2PGenericFail.SetEvent");	
@@ -2224,7 +2281,8 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_GENERIC_FAILURE)
 	EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
 		.Times(2)
 		.WillOnce(::testing::Invoke(
-					[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+					[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) 	{
+					std::thread thread1([&]() {	
 					string text;
 					TEST_LOG("Before connectRequest.SetEvent json2str");	
 					EXPECT_TRUE(json->ToString(text));
@@ -2236,6 +2294,8 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_GENERIC_FAILURE)
 									"\"name\":\"Sample-Test-Android-2\""
 									"}}"
 								)));
+					});
+					thread1.join();	
 					TEST_LOG("Before connectRequest.SetEvent");	
 					connectRequest.SetEvent();
 					TEST_LOG("After connectRequest.SetEvent");	
@@ -2244,6 +2304,7 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_GENERIC_FAILURE)
 
 		.WillOnce(::testing::Invoke(
 					[&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+					std::thread thread1([&]() {	
 					string text;
 					TEST_LOG("Before P2PGeneric.SetEvent json2str");		
 					EXPECT_TRUE(json->ToString(text));
@@ -2258,6 +2319,8 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_GENERIC_FAILURE)
 												"}"
 												"}"
 											)));
+					});
+					thread1.join();	
 					TEST_LOG("Before P2PGeneric.SetEvent");	
 					P2PGenericFail.SetEvent();
 					TEST_LOG("After P2PGenericFail.SetEvent");	
