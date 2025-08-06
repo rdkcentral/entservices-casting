@@ -370,12 +370,45 @@ namespace WPEFramework
                 .withRetryCount(25)
                 .createInterface();
 
+            if (_powerManagerPlugin) {
+                LOGINFO("PowerManagerInterfaceBuilder created successfully");
+                checkPowerAndNetworkStandbyStates();
+            }
+            else {
+                LOGERR("Failed to get PowerManager instance");
+            }
+        }
+
+        void XCastImplementation::registerEventHandlers()
+        {
+            ASSERT (_powerManagerPlugin);
+            if(!_registeredEventHandlers && _powerManagerPlugin) {
+                _powerManagerPlugin->Register(_pwrMgrNotification.baseInterface<Exchange::IPowerManager::INetworkStandbyModeChangedNotification>());
+                LOGINFO("INetworkStandbyModeChangedNotification event registered");
+                _powerManagerPlugin->Register(_pwrMgrNotification.baseInterface<Exchange::IPowerManager::IModeChangedNotification>());
+                LOGINFO("IModeChangedNotification event registered");
+                _registeredEventHandlers = true;
+            }
+        }
+
+        void XCastImplementation::unregisterEventHandlers()
+        {
+            ASSERT (_powerManagerPlugin);
+            if (_registeredEventHandlers && _powerManagerPlugin) {
+                _powerManagerPlugin->Unregister(_pwrMgrNotification.baseInterface<Exchange::IPowerManager::INetworkStandbyModeChangedNotification>());
+                LOGINFO("INetworkStandbyModeChangedNotification event unregistered");
+                _powerManagerPlugin->Unregister(_pwrMgrNotification.baseInterface<Exchange::IPowerManager::IModeChangedNotification>());
+                LOGINFO("IModeChangedNotification event unregistered");
+                _registeredEventHandlers = false;
+            }
+        }
+
+        void XCastImplementation::checkPowerAndNetworkStandbyStates()
+        {
             Core::hresult retStatus = Core::ERROR_GENERAL;
             PowerState pwrStateCur = WPEFramework::Exchange::IPowerManager::POWER_STATE_UNKNOWN;
             PowerState pwrStatePrev = WPEFramework::Exchange::IPowerManager::POWER_STATE_UNKNOWN;
             bool nwStandby = false;
-
-            LOGINFO("XCast:: Initialize  plugin called \n");
 
             ASSERT (_powerManagerPlugin);
             if (_powerManagerPlugin){
@@ -383,7 +416,7 @@ namespace WPEFramework
                 if (Core::ERROR_NONE == retStatus)
                 {
                     m_powerState = pwrStateCur;
-                    LOGINFO("XCast::m_powerState:%d", m_powerState);
+                    LOGINFO("m_powerState:%d", m_powerState);
                 }
 
                 retStatus = _powerManagerPlugin->GetNetworkStandbyMode(nwStandby);
@@ -392,32 +425,6 @@ namespace WPEFramework
                     m_networkStandbyMode = nwStandby;
                     LOGINFO("m_networkStandbyMode:%u ",m_networkStandbyMode);
                 }
-            }
-        }
-
-        void XCastImplementation::registerEventHandlers()
-        {
-            ASSERT (_powerManagerPlugin);
-
-            if(!_registeredEventHandlers && _powerManagerPlugin) {
-                _powerManagerPlugin->Register(_pwrMgrNotification.baseInterface<Exchange::IPowerManager::INetworkStandbyModeChangedNotification>());
-                LOGINFO("PowerManager NetworkStandbyModeChanged event registered");
-                _powerManagerPlugin->Register(_pwrMgrNotification.baseInterface<Exchange::IPowerManager::IModeChangedNotification>());
-                LOGINFO("PowerManager ModeChanged event registered");
-                _registeredEventHandlers = true;
-            }
-        }
-
-        void XCastImplementation::unregisterEventHandlers()
-        {
-            ASSERT (_powerManagerPlugin);
-
-            if (_registeredEventHandlers && _powerManagerPlugin) {
-                _powerManagerPlugin->Unregister(_pwrMgrNotification.baseInterface<Exchange::IPowerManager::INetworkStandbyModeChangedNotification>());
-                LOGINFO("PowerManager NetworkStandbyModeChanged event unregistered");
-                _powerManagerPlugin->Unregister(_pwrMgrNotification.baseInterface<Exchange::IPowerManager::IModeChangedNotification>());
-                LOGINFO("PowerManager ModeChanged event unregistered");
-                _registeredEventHandlers = false;
             }
         }
 
@@ -456,7 +463,6 @@ namespace WPEFramework
         {
             LOGINFO("m_networkStandbyMode:%u ",m_networkStandbyMode);
             SetNetworkStandbyMode(m_networkStandbyMode);
-        
         }
 
         void XCastImplementation::onXcastApplicationLaunchRequestWithParam (string appName, string strPayLoad, string strQuery, string strAddDataUrl)
@@ -1169,9 +1175,15 @@ void XCastImplementation::dumpDynamicAppCacheList(string strListName, std::vecto
         Core::hresult XCastImplementation::SetEnabled(const bool& enabled, Exchange::IXCast::XCastSuccess &success){
             LOGINFO("setEnabled [%d]",enabled);
             bool isEnabled = false;
+            bool currentNetworkStandbyMode = m_networkStandbyMode;
 
             m_xcastEnable= enabled;
             success.success = false;
+            if ((!_registeredEventHandlers) && (enabled))
+            {
+                checkPowerAndNetworkStandbyStates();
+            }
+
             if (m_xcastEnable && ( (m_standbyBehavior == true) || ((m_standbyBehavior == false)&&(m_powerState == WPEFramework::Exchange::IPowerManager::POWER_STATE_ON))))
             {
                 isEnabled = true;
@@ -1183,6 +1195,9 @@ void XCastImplementation::dumpDynamicAppCacheList(string strListName, std::vecto
             }
             LOGINFO("XCastImplementation::setEnabled : %d, enabled : %d" , m_xcastEnable, isEnabled);
             enableCastService(m_friendlyName,isEnabled);
+            if (currentNetworkStandbyMode != m_networkStandbyMode) {
+                SetNetworkStandbyMode(m_networkStandbyMode);
+            }
             success.success = true;
             return Core::ERROR_NONE;
         }
