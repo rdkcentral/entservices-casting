@@ -1916,14 +1916,14 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectP2PGoNegotiationGroupStart
         .WillOnce(::testing::Invoke([&](uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
             std::string text;
             EXPECT_TRUE(json->ToString(text));
-            TEST_LOG("Client connection event: " << text);
+            TEST_LOG("Client connection event: ");
             connectRequest.SetEvent();
             return Core::ERROR_NONE;
         }))
         .WillOnce(::testing::Invoke([&](uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
             std::string text;
             EXPECT_TRUE(json->ToString(text));
-            TEST_LOG("Launch request event: " << text);
+            TEST_LOG("Launch request event: ");
             P2PGrpStart.SetEvent();
             return Core::ERROR_NONE;
         }));
