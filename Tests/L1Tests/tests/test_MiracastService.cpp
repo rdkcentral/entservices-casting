@@ -124,13 +124,13 @@ protected:
 
 	void SetUp() override {
 	TEST_LOG("SetUp before sleep ");
-	std::this_thread::sleep_for(std::chrono::milliseconds(500));
+	std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 	TEST_LOG("SetUp after sleep ");	
 	}
 
 	void TearDown() override {
 	TEST_LOG("TearDown before sleep ");
-	std::this_thread::sleep_for(std::chrono::milliseconds(500));
+	std::this_thread::sleep_for(std::chrono::milliseconds(5000));
 	TEST_LOG("TearDown after sleep ");	
 	}	
 
