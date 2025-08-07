@@ -122,6 +122,18 @@ protected:
     
     NiceMock<FactoriesImplementation> factoriesImplementation;
 
+	void SetUp() override {
+	TEST_LOG("SetUp before sleep ");
+	std::this_thread::sleep_for(std::chrono::milliseconds(500));
+	TEST_LOG("SetUp after sleep ");	
+	}
+
+	void TearDown() override {
+	TEST_LOG("TearDown before sleep ");
+	std::this_thread::sleep_for(std::chrono::milliseconds(500));
+	TEST_LOG("TearDown after sleep ");	
+	}	
+
     MiracastServiceTest()
         : plugin(Core::ProxyType<Plugin::MiracastService>::Create())
         , handler(*(plugin))
