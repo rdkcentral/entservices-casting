@@ -50,11 +50,72 @@ namespace WPEFramework
         MiracastServiceImplementation *MiracastServiceImplementation::_instance = nullptr;
         PowerManagerInterfaceRef MiracastServiceImplementation::_powerManagerPlugin;
         MiracastController *MiracastServiceImplementation::m_miracast_ctrler_obj = nullptr;
+
+    static void removeFile(const char* fileName)
+	{
+		if (std::remove(fileName) != 0)
+		{
+			printf("File %s failed to remove\n", fileName);
+			perror("Error deleting file");
+		}
+		else
+		{
+			printf("File %s successfully deleted\n", fileName);
+		}
+	}
+
+	static void removeEntryFromFile(const char* fileName, const char* entryToRemove)
+	{
+		std::ifstream inputFile(fileName);
+		if (!inputFile.is_open())
+		{
+			printf("Error: Unable to open file: %s\n",fileName);
+			return;
+		}
+
+		std::vector<std::string> lines;
+		std::string line;
+		while (std::getline(inputFile, line)) {
+			if (line != entryToRemove) {
+				lines.push_back(line);
+			}
+		}
+		inputFile.close();
+
+		std::ofstream outputFile(fileName);
+		if (!outputFile.is_open())
+		{
+			printf("Error: Unable to open file: %s for writing\n",fileName);
+			return;
+		}
+
+		for (const auto& line : lines) {
+			outputFile << line << "\n";
+		}
+		outputFile.close();
+
+		printf("Entry removed from file: %s\n",fileName);
+	}
+	
+	static void createFile(const char* fileName, const char* fileContent)
+	{
+		removeFile(fileName);
+
+		std::ofstream fileContentStream(fileName);
+		fileContentStream << fileContent;
+		fileContentStream << "\n";
+		fileContentStream.close();
+	}
     
         MiracastServiceImplementation::MiracastServiceImplementation()
         : _adminLock(), _pwrMgrNotification(*this)
         {
             LOGINFO("Create MiracastServiceImplementation Instance");
+            createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+            LOGINFO("Created /etc/device.prop successfully");
+	        createFile("/var/run/wpa_supplicant/p2p0","p2p0");
+            LOGINFO("Created p2p0 successfully");
+            
             MiracastServiceImplementation::_instance = this;
             MIRACAST::logger_init("MiracastService");
             m_isServiceInitialized = false;
@@ -114,6 +175,10 @@ namespace WPEFramework
             }
             MIRACAST::logger_deinit();
             MiracastServiceImplementation::_instance = nullptr;
+            removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+            LOGINFO("deleted device properties successfully");
+	        removeFile("/var/run/wpa_supplicant/p2p0");
+            LOGINFO("deleted p2p0 successfully");
         }
 
         /**
