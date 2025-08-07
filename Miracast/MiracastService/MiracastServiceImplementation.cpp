@@ -53,15 +53,19 @@ namespace WPEFramework
 
     static void removeFile(const char* fileName)
 	{
-		if (std::remove(fileName) != 0)
-		{
-			printf("File %s failed to remove\n", fileName);
-			perror("Error deleting file");
-		}
-		else
-		{
-			printf("File %s successfully deleted\n", fileName);
-		}
+		std::ifstream check(fileName);
+            if (check.is_open()) {
+            check.close();  // Ensure file is closed before delete
+        }
+		
+	std::string command = std::string("sudo rm -f ") + fileName;
+    int result = system(command.c_str());
+    if (result != 0) {
+        printf("Failed to remove file with sudo: %s\n", fileName);
+		perror("Error deleting file");
+    } else {
+        printf("File %s removed using sudo.\n", fileName);
+    }
 	}
 
 	static void removeEntryFromFile(const char* fileName, const char* entryToRemove)
