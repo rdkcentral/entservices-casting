@@ -43,6 +43,7 @@ namespace
 {
     #define TEST_LOG(FMT, ...) log(__func__, __FILE__, __LINE__, syscall(__NR_gettid),FMT,##__VA_ARGS__)
 
+	#if 0
 	static void removeFile(const char* fileName)
 	{
 		if (std::remove(fileName) != 0)
@@ -98,6 +99,8 @@ namespace
 		fileContentStream << "\n";
 		fileContentStream.close();
 	}
+	#endif
+
     void current_time(char *time_str)
     {
         struct timeval tv;
@@ -173,7 +176,7 @@ protected:
     void SetUp() override {
     mockFs = new testing::StrictMock<MockFileSystem>();
     // Expect cleanup at start
-    TEST_LOG("Entering Setup for removing and deleting wpa files ")	    
+    TEST_LOG("Entering Setup for removing and deleting wpa files ");	    
     EXPECT_CALL(*mockFs, Remove("/var/run/wpa_supplicant/p2p0"))
         .Times(1).WillOnce(testing::Return(true));
     EXPECT_CALL(*mockFs, Remove("/etc/device.properties"))
@@ -191,7 +194,7 @@ protected:
  
   void TearDown() override {
     // Expect cleanup at end
-    TEST_LOG("ENtering Teardown to remove wpa files.")	  
+    TEST_LOG("ENtering Teardown to remove wpa files."); 
     EXPECT_CALL(*mockFs, Remove("/var/run/wpa_supplicant/p2p0"))
         .Times(1).WillOnce(testing::Return(true));
     EXPECT_CALL(*mockFs, Remove("/etc/device.properties"))
@@ -342,7 +345,6 @@ TEST_F(MiracastServiceTest, RegisteredMethods)
 	//removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	//removeFile("/var/run/wpa_supplicant/p2p0");
 }
-
 #if 0
 TEST_F(MiracastServiceTest, P2P_DiscoveryStatus)
 {
@@ -467,9 +469,9 @@ TEST_F(MiracastServiceEventTest, stopClientConnection)
 					return Core::ERROR_NONE;
 					}));
 
-	TEST_LOG(" Before onClientConnectionRequest  ");
+	TEST_LOG(" Before onClientConnectionRequest 1 ");
      EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
-    TEST_LOG(" aftr onClientConnectionRequest  ");
+    TEST_LOG(" aftr onClientConnectionRequest 1 ");
 	
 	EXPECT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000));
 
@@ -663,10 +665,11 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_onClientConnectionAndLaunchRequest)
 				return Core::ERROR_NONE;
 				}));
 
-
+	TEST_LOG(" Before onClientConnectionRequest 2 ");
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
-
+	TEST_LOG(" After onClientConnectionRequest 2 ");
+	
 	EXPECT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
@@ -775,9 +778,9 @@ TEST_F(MiracastServiceEventTest, onClientConnectionRequestRejected)
 					connectRequest.SetEvent();
 					return Core::ERROR_NONE;
 					}));
-
+	TEST_LOG(" Before onClientConnectionRequest 3");
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
-
+	TEST_LOG(" after onClientConnectionRequest 3");
 	EXPECT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Reject}"), response));
 
@@ -874,10 +877,10 @@ TEST_F(MiracastServiceEventTest, P2P_CONNECT_FAIL_onClientConnectionError)
 				P2PConnectFail.SetEvent();
 				return Core::ERROR_NONE;
 				}));
-
+	TEST_LOG(" Before onClientConnectionRequest 4");
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
-
+	TEST_LOG(" after onClientConnectionRequest 4");
 	EXPECT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
@@ -1000,10 +1003,10 @@ TEST_F(MiracastServiceEventTest, P2P_GO_NEGOTIATION_FAIL_onClientConnectionError
 				P2PGoFail.SetEvent();
 				return Core::ERROR_NONE;
 				}));
-
+	TEST_LOG(" Before onClientConnectionRequest 5");
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
-
+	TEST_LOG(" Before onClientConnectionRequest 5");
 	EXPECT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
@@ -1135,10 +1138,10 @@ TEST_F(MiracastServiceEventTest, P2P_GO_FORMATION_FAIL_onClientConnectionError)
 				P2PGoFail.SetEvent();
 				return Core::ERROR_NONE;
 				}));
-
+	TEST_LOG(" Before onClientConnectionRequest 6");
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
-
+	TEST_LOG(" aftere onClientConnectionRequest 6");
 	EXPECT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
@@ -1309,10 +1312,10 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_onClientConnectionAndLaunchReque
                                 P2PGrpStart.SetEvent();
 				return Core::ERROR_NONE;
 				}));
-	
+	TEST_LOG(" Before onClientConnectionRequest 7");
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
-
+	TEST_LOG(" aftr onClientConnectionRequest 7");
 	EXPECT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
@@ -1419,10 +1422,10 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectonClientConnectionAndLaunc
                                 P2PGrpStart.SetEvent();
 				return Core::ERROR_NONE;
 				}));
-
+	TEST_LOG(" Before onClientConnectionRequest 8");
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
-
+	TEST_LOG(" aftr onClientConnectionRequest 8");
 	EXPECT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
@@ -1521,10 +1524,10 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithName)
                                 P2PGrpStart.SetEvent();
 				return Core::ERROR_NONE;
 				}));
-
+	TEST_LOG(" Before onClientConnectionRequest 9");
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
-
+	TEST_LOG(" aftr onClientConnectionRequest 9");
 	EXPECT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
@@ -1623,10 +1626,10 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithoutName)
                                 P2PGrpStart.SetEvent();
 				return Core::ERROR_NONE;
 				}));
-
+	TEST_LOG(" Before onClientConnectionRequest 10");
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
-
+	TEST_LOG(" aftr onClientConnectionRequest 10");
 	EXPECT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
@@ -1757,10 +1760,10 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectP2PGoNegotiationGroupStart
                                 P2PGrpStart.SetEvent();
 				return Core::ERROR_NONE;
 				}));
-
+	TEST_LOG(" Before onClientConnectionRequest 11");
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
-
+	TEST_LOG(" aftr onClientConnectionRequest 11");
 	EXPECT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
@@ -1933,10 +1936,10 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_GENERIC_FAILURE)
 				return Core::ERROR_NONE;
 				}));
 
-
+	TEST_LOG(" Before onClientConnectionRequest 12");
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
-
+	TEST_LOG(" aftr onClientConnectionRequest 12");
 	EXPECT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
@@ -2084,10 +2087,10 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_GENERIC_FAILURE)
 					P2PGenericFail.SetEvent();
 					return Core::ERROR_NONE;
 					}));
-
+	TEST_LOG(" Before onClientConnectionRequest 13");
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
-
+	TEST_LOG(" aftr onClientConnectionRequest 13");
 	EXPECT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
