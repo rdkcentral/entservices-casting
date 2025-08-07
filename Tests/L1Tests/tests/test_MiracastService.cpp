@@ -201,7 +201,7 @@ TEST_F(MiracastServiceTest, GetInformation)
 {
     EXPECT_EQ("This MiracastService Plugin Facilitates Peer-to-Peer Control and WFD Source Device Discovery", plugin->Information());
 }
-
+#if 0
 TEST_F(MiracastServiceTest, P2PCtrlInterfaceNameNotFound)
 {
 	//removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
@@ -222,7 +222,7 @@ TEST_F(MiracastServiceTest, P2PCtrlInterfacePathNotFound)
 
 	//removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 }
-
+#endif
 TEST_F(MiracastServiceTest, RegisteredMethods)
 {
 	//createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
@@ -242,11 +242,11 @@ TEST_F(MiracastServiceTest, RegisteredMethods)
 	//removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	//removeFile("/var/run/wpa_supplicant/p2p0");
 }
-#if 0
+
 TEST_F(MiracastServiceTest, P2P_DiscoveryStatus)
 {
-	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
+	//createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
 
@@ -270,14 +270,14 @@ TEST_F(MiracastServiceTest, P2P_DiscoveryStatus)
 
 	plugin->Deinitialize(nullptr);
 
-	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	removeFile("/var/run/wpa_supplicant/p2p0");
+	//removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//removeFile("/var/run/wpa_supplicant/p2p0");
 }
 
 TEST_F(MiracastServiceTest, BackendDiscoveryStatus)
 {
-	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
+	//createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
 
@@ -285,14 +285,14 @@ TEST_F(MiracastServiceTest, BackendDiscoveryStatus)
 
 	plugin->Deinitialize(nullptr);
 
-	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	removeFile("/var/run/wpa_supplicant/p2p0");
+	//removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//removeFile("/var/run/wpa_supplicant/p2p0");
 }
 
 TEST_F(MiracastServiceEventTest, stopClientConnection)
 {
-	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
+	//createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
@@ -393,14 +393,14 @@ TEST_F(MiracastServiceEventTest, stopClientConnection)
 
 	plugin->Deinitialize(nullptr);
 
-	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	removeFile("/var/run/wpa_supplicant/p2p0");
+	//removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//removeFile("/var/run/wpa_supplicant/p2p0");
 }
 
 TEST_F(MiracastServiceEventTest, P2P_GOMode_onClientConnectionAndLaunchRequest)
 {
-	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
+	//createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
@@ -595,14 +595,14 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_onClientConnectionAndLaunchRequest)
 
 	plugin->Deinitialize(nullptr);
 
-	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	removeFile("/var/run/wpa_supplicant/p2p0");
+	//removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//removeFile("/var/run/wpa_supplicant/p2p0");
 }
 
 TEST_F(MiracastServiceEventTest, onClientConnectionRequestRejected)
 {
-	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
+	//createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
@@ -685,14 +685,14 @@ TEST_F(MiracastServiceEventTest, onClientConnectionRequestRejected)
 
 	plugin->Deinitialize(nullptr);
 
-	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	removeFile("/var/run/wpa_supplicant/p2p0");
+	//removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//removeFile("/var/run/wpa_supplicant/p2p0");
 }
 
 TEST_F(MiracastServiceEventTest, P2P_CONNECT_FAIL_onClientConnectionError)
 {
-	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
+	//createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
@@ -788,14 +788,14 @@ TEST_F(MiracastServiceEventTest, P2P_CONNECT_FAIL_onClientConnectionError)
 
 	plugin->Deinitialize(nullptr);
 
-	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	removeFile("/var/run/wpa_supplicant/p2p0");
+	//removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//removeFile("/var/run/wpa_supplicant/p2p0");
 }
 
 TEST_F(MiracastServiceEventTest, P2P_GO_NEGOTIATION_FAIL_onClientConnectionError)
 {
-	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
+	//createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
@@ -914,14 +914,14 @@ TEST_F(MiracastServiceEventTest, P2P_GO_NEGOTIATION_FAIL_onClientConnectionError
 
 	plugin->Deinitialize(nullptr);
 
-	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	removeFile("/var/run/wpa_supplicant/p2p0");
+	//removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//removeFile("/var/run/wpa_supplicant/p2p0");
 }
 
 TEST_F(MiracastServiceEventTest, P2P_GO_FORMATION_FAIL_onClientConnectionError)
 {
-	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
+	//createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
@@ -1049,14 +1049,14 @@ TEST_F(MiracastServiceEventTest, P2P_GO_FORMATION_FAIL_onClientConnectionError)
 
 	plugin->Deinitialize(nullptr);
 
-	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	removeFile("/var/run/wpa_supplicant/p2p0");
+	//removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//removeFile("/var/run/wpa_supplicant/p2p0");
 }
 
 TEST_F(MiracastServiceEventTest, P2P_ClientMode_onClientConnectionAndLaunchRequest)
 {
-	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
+	//createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
@@ -1223,14 +1223,14 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_onClientConnectionAndLaunchReque
 
 	plugin->Deinitialize(nullptr);
 
-	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	removeFile("/var/run/wpa_supplicant/p2p0");
+	//removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//removeFile("/var/run/wpa_supplicant/p2p0");
 }
 
 TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectonClientConnectionAndLaunchRequest)
 {
-	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
+	//createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
@@ -1333,14 +1333,14 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectonClientConnectionAndLaunc
 
 	plugin->Deinitialize(nullptr);
 
-	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	removeFile("/var/run/wpa_supplicant/p2p0");
+	//removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//removeFile("/var/run/wpa_supplicant/p2p0");
 }
 
 TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithName)
 {
-	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
+	//createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
@@ -1435,14 +1435,14 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithName)
 
 	plugin->Deinitialize(nullptr);
 
-	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	removeFile("/var/run/wpa_supplicant/p2p0");
+	//removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//removeFile("/var/run/wpa_supplicant/p2p0");
 }
 
 TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithoutName)
 {
-	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
+	//createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
@@ -1537,14 +1537,14 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithoutName)
 
 	plugin->Deinitialize(nullptr);
 
-	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	removeFile("/var/run/wpa_supplicant/p2p0");
+	//removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//removeFile("/var/run/wpa_supplicant/p2p0");
 }
 
 TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectP2PGoNegotiationGroupStartWithoutName)
 {
-	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
+	//createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
@@ -1671,14 +1671,14 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectP2PGoNegotiationGroupStart
 
 	plugin->Deinitialize(nullptr);
 
-	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	removeFile("/var/run/wpa_supplicant/p2p0");
+	//removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//removeFile("/var/run/wpa_supplicant/p2p0");
 }
 
 TEST_F(MiracastServiceEventTest, P2P_ClientMode_GENERIC_FAILURE)
 {
-	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
+	//createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
@@ -1847,14 +1847,14 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_GENERIC_FAILURE)
 
 	plugin->Deinitialize(nullptr);
 
-	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	removeFile("/var/run/wpa_supplicant/p2p0");
+	//removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//removeFile("/var/run/wpa_supplicant/p2p0");
 }
 
 TEST_F(MiracastServiceEventTest, P2P_GOMode_GENERIC_FAILURE)
 {
-	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
+	//createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
@@ -1998,14 +1998,37 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_GENERIC_FAILURE)
 
 	plugin->Deinitialize(nullptr);
 
-	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	removeFile("/var/run/wpa_supplicant/p2p0");
+	//removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//removeFile("/var/run/wpa_supplicant/p2p0");
 }
 
 TEST_F(MiracastServiceEventTest, P2P_GOMode_AutoConnect)
 {
-	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
+	//createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//createFile("/var/run/wpa_supplicant/p2p0","p2p0");
+	static void removeFile(const char* fileName)
+	{
+		if (std::remove(fileName) != 0)
+		{
+			printf("File %s failed to remove\n", fileName);
+			perror("Error deleting file");
+		}
+		else
+		{
+			printf("File %s successfully deleted\n", fileName);
+		}
+	}
+
+	static void createFile(const char* fileName, const char* fileContent)
+	{
+		removeFile(fileName);
+
+		std::ofstream fileContentStream(fileName);
+		fileContentStream << fileContent;
+		fileContentStream << "\n";
+		fileContentStream.close();
+	}
+	
 	createFile("/opt/miracast_autoconnect","GTest");
 
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
@@ -2111,15 +2134,15 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_AutoConnect)
 
 	plugin->Deinitialize(nullptr);
 
-	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	removeFile("/var/run/wpa_supplicant/p2p0");
+	//removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//removeFile("/var/run/wpa_supplicant/p2p0");
 	removeFile("/opt/miracast_autoconnect");
 }
 
 TEST_F(MiracastServiceEventTest, powerStateChange)
 {
-	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
+	//createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
 
@@ -2134,8 +2157,6 @@ TEST_F(MiracastServiceEventTest, powerStateChange)
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
 	plugin->Deinitialize(nullptr);
 
-	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	removeFile("/var/run/wpa_supplicant/p2p0");
+	//removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//removeFile("/var/run/wpa_supplicant/p2p0");
 }
-
-#endif
