@@ -43,64 +43,6 @@ namespace
 {
     #define TEST_LOG(FMT, ...) log(__func__, __FILE__, __LINE__, syscall(__NR_gettid),FMT,##__VA_ARGS__)
 
-	#if 0
-	static void removeFile(const char* fileName)
-	{
-		if (std::remove(fileName) != 0)
-		{
-			printf("File %s failed to remove\n", fileName);
-			perror("Error deleting file");
-		}
-		else
-		{
-			printf("File %s successfully deleted\n", fileName);
-		}
-	}
-
-	static void removeEntryFromFile(const char* fileName, const char* entryToRemove)
-	{
-		std::ifstream inputFile(fileName);
-		if (!inputFile.is_open())
-		{
-			printf("Error: Unable to open file: %s\n",fileName);
-			return;
-		}
-
-		std::vector<std::string> lines;
-		std::string line;
-		while (std::getline(inputFile, line)) {
-			if (line != entryToRemove) {
-				lines.push_back(line);
-			}
-		}
-		inputFile.close();
-
-		std::ofstream outputFile(fileName);
-		if (!outputFile.is_open())
-		{
-			printf("Error: Unable to open file: %s for writing\n",fileName);
-			return;
-		}
-
-		for (const auto& line : lines) {
-			outputFile << line << "\n";
-		}
-		outputFile.close();
-
-		printf("Entry removed from file: %s\n",fileName);
-	}
-	
-	static void createFile(const char* fileName, const char* fileContent)
-	{
-		removeFile(fileName);
-
-		std::ofstream fileContentStream(fileName);
-		fileContentStream << fileContent;
-		fileContentStream << "\n";
-		fileContentStream.close();
-	}
-	#endif
-
     void current_time(char *time_str)
     {
         struct timeval tv;
@@ -140,20 +82,6 @@ namespace
 
 static struct wpa_ctrl global_wpa_ctrl_handle;
 
-//For file permission errors
-class IFileSystem {
-public:
-  virtual ~IFileSystem() = default;
-  virtual bool Remove(const std::string& path) = 0;
-  virtual bool Create(const std::string& path, const std::string& content) = 0;
-};
-
-class MockFileSystem : public IFileSystem {
-public:
-  MOCK_METHOD(bool, Remove, (const std::string& path), (override));
-  MOCK_METHOD(bool, Create, (const std::string& path, const std::string& content), (override));
-};
-
 class MiracastServiceTest : public ::testing::Test {
 protected:
     Core::ProxyType<Plugin::MiracastService> plugin;
@@ -172,37 +100,6 @@ protected:
     
     NiceMock<FactoriesImplementation> factoriesImplementation;
 
-    MockFileSystem* mockFs;
-    void SetUp() override {
-    mockFs = new testing::StrictMock<MockFileSystem>();
-    // Expect cleanup at start
-    TEST_LOG("Entering Setup for removing and deleting wpa files ");	    
-    EXPECT_CALL(*mockFs, Remove("/var/run/wpa_supplicant/p2p0"))
-        .Times(1).WillOnce(testing::Return(true));
-    EXPECT_CALL(*mockFs, Remove("/etc/device.properties"))
-        .Times(1).WillOnce(testing::Return(true));
- 
-    EXPECT_CALL(*mockFs, Create("/etc/device.properties",
-            testing::HasSubstr("WIFI_P2P_CTRL_INTERFACE=p2p0")))
-        .Times(1).WillOnce(testing::Return(true));
-    EXPECT_CALL(*mockFs, Create("/var/run/wpa_supplicant/p2p0", "p2p0"))
-        .Times(1).WillOnce(testing::Return(true));
- 
-    // Inject mockFs to system under test
-    // e.g., sut = new MiracastService(..., mockFs, ...);
-  }
- 
-  void TearDown() override {
-    // Expect cleanup at end
-    TEST_LOG("ENtering Teardown to remove wpa files."); 
-    EXPECT_CALL(*mockFs, Remove("/var/run/wpa_supplicant/p2p0"))
-        .Times(1).WillOnce(testing::Return(true));
-    EXPECT_CALL(*mockFs, Remove("/etc/device.properties"))
-        .Times(1).WillOnce(testing::Return(true));
- 
-    // delete sut;
-    delete mockFs;
-  }
     MiracastServiceTest()
         : plugin(Core::ProxyType<Plugin::MiracastService>::Create())
         , handler(*(plugin))
