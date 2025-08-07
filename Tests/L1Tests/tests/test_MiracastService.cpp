@@ -43,6 +43,60 @@ namespace
 {
     #define TEST_LOG(FMT, ...) log(__func__, __FILE__, __LINE__, syscall(__NR_gettid),FMT,##__VA_ARGS__)
 
+    static void removeFile(const char* fileName)
+	{
+		if (std::remove(fileName) != 0)
+		{
+			printf("File %s failed to remove\n", fileName);
+			perror("Error deleting file");
+		}
+		else
+		{
+			printf("File %s successfully deleted\n", fileName);
+		}
+	}
+
+	static void removeEntryFromFile(const char* fileName, const char* entryToRemove)
+	{
+		std::ifstream inputFile(fileName);
+		if (!inputFile.is_open())
+		{
+			printf("Error: Unable to open file: %s\n",fileName);
+			return;
+		}
+
+		std::vector<std::string> lines;
+		std::string line;
+		while (std::getline(inputFile, line)) {
+			if (line != entryToRemove) {
+				lines.push_back(line);
+			}
+		}
+		inputFile.close();
+
+		std::ofstream outputFile(fileName);
+		if (!outputFile.is_open())
+		{
+			printf("Error: Unable to open file: %s for writing\n",fileName);
+			return;
+		}
+
+		for (const auto& line : lines) {
+			outputFile << line << "\n";
+		}
+		outputFile.close();
+
+		printf("Entry removed from file: %s\n",fileName);
+	}
+	static void createFile(const char* fileName, const char* fileContent)
+	{
+		removeFile(fileName);
+
+		std::ofstream fileContentStream(fileName);
+		fileContentStream << fileContent;
+		fileContentStream << "\n";
+		fileContentStream.close();
+	}
     void current_time(char *time_str)
     {
         struct timeval tv;
@@ -2006,29 +2060,6 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_AutoConnect)
 {
 	//createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	//createFile("/var/run/wpa_supplicant/p2p0","p2p0");
-	static void removeFile(const char* fileName)
-	{
-		if (std::remove(fileName) != 0)
-		{
-			printf("File %s failed to remove\n", fileName);
-			perror("Error deleting file");
-		}
-		else
-		{
-			printf("File %s successfully deleted\n", fileName);
-		}
-	}
-
-	static void createFile(const char* fileName, const char* fileContent)
-	{
-		removeFile(fileName);
-
-		std::ofstream fileContentStream(fileName);
-		fileContentStream << fileContent;
-		fileContentStream << "\n";
-		fileContentStream.close();
-	}
-	
 	createFile("/opt/miracast_autoconnect","GTest");
 
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
