@@ -56,38 +56,6 @@ namespace
 		}
 	}
 
-	static void removeEntryFromFile(const char* fileName, const char* entryToRemove)
-	{
-		std::ifstream inputFile(fileName);
-		if (!inputFile.is_open())
-		{
-			printf("Error: Unable to open file: %s\n",fileName);
-			return;
-		}
-
-		std::vector<std::string> lines;
-		std::string line;
-		while (std::getline(inputFile, line)) {
-			if (line != entryToRemove) {
-				lines.push_back(line);
-			}
-		}
-		inputFile.close();
-
-		std::ofstream outputFile(fileName);
-		if (!outputFile.is_open())
-		{
-			printf("Error: Unable to open file: %s for writing\n",fileName);
-			return;
-		}
-
-		for (const auto& line : lines) {
-			outputFile << line << "\n";
-		}
-		outputFile.close();
-
-		printf("Entry removed from file: %s\n",fileName);
-	}
 	static void createFile(const char* fileName, const char* fileContent)
 	{
 		removeFile(fileName);
