@@ -43,9 +43,7 @@ namespace
 {
     #define TEST_LOG(FMT, ...) log(__func__, __FILE__, __LINE__, syscall(__NR_gettid),FMT,##__VA_ARGS__)
 
-    //Commented out the functions below because some test cases that use them have also been commented out. Since those test cases are disabled, these functions are now unused.
-	#if 0 
-	static void removeFile(const char* fileName)
+    static void removeFile(const char* fileName)
 	{
 		if (std::remove(fileName) != 0)
 		{
@@ -58,39 +56,6 @@ namespace
 		}
 	}
 
-	static void removeEntryFromFile(const char* fileName, const char* entryToRemove)
-	{
-		std::ifstream inputFile(fileName);
-		if (!inputFile.is_open())
-		{
-			printf("Error: Unable to open file: %s\n",fileName);
-			return;
-		}
-
-		std::vector<std::string> lines;
-		std::string line;
-		while (std::getline(inputFile, line)) {
-			if (line != entryToRemove) {
-				lines.push_back(line);
-			}
-		}
-		inputFile.close();
-
-		std::ofstream outputFile(fileName);
-		if (!outputFile.is_open())
-		{
-			printf("Error: Unable to open file: %s for writing\n",fileName);
-			return;
-		}
-
-		for (const auto& line : lines) {
-			outputFile << line << "\n";
-		}
-		outputFile.close();
-
-		printf("Entry removed from file: %s\n",fileName);
-	}
-	
 	static void createFile(const char* fileName, const char* fileContent)
 	{
 		removeFile(fileName);
@@ -100,7 +65,6 @@ namespace
 		fileContentStream << "\n";
 		fileContentStream.close();
 	}
-	#endif
     void current_time(char *time_str)
     {
         struct timeval tv;
@@ -250,8 +214,13 @@ protected:
     {
         dispatcher->Deactivate();
         dispatcher->Release();
-
+		
         PluginHost::IFactories::Assign(nullptr);
+
+		TEST_LOG("Before destructor sleep ");
+		//Wait for all the previous destructor process to complete
+		//std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+		TEST_LOG("After destructor sleep ");
     }
 };
 
@@ -262,7 +231,7 @@ TEST_F(MiracastServiceTest, GetInformation)
 #if 0
 TEST_F(MiracastServiceTest, P2PCtrlInterfaceNameNotFound)
 {
-	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 
 	// WIFI_P2P_CTRL_INTERFACE not configured in device properties file
 	EXPECT_NE(string(""), plugin->Initialize(&service));
@@ -271,20 +240,20 @@ TEST_F(MiracastServiceTest, P2PCtrlInterfaceNameNotFound)
 
 TEST_F(MiracastServiceTest, P2PCtrlInterfacePathNotFound)
 {
-	removeFile("/var/run/wpa_supplicant/p2p0");
-	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//removeFile("/var/run/wpa_supplicant/p2p0");
+	//createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 
 	// Invalid P2P Ctrl iface configured
 	EXPECT_NE(string(""), plugin->Initialize(&service));
 	plugin->Deinitialize(nullptr);
 
-	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 }
-
+#endif
 TEST_F(MiracastServiceTest, RegisteredMethods)
 {
-	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
+	//createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
 
@@ -297,14 +266,14 @@ TEST_F(MiracastServiceTest, RegisteredMethods)
 
 	plugin->Deinitialize(nullptr);
 
-	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	removeFile("/var/run/wpa_supplicant/p2p0");
+	//removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//removeFile("/var/run/wpa_supplicant/p2p0");
 }
 
 TEST_F(MiracastServiceTest, P2P_DiscoveryStatus)
 {
-	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
+	//createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
 
@@ -328,14 +297,14 @@ TEST_F(MiracastServiceTest, P2P_DiscoveryStatus)
 
 	plugin->Deinitialize(nullptr);
 
-	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	removeFile("/var/run/wpa_supplicant/p2p0");
+	//removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//removeFile("/var/run/wpa_supplicant/p2p0");
 }
 
 TEST_F(MiracastServiceTest, BackendDiscoveryStatus)
 {
-	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
+	//createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
 
@@ -343,14 +312,14 @@ TEST_F(MiracastServiceTest, BackendDiscoveryStatus)
 
 	plugin->Deinitialize(nullptr);
 
-	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	removeFile("/var/run/wpa_supplicant/p2p0");
+	//removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//removeFile("/var/run/wpa_supplicant/p2p0");
 }
 
 TEST_F(MiracastServiceEventTest, stopClientConnection)
 {
-	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
+	//createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
@@ -370,25 +339,33 @@ TEST_F(MiracastServiceEventTest, stopClientConnection)
 	EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_recv(::testing::_, ::testing::_, ::testing::_))
 		.WillOnce(::testing::Invoke(
 					[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+					TEST_LOG(" Before strncpy: P2P DEVICE-FOUND message");	
 					strncpy(reply, "P2P-DEVICE-FOUND 96:52:44:b6:7d:14 p2p_dev_addr=96:52:44:b6:7d:14 pri_dev_type=10-0050F204-5 name='Sample-Test-Android-2' config_methods=0x188 dev_capab=0x25 group_capab=0x0 wfd_dev_info=0x01101c440032 vendor_elems=1 new=1", *reply_len);
+					TEST_LOG(" After strncpy: P2P DEVICE-FOUND message");
 					return false;
 					}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" Before strncpy: P2P PROV-DISC-PBC-REQ message");	
 				strncpy(reply, "P2P-PROV-DISC-PBC-REQ 96:52:44:b6:7d:14 p2p_dev_addr=96:52:44:b6:7d:14 pri_dev_type=10-0050F204-5 name='Sample-Test-Android-2' config_methods=0x188 dev_capab=0x25 group_capab=0x0", *reply_len);
+				TEST_LOG(" after strncpy: P2P PROV-DISC-PBC-REQ message");	
 				return false;
 				}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" Before strncpy: P2P-GO-NEG-REQ message");	
 				strncpy(reply, "P2P-GO-NEG-REQUEST 96:52:44:b6:7d:14 dev_passwd_id=4 go_intent=13", *reply_len);
+				TEST_LOG(" After strncpy: P2P-GO-NEG-REQ message");	
 				return false;
 				}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" Before strncpy: P2P-GO-NEG-SUCCESS message");	
 				strncpy(reply, "P2P-GO-NEG-SUCCESS role=client freq=2437 ht40=0 x=96:52:44:b6:7d:14 peer_iface=96:52:44:b6:fd:14 wps_method=PBC", *reply_len);
+				TEST_LOG(" After strncpy: P2P-GO-NEG-SUCCESS message");
 				return false;
 				}))
 
@@ -416,8 +393,10 @@ TEST_F(MiracastServiceEventTest, stopClientConnection)
 					return Core::ERROR_NONE;
 					}));
 
+	TEST_LOG(" Before onClientConnectionRequest 1 ");
      EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
-
+    TEST_LOG(" aftr onClientConnectionRequest 1 ");
+	
 	EXPECT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000));
 
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Timeout}"), response));
@@ -441,14 +420,14 @@ TEST_F(MiracastServiceEventTest, stopClientConnection)
 
 	plugin->Deinitialize(nullptr);
 
-	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	removeFile("/var/run/wpa_supplicant/p2p0");
+	//removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//removeFile("/var/run/wpa_supplicant/p2p0");
 }
 
 TEST_F(MiracastServiceEventTest, P2P_GOMode_onClientConnectionAndLaunchRequest)
 {
-	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
+	//createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
@@ -489,62 +468,82 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_onClientConnectionAndLaunchRequest)
 	EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_recv(::testing::_, ::testing::_, ::testing::_))
 		.WillOnce(::testing::Invoke(
 					[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+					TEST_LOG(" Before strncpy: P2P-DEVICE-FOUND message");	
 					strncpy(reply, "P2P-DEVICE-FOUND 2c:33:58:9c:73:2d p2p_dev_addr=2c:33:58:9c:73:2d pri_dev_type=1-0050F200-0 name='Sample-Test-Android-1' config_methods=0x11e8 dev_capab=0x25 group_capab=0x82 wfd_dev_info=0x01101c440006 new=0", *reply_len);
+					TEST_LOG(" After strncpy: P2P-DEVICE-FOUND message");
 					return false;
 					}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" Before strncpy: P2P-DEVICE-LOST message");	
 				strncpy(reply, "P2P-DEVICE-LOST 2c:33:58:9c:73:2d p2p_dev_addr=2c:33:58:9c:73:2d pri_dev_type=1-0050F200-0 name='Sample-Test-Android-1' config_methods=0x11e8 dev_capab=0x25 group_capab=0x82 wfd_dev_info=0x01101c440006 new=0", *reply_len);
+				TEST_LOG(" after strncpy: P2P-DEVICE-LOST message");
 				return false;
 				}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" Before strncpy: P2P-DEVICE-Founnd message");	
 				strncpy(reply, "P2P-DEVICE-FOUND 96:52:44:b6:7d:14 p2p_dev_addr=96:52:44:b6:7d:14 pri_dev_type=10-0050F204-5 name='Sample-Test-Android-2' config_methods=0x188 dev_capab=0x25 group_capab=0x0 wfd_dev_info=0x01101c440032 vendor_elems=1 new=1", *reply_len);
+				TEST_LOG(" After strncpy: P2P-DEVICE-Founnd message");
 				return false;
 				}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" Before strncpy: P2P-PROV-DISC-PBC-REQ message");	
 				strncpy(reply, "P2P-PROV-DISC-PBC-REQ 96:52:44:b6:7d:14 p2p_dev_addr=96:52:44:b6:7d:14 pri_dev_type=10-0050F204-5 name='Sample-Test-Android-2' config_methods=0x188 dev_capab=0x25 group_capab=0x0", *reply_len);
+				TEST_LOG(" After strncpy: P2P-PROV-DISC-PBC-REQ message");
 				return false;
 				}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" Before strncpy: P2P-PROV-DISC-PBC-REQ2 message");	
 				strncpy(reply, "P2P-PROV-DISC-PBC-REQ 96:52:44:b6:7d:14 p2p_dev_addr=96:52:44:b6:7d:14 pri_dev_type=10-0050F204-5 name='Sample-Test-Android-2' config_methods=0x188 dev_capab=0x25 group_capab=0x0", *reply_len);
+				TEST_LOG(" After strncpy: P2P-PROV-DISC-PBC-REQ2 message");
 				return false;
 				}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" Before strncpy: P2P-GO-NEG-REQ2 message");	
 				strncpy(reply, "P2P-GO-NEG-REQUEST 96:52:44:b6:7d:14 dev_passwd_id=4 go_intent=13", *reply_len);
+				TEST_LOG(" Before strncpy: P2P-PROV-DISC-PBC-REQ2 message");
 				return false;
 				}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" Before strncpy: P2P-NEG-SUCCESS message");	
 				strncpy(reply, "P2P-GO-NEG-SUCCESS role=client freq=2437 ht40=0 x=96:52:44:b6:7d:14 peer_iface=96:52:44:b6:fd:14 wps_method=PBC", *reply_len);
+				TEST_LOG(" after strncpy: P2P-NEG-SUCCESS message");	
 				return false;
 				}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" Before strncpy: P2P-GRP-FORM-SUCCESS message");		
 				strncpy(reply, "P2P-GROUP-FORMATION-SUCCESS", *reply_len);
+				TEST_LOG(" After strncpy: P2P-GRP-FORM-SUCCESS message");	
 				return false;
 				}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" Before strncpy: P2P-FIND-STOP message");	
 				strncpy(reply, "P2P-FIND-STOPPED", *reply_len);
+				TEST_LOG(" After strncpy: P2P-FIND-STOP message");	
 				return false;
 				}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
 				// Here using lo to avoid the operation not permitted error for unknown interfaces
+				TEST_LOG(" Before strncpy: P2P-GRP-START message");	
 				strncpy(reply, "P2P-GROUP-STARTED lo GO ssid=\"DIRECT-UU-Element-Xumo-TV\" freq=2437 psk=12c3ce3d8976152df796e5f42fc646723471bf1aab8d72a546fa3dce60dc14a3 go_dev_addr=96:52:44:b6:7d:14 ip_addr=192.168.49.200 ip_mask=255.255.255.0 go_ip_addr=192.168.49.1", *reply_len);
+				TEST_LOG(" After strncpy: P2P-FIND-STOP message");
 				return false;
 				}))
 
@@ -590,10 +589,11 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_onClientConnectionAndLaunchRequest)
 				return Core::ERROR_NONE;
 				}));
 
-
+	TEST_LOG(" Before onClientConnectionRequest 2 ");
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
-
+	TEST_LOG(" After onClientConnectionRequest 2 ");
+	
 	EXPECT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
@@ -622,14 +622,14 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_onClientConnectionAndLaunchRequest)
 
 	plugin->Deinitialize(nullptr);
 
-	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	removeFile("/var/run/wpa_supplicant/p2p0");
+	//removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//removeFile("/var/run/wpa_supplicant/p2p0");
 }
 
 TEST_F(MiracastServiceEventTest, onClientConnectionRequestRejected)
 {
-	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
+	//createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
@@ -649,25 +649,33 @@ TEST_F(MiracastServiceEventTest, onClientConnectionRequestRejected)
 	EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_recv(::testing::_, ::testing::_, ::testing::_))
 		.WillOnce(::testing::Invoke(
 					[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+					TEST_LOG(" Before strncpy: P2P-DEVICE-FOUND message");	
 					strncpy(reply, "P2P-DEVICE-FOUND 96:52:44:b6:7d:14 p2p_dev_addr=96:52:44:b6:7d:14 pri_dev_type=10-0050F204-5 name='Sample-Test-Android-2' config_methods=0x188 dev_capab=0x25 group_capab=0x0 wfd_dev_info=0x01101c440032 vendor_elems=1 new=1", *reply_len);
+					TEST_LOG(" After strncpy: P2P-DEVICE-FOUND message");	
 					return false;
 					}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" Before strncpy: P2P-PRO-DISC-PBC-REQ message");		
 				strncpy(reply, "P2P-PROV-DISC-PBC-REQ 96:52:44:b6:7d:14 p2p_dev_addr=96:52:44:b6:7d:14 pri_dev_type=10-0050F204-5 name='Sample-Test-Android-2' config_methods=0x188 dev_capab=0x25 group_capab=0x0", *reply_len);
+				TEST_LOG(" After strncpy: P2P-PRO-DISC-PBC-REQ message");
 				return false;
 				}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" Before strncpy: P2P-PRO-DISC-PBC-REQ2 message");	
 				strncpy(reply, "P2P-PROV-DISC-PBC-REQ 96:52:44:b6:7d:14 p2p_dev_addr=96:52:44:b6:7d:14 pri_dev_type=10-0050F204-5 name='Sample-Test-Android-2' config_methods=0x188 dev_capab=0x25 group_capab=0x0", *reply_len);
+				TEST_LOG(" Aftre strncpy: P2P-PRO-DISC-PBC-REQ2 message");
 				return false;
 				}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" Before strncpy: P2P-GO-NEG-REQ message");	
 				strncpy(reply, "P2P-GO-NEG-REQUEST 96:52:44:b6:7d:14 dev_passwd_id=4 go_intent=13", *reply_len);
+				TEST_LOG(" After strncpy: P2P-GO-NEG-REQ message");
 				return false;
 				}))
 
@@ -694,9 +702,9 @@ TEST_F(MiracastServiceEventTest, onClientConnectionRequestRejected)
 					connectRequest.SetEvent();
 					return Core::ERROR_NONE;
 					}));
-
+	TEST_LOG(" Before onClientConnectionRequest 3");
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
-
+	TEST_LOG(" after onClientConnectionRequest 3");
 	EXPECT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Reject}"), response));
 
@@ -704,14 +712,14 @@ TEST_F(MiracastServiceEventTest, onClientConnectionRequestRejected)
 
 	plugin->Deinitialize(nullptr);
 
-	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	removeFile("/var/run/wpa_supplicant/p2p0");
+	//removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//removeFile("/var/run/wpa_supplicant/p2p0");
 }
 
 TEST_F(MiracastServiceEventTest, P2P_CONNECT_FAIL_onClientConnectionError)
 {
-	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
+	//createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
@@ -731,19 +739,25 @@ TEST_F(MiracastServiceEventTest, P2P_CONNECT_FAIL_onClientConnectionError)
 	EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_recv(::testing::_, ::testing::_, ::testing::_))
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" Before strncpy: P2P-DEV-FounD message");	
 				strncpy(reply, "P2P-DEVICE-FOUND 96:52:44:b6:7d:14 p2p_dev_addr=96:52:44:b6:7d:14 pri_dev_type=10-0050F204-5 name='Sample-Test-Android-2' config_methods=0x188 dev_capab=0x25 group_capab=0x0 wfd_dev_info=0x01101c440032 vendor_elems=1 new=1", *reply_len);
+				TEST_LOG(" After strncpy: P2P-DEV-FOUND message");
 				return false;
 				}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" Before strncpy: P2P-DISC-PBC-REQ message");	
 				strncpy(reply, "P2P-PROV-DISC-PBC-REQ 96:52:44:b6:7d:14 p2p_dev_addr=96:52:44:b6:7d:14 pri_dev_type=10-0050F204-5 name='Sample-Test-Android-2' config_methods=0x188 dev_capab=0x25 group_capab=0x0", *reply_len);
+				TEST_LOG(" After strncpy: P2P-DISC-PBC-REQ message");
 				return false;
 				}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" Before strncpy: P2P-GO-NEG-REQ message");	
 				strncpy(reply, "P2P-GO-NEG-REQUEST 96:52:44:b6:7d:14 dev_passwd_id=4 go_intent=13", *reply_len);
+				TEST_LOG(" AfTR strncpy: P2P-GO-NEG-REQ message");
 				return false;
 				}))
 
@@ -787,10 +801,10 @@ TEST_F(MiracastServiceEventTest, P2P_CONNECT_FAIL_onClientConnectionError)
 				P2PConnectFail.SetEvent();
 				return Core::ERROR_NONE;
 				}));
-
+	TEST_LOG(" Before onClientConnectionRequest 4");
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
-
+	TEST_LOG(" after onClientConnectionRequest 4");
 	EXPECT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
@@ -801,14 +815,14 @@ TEST_F(MiracastServiceEventTest, P2P_CONNECT_FAIL_onClientConnectionError)
 
 	plugin->Deinitialize(nullptr);
 
-	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	removeFile("/var/run/wpa_supplicant/p2p0");
+	//removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//removeFile("/var/run/wpa_supplicant/p2p0");
 }
 
 TEST_F(MiracastServiceEventTest, P2P_GO_NEGOTIATION_FAIL_onClientConnectionError)
 {
-	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
+	//createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
@@ -828,37 +842,49 @@ TEST_F(MiracastServiceEventTest, P2P_GO_NEGOTIATION_FAIL_onClientConnectionError
 	EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_recv(::testing::_, ::testing::_, ::testing::_))
 		.WillOnce(::testing::Invoke(
 					[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+					TEST_LOG(" Before strncpy: P2P-DEV-FounD message");	
 					strncpy(reply, "P2P-DEVICE-FOUND 2c:33:58:9c:73:2d p2p_dev_addr=2c:33:58:9c:73:2d pri_dev_type=1-0050F200-0 name='Sample-Test-Android-1' config_methods=0x11e8 dev_capab=0x25 group_capab=0x82 wfd_dev_info=0x01101c440006 new=0", *reply_len);
+					TEST_LOG(" AFTER strncpy: P2P-DEV-FounD message");
 					return false;
 					}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" Before strncpy: P2P-DEV-FounD2 message");	
 				strncpy(reply, "P2P-DEVICE-FOUND 96:52:44:b6:7d:14 p2p_dev_addr=96:52:44:b6:7d:14 pri_dev_type=10-0050F204-5 name='Sample-Test-Android-2' config_methods=0x188 dev_capab=0x25 group_capab=0x0 wfd_dev_info=0x01101c440032 vendor_elems=1 new=1", *reply_len);
+				TEST_LOG(" AFTR strncpy: P2P-DEV-FounD2 message");
 				return false;
 				}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" Before strncpy: P2P-PROV-DISC-PBC-REQ message");	
 				strncpy(reply, "P2P-PROV-DISC-PBC-REQ 96:52:44:b6:7d:14 p2p_dev_addr=96:52:44:b6:7d:14 pri_dev_type=10-0050F204-5 name='Sample-Test-Android-2' config_methods=0x188 dev_capab=0x25 group_capab=0x0", *reply_len);
+				TEST_LOG(" AFTR strncpy: P2P-PROV-DISC-PBC-REQ message");
 				return false;
 				}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" Before strncpy: P2P-PROV-DISC-PBC-REQ2 message");	
 				strncpy(reply, "P2P-PROV-DISC-PBC-REQ 96:52:44:b6:7d:14 p2p_dev_addr=96:52:44:b6:7d:14 pri_dev_type=10-0050F204-5 name='Sample-Test-Android-2' config_methods=0x188 dev_capab=0x25 group_capab=0x0", *reply_len);
+				TEST_LOG(" AFTR strncpy: P2P-PROV-DISC-PBC-REQ message");
 				return false;
 				}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" Before strncpy: P2P-GO-NEGREQ message");	
 				strncpy(reply, "P2P-GO-NEG-REQUEST 96:52:44:b6:7d:14 dev_passwd_id=4 go_intent=13", *reply_len);
+				TEST_LOG(" SFTR strncpy: P2P-GO-NEG-REQ message");	
 				return false;
 				}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" Before strncpy: P2P-GO-NEG-FAILURE message");	
 				strncpy(reply, "P2P-GO-NEG-FAILURE 96:52:44:b6:7d:14", *reply_len);
+				TEST_LOG(" AFTR strncpy: P2P-GO-FAILURE message");	
 				return false;
 				}))
 	.WillRepeatedly(::testing::Invoke(
@@ -901,10 +927,10 @@ TEST_F(MiracastServiceEventTest, P2P_GO_NEGOTIATION_FAIL_onClientConnectionError
 				P2PGoFail.SetEvent();
 				return Core::ERROR_NONE;
 				}));
-
+	TEST_LOG(" Before onClientConnectionRequest 5");
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
-
+	TEST_LOG(" Before onClientConnectionRequest 5");
 	EXPECT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
@@ -915,14 +941,14 @@ TEST_F(MiracastServiceEventTest, P2P_GO_NEGOTIATION_FAIL_onClientConnectionError
 
 	plugin->Deinitialize(nullptr);
 
-	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	removeFile("/var/run/wpa_supplicant/p2p0");
+	//removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//removeFile("/var/run/wpa_supplicant/p2p0");
 }
 
 TEST_F(MiracastServiceEventTest, P2P_GO_FORMATION_FAIL_onClientConnectionError)
 {
-	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
+	//createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
@@ -942,43 +968,57 @@ TEST_F(MiracastServiceEventTest, P2P_GO_FORMATION_FAIL_onClientConnectionError)
 	EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_recv(::testing::_, ::testing::_, ::testing::_))
 		.WillOnce(::testing::Invoke(
 					[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+					TEST_LOG(" Before strncpy: P2P-DEV-FOUND message");	
 					strncpy(reply, "P2P-DEVICE-FOUND 2c:33:58:9c:73:2d p2p_dev_addr=2c:33:58:9c:73:2d pri_dev_type=1-0050F200-0 name='Sample-Test-Android-1' config_methods=0x11e8 dev_capab=0x25 group_capab=0x82 wfd_dev_info=0x01101c440006 new=0", *reply_len);
+					TEST_LOG(" AFTR strncpy: P2P-DEV-FOUND message");
 					return false;
 					}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" Before strncpy: P2P-DEV-FOUND2 message");	
 				strncpy(reply, "P2P-DEVICE-FOUND 96:52:44:b6:7d:14 p2p_dev_addr=96:52:44:b6:7d:14 pri_dev_type=10-0050F204-5 name='Sample-Test-Android-2' config_methods=0x188 dev_capab=0x25 group_capab=0x0 wfd_dev_info=0x01101c440032 vendor_elems=1 new=1", *reply_len);
+				TEST_LOG(" AFTR strncpy: P2P-DEV-FOUND2 message");
 				return false;
 				}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" Before strncpy: P2P-PROV-DISC-PBC-REQ message");	
 				strncpy(reply, "P2P-PROV-DISC-PBC-REQ 96:52:44:b6:7d:14 p2p_dev_addr=96:52:44:b6:7d:14 pri_dev_type=10-0050F204-5 name='Sample-Test-Android-2' config_methods=0x188 dev_capab=0x25 group_capab=0x0", *reply_len);
+				TEST_LOG(" AFTR strncpy: P2P-PROV-DISC-PBC-REQ message");
 				return false;
 				}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" Before strncpy: P2P-PROV-DISC-PBC-REQ2 message");	
 				strncpy(reply, "P2P-PROV-DISC-PBC-REQ 96:52:44:b6:7d:14 p2p_dev_addr=96:52:44:b6:7d:14 pri_dev_type=10-0050F204-5 name='Sample-Test-Android-2' config_methods=0x188 dev_capab=0x25 group_capab=0x0", *reply_len);
+				TEST_LOG(" AFTR strncpy: P2P-PROV-DISC-PBC-REQ2 message");
 				return false;
 				}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" Before strncpy: P2P-GO-NEG-REQ message");	
 				strncpy(reply, "P2P-GO-NEG-REQUEST 96:52:44:b6:7d:14 dev_passwd_id=4 go_intent=13", *reply_len);
+				TEST_LOG(" AFT strncPY: P2P-GO-NEG-REQ message");
 				return false;
 				}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" Before strncpy: P2P-GO-NEG-SUCCESS message");	
 				strncpy(reply, "P2P-GO-NEG-SUCCESS role=client freq=2437 ht40=0 x=96:52:44:b6:7d:14 peer_iface=96:52:44:b6:fd:14 wps_method=PBC", *reply_len);
+				TEST_LOG(" AFT strncpy: P2P-GO-NEG-SUCCESS message");
 				return false;
 				}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" Before strncpy: P2P-GRP-FORM-FAIL message");	
 				strncpy(reply, "P2P-GROUP-FORMATION-FAILURE", *reply_len);
+				TEST_LOG(" AFT strncpy: P2P-GRP-FORM-FAIL message");		
 				return false;
 				}))
 
@@ -1022,10 +1062,10 @@ TEST_F(MiracastServiceEventTest, P2P_GO_FORMATION_FAIL_onClientConnectionError)
 				P2PGoFail.SetEvent();
 				return Core::ERROR_NONE;
 				}));
-
+	TEST_LOG(" Before onClientConnectionRequest 6");
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
-
+	TEST_LOG(" aftere onClientConnectionRequest 6");
 	EXPECT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
@@ -1036,14 +1076,14 @@ TEST_F(MiracastServiceEventTest, P2P_GO_FORMATION_FAIL_onClientConnectionError)
 
 	plugin->Deinitialize(nullptr);
 
-	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	removeFile("/var/run/wpa_supplicant/p2p0");
+	//removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//removeFile("/var/run/wpa_supplicant/p2p0");
 }
 
 TEST_F(MiracastServiceEventTest, P2P_ClientMode_onClientConnectionAndLaunchRequest)
 {
-	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
+	//createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
@@ -1076,62 +1116,82 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_onClientConnectionAndLaunchReque
 	EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_recv(::testing::_, ::testing::_, ::testing::_))
 		.WillOnce(::testing::Invoke(
 					[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+					TEST_LOG(" Before strncpy: P2P-DEV-FOUND message");		
 					strncpy(reply, "P2P-DEVICE-FOUND 2c:33:58:9c:73:2d p2p_dev_addr=2c:33:58:9c:73:2d pri_dev_type=1-0050F200-0 name='Sample-Test-Android-1' config_methods=0x11e8 dev_capab=0x25 group_capab=0x82 wfd_dev_info=0x01101c440006 new=0", *reply_len);
+					TEST_LOG(" AFTER strncpy: P2P-DEV-FOUND message");
 					return false;
 					}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" Before strncpy: P2P-DEV-FOUND2 message");	
 				strncpy(reply, "P2P-DEVICE-FOUND 96:52:44:b6:7d:14 p2p_dev_addr=96:52:44:b6:7d:14 pri_dev_type=10-0050F204-5 name='Sample-Test-Android-2' config_methods=0x188 dev_capab=0x25 group_capab=0x0 wfd_dev_info=0x01101c440032 vendor_elems=1 new=1", *reply_len);
+				TEST_LOG(" AFTER strncpy: P2P-DEV-FOUND2 message");
 				return false;
 				}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" BEFORE strncpy: P2P-DEV-LOST message");	
 				strncpy(reply, "P2P-DEVICE-LOST 2c:33:58:9c:73:2d p2p_dev_addr=2c:33:58:9c:73:2d pri_dev_type=1-0050F200-0 name='Sample-Test-Android-1' config_methods=0x11e8 dev_capab=0x25 group_capab=0x82 wfd_dev_info=0x01101c440006 new=0", *reply_len);
+				TEST_LOG(" AFTER strncpy: P2P-DEV-LOST message");
 				return false;
 				}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" BEFORE strncpy: P2P=PROV-DISC-PBC-REQ message");	
 				strncpy(reply, "P2P-PROV-DISC-PBC-REQ 96:52:44:b6:7d:14 p2p_dev_addr=96:52:44:b6:7d:14 pri_dev_type=10-0050F204-5 name='Sample-Test-Android-2' config_methods=0x188 dev_capab=0x25 group_capab=0x0", *reply_len);
+				TEST_LOG(" AFTER strncpy: P2P-PROV-DISC-PBC message");
 				return false;
 				}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" BEFORE strncpy: P2P-PROV-DISC-PBC-REQ message");	
 				strncpy(reply, "P2P-PROV-DISC-PBC-REQ 96:52:44:b6:7d:14 p2p_dev_addr=96:52:44:b6:7d:14 pri_dev_type=10-0050F204-5 name='Sample-Test-Android-2' config_methods=0x188 dev_capab=0x25 group_capab=0x0", *reply_len);
+				TEST_LOG(" AFTR strncpy: P2P-PROV-DISC-PBC-REQ message");
 				return false;
 				}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" BEFORE strncpy: P2P-GO-NEG-REQ message");	
 				strncpy(reply, "P2P-GO-NEG-REQUEST 96:52:44:b6:7d:14 dev_passwd_id=4 go_intent=13", *reply_len);
+				TEST_LOG(" AFTR strncpy: P2P-GO-NEG-REQ message");
 				return false;
 				}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" BEFORE strncpy: P2P-GO-NEG-SUCCESS message");	
 				strncpy(reply, "P2P-GO-NEG-SUCCESS role=client freq=2437 ht40=0 x=96:52:44:b6:7d:14 peer_iface=96:52:44:b6:fd:14 wps_method=PBC", *reply_len);
+				TEST_LOG(" AFTR strncpy: P2P-GO-NEG-SUCCESS message");
 				return false;
 				}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" BEFORE strncpy: P2P-GRP-FORM-SUCC message");	
 				strncpy(reply, "P2P-GROUP-FORMATION-SUCCESS", *reply_len);
+				TEST_LOG(" AFTR strncpy: P2P-GRP-FORM-SUCCES message");
 				return false;
 				}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" BEFORE strncpy: P2P-FIND-STOP message");	
 				strncpy(reply, "P2P-FIND-STOPPED", *reply_len);
+				TEST_LOG(" AFTR strncpy: P2P-FIND-STOP message");	
 				return false;
 				}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
 				// Here using lo to avoid the operation not permitted error for unknown interfaces
+				TEST_LOG(" BEFORE strncpy: P2P-GRP-START message");	
 				strncpy(reply, "P2P-GROUP-STARTED lo client ssid=\"DIRECT-UU-Galaxy A23 5G\" freq=2437 psk=12c3ce3d8976152df796e5f42fc646723471bf1aab8d72a546fa3dce60dc14a3 go_dev_addr=96:52:44:b6:7d:14 [PERSISTENT]", *reply_len);
+				TEST_LOG(" AFTR strncpy: P2P-GRP-START message");
 				return false;
 				}))
 
@@ -1176,10 +1236,10 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_onClientConnectionAndLaunchReque
                                 P2PGrpStart.SetEvent();
 				return Core::ERROR_NONE;
 				}));
-
+	TEST_LOG(" Before onClientConnectionRequest 7");
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
-
+	TEST_LOG(" aftr onClientConnectionRequest 7");
 	EXPECT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
@@ -1190,14 +1250,14 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_onClientConnectionAndLaunchReque
 
 	plugin->Deinitialize(nullptr);
 
-	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	removeFile("/var/run/wpa_supplicant/p2p0");
+	//removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//removeFile("/var/run/wpa_supplicant/p2p0");
 }
 
 TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectonClientConnectionAndLaunchRequest)
 {
-	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
+	//createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
@@ -1230,14 +1290,18 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectonClientConnectionAndLaunc
 	EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_recv(::testing::_, ::testing::_, ::testing::_))
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" BEFORE strncpy: P2P-DEVICE-FOUND message");	
 				strncpy(reply, "P2P-DEVICE-FOUND 96:52:44:b6:7d:14 p2p_dev_addr=96:52:44:b6:7d:14 pri_dev_type=10-0050F204-5 name='Sample-Test-Android-2' config_methods=0x188 dev_capab=0x25 group_capab=0x0 wfd_dev_info=0x01101c440032 vendor_elems=1 new=1", *reply_len);
+				TEST_LOG(" AFT strncpy: P2P-DEVICE-FOUND message");
 				return false;
 				}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
 				// Here using lo to avoid the operation not permitted error for unknown interfaces
+				TEST_LOG(" BEFORE strncpy: P2P-GRP-START message");	
 				strncpy(reply, "P2P-GROUP-STARTED lo client ssid=\"DIRECT-UU-Galaxy A23 5G\" freq=2437 psk=12c3ce3d8976152df796e5f42fc646723471bf1aab8d72a546fa3dce60dc14a3 go_dev_addr=96:52:44:b6:7d:14 [PERSISTENT]", *reply_len);
+				TEST_LOG(" AFT strncpy: P2P-GRP-START message");
 				return false;
 				}))
 
@@ -1282,10 +1346,10 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectonClientConnectionAndLaunc
                                 P2PGrpStart.SetEvent();
 				return Core::ERROR_NONE;
 				}));
-
+	TEST_LOG(" Before onClientConnectionRequest 8");
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
-
+	TEST_LOG(" aftr onClientConnectionRequest 8");
 	EXPECT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
@@ -1296,14 +1360,14 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectonClientConnectionAndLaunc
 
 	plugin->Deinitialize(nullptr);
 
-	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	removeFile("/var/run/wpa_supplicant/p2p0");
+	//removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//removeFile("/var/run/wpa_supplicant/p2p0");
 }
 
 TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithName)
 {
-	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
+	//createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
@@ -1337,7 +1401,9 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithName)
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
 				// Here using lo to avoid the operation not permitted error for unknown interfaces
+				TEST_LOG(" BEFORE strncpy: P2P-GRP-START message");	
 				strncpy(reply, "P2P-GROUP-STARTED lo client ssid=\"DIRECT-UU-Galaxy A23 5G\" freq=2437 psk=12c3ce3d8976152df796e5f42fc646723471bf1aab8d72a546fa3dce60dc14a3 go_dev_addr=96:52:44:b6:7d:14 [PERSISTENT]", *reply_len);
+				TEST_LOG(" AFT strncpy: P2P-GRP-START message");	
 				return false;
 				}))
 
@@ -1382,10 +1448,10 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithName)
                                 P2PGrpStart.SetEvent();
 				return Core::ERROR_NONE;
 				}));
-
+	TEST_LOG(" Before onClientConnectionRequest 9");
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
-
+	TEST_LOG(" aftr onClientConnectionRequest 9");
 	EXPECT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
@@ -1396,14 +1462,14 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithName)
 
 	plugin->Deinitialize(nullptr);
 
-	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	removeFile("/var/run/wpa_supplicant/p2p0");
+	//removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//removeFile("/var/run/wpa_supplicant/p2p0");
 }
 
 TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithoutName)
 {
-	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
+	//createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
@@ -1437,7 +1503,9 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithoutName)
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
 				// Here using lo to avoid the operation not permitted error for unknown interfaces
+				TEST_LOG(" BEFORE strncpy: P2P-GRP-START message");		
 				strncpy(reply, "P2P-GROUP-STARTED lo client ssid=\"DIRECT-UU\" freq=2437 psk=12c3ce3d8976152df796e5f42fc646723471bf1aab8d72a546fa3dce60dc14a3 go_dev_addr=96:52:44:b6:7d:14 [PERSISTENT]", *reply_len);
+				TEST_LOG(" AFT strncpy: P2P-GRP-START message");	
 				return false;
 				}))
 
@@ -1482,10 +1550,10 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithoutName)
                                 P2PGrpStart.SetEvent();
 				return Core::ERROR_NONE;
 				}));
-
+	TEST_LOG(" Before onClientConnectionRequest 10");
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
-
+	TEST_LOG(" aftr onClientConnectionRequest 10");
 	EXPECT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
@@ -1496,14 +1564,14 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithoutName)
 
 	plugin->Deinitialize(nullptr);
 
-	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	removeFile("/var/run/wpa_supplicant/p2p0");
+	//removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//removeFile("/var/run/wpa_supplicant/p2p0");
 }
 
 TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectP2PGoNegotiationGroupStartWithoutName)
 {
-	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
+	//createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
@@ -1536,32 +1604,42 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectP2PGoNegotiationGroupStart
 	EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_recv(::testing::_, ::testing::_, ::testing::_))
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" BEFORE strncpy: P2P-GO-NEG-REQ message");		
 				strncpy(reply, "P2P-GO-NEG-REQUEST 96:52:44:b6:7d:14 dev_passwd_id=4 go_intent=13", *reply_len);
+				TEST_LOG(" AFT strncpy: P2P-GO-NEG-REQ message");	
 				return false;
 				}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" BEFORE strncpy: P2P-GO-NEG-REQUEST2 message");		
 				strncpy(reply, "P2P-GO-NEG-REQUEST 96:52:44:b6:7d:14 dev_passwd_id=4 go_intent=13", *reply_len);
+				TEST_LOG(" AFT strncpy: P2P-GO-NEG-REQUST2 message");
 				return false;
 				}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" BEFORE strncpy: P2P-GO-NEG-SUCCESS message");	
 				strncpy(reply, "P2P-GO-NEG-SUCCESS role=client freq=2437 ht40=0 x=96:52:44:b6:7d:14 peer_iface=96:52:44:b6:fd:14 wps_method=PBC", *reply_len);
+				TEST_LOG(" AFT strncpy: P2P-GO-NEG-SUCCES message");
 				return false;
 				}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" BEFORE strncpy: P2P-GRP-FORM-SUCCES message");	
 				strncpy(reply, "P2P-GROUP-FORMATION-SUCCESS", *reply_len);
+				TEST_LOG(" AFT strncpy: P2P-GRP-FORM-SUCCES message");	
 				return false;
 				}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
 				// Here using lo to avoid the operation not permitted error for unknown interfaces
+				TEST_LOG(" BEFRE strncpy: P2P-GRP-START message");	
 				strncpy(reply, "P2P-GROUP-STARTED lo client ssid=\"DIRECT-UU-Unknown\" freq=2437 psk=12c3ce3d8976152df796e5f42fc646723471bf1aab8d72a546fa3dce60dc14a3 go_dev_addr=96:52:44:b6:7d:14 [PERSISTENT]", *reply_len);
+				TEST_LOG(" AFT strncpy: P2P-GRP-START message");
 				return false;
 				}))
 
@@ -1606,10 +1684,10 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectP2PGoNegotiationGroupStart
                                 P2PGrpStart.SetEvent();
 				return Core::ERROR_NONE;
 				}));
-
+	TEST_LOG(" Before onClientConnectionRequest 11");
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_SUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
-
+	TEST_LOG(" aftr onClientConnectionRequest 11");
 	EXPECT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
@@ -1620,14 +1698,14 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectP2PGoNegotiationGroupStart
 
 	plugin->Deinitialize(nullptr);
 
-	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	removeFile("/var/run/wpa_supplicant/p2p0");
+	//removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//removeFile("/var/run/wpa_supplicant/p2p0");
 }
 
 TEST_F(MiracastServiceEventTest, P2P_ClientMode_GENERIC_FAILURE)
 {
-	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
+	//createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
@@ -1660,62 +1738,82 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_GENERIC_FAILURE)
 	EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_recv(::testing::_, ::testing::_, ::testing::_))
 		.WillOnce(::testing::Invoke(
 					[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+					TEST_LOG(" B4 strncpy: P2P-DEVICE-FOUND message");	
 					strncpy(reply, "P2P-DEVICE-FOUND 2c:33:58:9c:73:2d p2p_dev_addr=2c:33:58:9c:73:2d pri_dev_type=1-0050F200-0 name='Sample-Test-Android-1' config_methods=0x11e8 dev_capab=0x25 group_capab=0x82 wfd_dev_info=0x01101c440006 new=0", *reply_len);
+					TEST_LOG(" AFT strncpy: P2P-DEVICE-FOUND message");
 					return false;
 					}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" B4 strncpy: P2P-DEVICE-FOUND2 message");	
 				strncpy(reply, "P2P-DEVICE-FOUND 96:52:44:b6:7d:14 p2p_dev_addr=96:52:44:b6:7d:14 pri_dev_type=10-0050F204-5 name='Sample-Test-Android-2' config_methods=0x188 dev_capab=0x25 group_capab=0x0 wfd_dev_info=0x01101c440032 vendor_elems=1 new=1", *reply_len);
+				TEST_LOG(" AFT strncpy: P2P-DEVICE-FOUND2 message");
 				return false;
 				}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" B4 strncpy: P2P-DEVICE-LOST message");	
 				strncpy(reply, "P2P-DEVICE-LOST 2c:33:58:9c:73:2d p2p_dev_addr=2c:33:58:9c:73:2d pri_dev_type=1-0050F200-0 name='Sample-Test-Android-1' config_methods=0x11e8 dev_capab=0x25 group_capab=0x82 wfd_dev_info=0x01101c440006 new=0", *reply_len);
+				TEST_LOG(" AFT strncpy: P2P-DEVICE-LOST message");
 				return false;
 				}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" B4 strncpy: P2P-PROV-DISC-PBC-REQ message");	
 				strncpy(reply, "P2P-PROV-DISC-PBC-REQ 96:52:44:b6:7d:14 p2p_dev_addr=96:52:44:b6:7d:14 pri_dev_type=10-0050F204-5 name='Sample-Test-Android-2' config_methods=0x188 dev_capab=0x25 group_capab=0x0", *reply_len);
+				TEST_LOG(" AFTR strncpy: P2P-PROV-DISC-PBC-REQ message");
 				return false;
 				}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" B4 strncpy: P2P-PROV-DISC-PBC-REQ2 message");	
 				strncpy(reply, "P2P-PROV-DISC-PBC-REQ 96:52:44:b6:7d:14 p2p_dev_addr=96:52:44:b6:7d:14 pri_dev_type=10-0050F204-5 name='Sample-Test-Android-2' config_methods=0x188 dev_capab=0x25 group_capab=0x0", *reply_len);
+				TEST_LOG(" AFTR strncpy: P2P-PROV-DISC-PBC-REQ message");
 				return false;
 				}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" B4 strncpy: P2P-GO-NEG-REQ message");	
 				strncpy(reply, "P2P-GO-NEG-REQUEST 96:52:44:b6:7d:14 dev_passwd_id=4 go_intent=13", *reply_len);
+				TEST_LOG(" AFT strncpy: P2P-GO-NEG-REQ message");
 				return false;
 				}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" B4 strncpy: P2P-GO-NEG-SUCCESS message");	
 				strncpy(reply, "P2P-GO-NEG-SUCCESS role=client freq=2437 ht40=0 x=96:52:44:b6:7d:14 peer_iface=96:52:44:b6:fd:14 wps_method=PBC", *reply_len);
+				TEST_LOG(" AFTR strncpy: P2P-GO-NEG-SUCCESS message");
 				return false;
 				}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" B4 strncpy: P2P-GO-FORM-SUCCESS message");	
 				strncpy(reply, "P2P-GROUP-FORMATION-SUCCESS", *reply_len);
+				TEST_LOG(" AFTR strncpy: P2P-GO-FORM-SUCCESS message");
 				return false;
 				}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" B4 strncpy: P2P-FIND-STOP message");	
 				strncpy(reply, "P2P-FIND-STOPPED", *reply_len);
+				TEST_LOG(" AFTR strncpy: P2P-FIND-STOP message");	
 				return false;
 				}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
 				// Here using lo to avoid the operation not permitted error for unknown interfaces
+				TEST_LOG(" B4 strncpy: P2P-GRP-STRT message");	
 				strncpy(reply, "P2P-GROUP-STARTED lo client ssid=\"DIRECT-UU-Galaxy A23 5G\" freq=2437 psk=12c3ce3d8976152df796e5f42fc646723471bf1aab8d72a546fa3dce60dc14a3 go_dev_addr=96:52:44:b6:7d:14 [PERSISTENT]", *reply_len);
+				TEST_LOG(" AFTR strncpy: P2P-GRP-STRT message");
 				return false;
 				}))
 
@@ -1762,10 +1860,10 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_GENERIC_FAILURE)
 				return Core::ERROR_NONE;
 				}));
 
-
+	TEST_LOG(" Before onClientConnectionRequest 12");
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
-
+	TEST_LOG(" aftr onClientConnectionRequest 12");
 	EXPECT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
@@ -1776,14 +1874,14 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_GENERIC_FAILURE)
 
 	plugin->Deinitialize(nullptr);
 
-	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	removeFile("/var/run/wpa_supplicant/p2p0");
+	//removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//removeFile("/var/run/wpa_supplicant/p2p0");
 }
 
 TEST_F(MiracastServiceEventTest, P2P_GOMode_GENERIC_FAILURE)
 {
-	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
+	//createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
@@ -1824,38 +1922,50 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_GENERIC_FAILURE)
 	EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_recv(::testing::_, ::testing::_, ::testing::_))
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" B4 strncpy: P2P-DEV-FOUND message");	
 				strncpy(reply, "P2P-DEVICE-FOUND 96:52:44:b6:7d:14 p2p_dev_addr=96:52:44:b6:7d:14 pri_dev_type=10-0050F204-5 name='Sample-Test-Android-2' config_methods=0x188 dev_capab=0x25 group_capab=0x0 wfd_dev_info=0x01101c440032 vendor_elems=1 new=1", *reply_len);
+				TEST_LOG(" AFT strncpy: P2P-DEV-FOUND message");
 				return false;
 				}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" B4 strncpy: P2P-PROV-DISC-PBC-REQ message");
 				strncpy(reply, "P2P-PROV-DISC-PBC-REQ 96:52:44:b6:7d:14 p2p_dev_addr=96:52:44:b6:7d:14 pri_dev_type=10-0050F204-5 name='Sample-Test-Android-2' config_methods=0x188 dev_capab=0x25 group_capab=0x0", *reply_len);
+				TEST_LOG(" AFT strncpy: P2P-PROV-DISC-PBC-REQ message");
 				return false;
 				}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" B4 strncpy: P2P-GO-NEG-REQ message");	
 				strncpy(reply, "P2P-GO-NEG-REQUEST 96:52:44:b6:7d:14 dev_passwd_id=4 go_intent=13", *reply_len);
+				TEST_LOG(" AFTER strncpy: P2P-GO-NEG-REQ message");
 				return false;
 				}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" B4 strncpy: P2P-GO-NEG-SUCCESS message");
 				strncpy(reply, "P2P-GO-NEG-SUCCESS role=client freq=2437 ht40=0 x=96:52:44:b6:7d:14 peer_iface=96:52:44:b6:fd:14 wps_method=PBC", *reply_len);
+				TEST_LOG(" AFTR strncpy: P2P-GO-NEG-SUCCESS message");
 				return false;
 				}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" B4 strncpy: P2P-GRP-FORM-SUCCESS message");	
 				strncpy(reply, "P2P-GROUP-FORMATION-SUCCESS", *reply_len);
+				TEST_LOG(" AFTR strncpy: P2P-GRP-FROM-SUCCESS message");	
 				return false;
 				}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
 				// Here using lo to avoid the operation not permitted error for unknown interfaces
+				TEST_LOG(" B4 strncpy: P2P-GRP-STRT message");	
 				strncpy(reply, "P2P-GROUP-STARTED lo GO ssid=\"DIRECT-UU-Element-Xumo-TV\" freq=2437 psk=12c3ce3d8976152df796e5f42fc646723471bf1aab8d72a546fa3dce60dc14a3 go_dev_addr=96:52:44:b6:7d:14 ip_addr=192.168.49.200 ip_mask=255.255.255.0 go_ip_addr=192.168.49.1", *reply_len);
+				TEST_LOG(" AFTR strncpy: P2P-GRP-STRT message");	
 				return false;
 				}))
 
@@ -1901,10 +2011,10 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_GENERIC_FAILURE)
 					P2PGenericFail.SetEvent();
 					return Core::ERROR_NONE;
 					}));
-
+	TEST_LOG(" Before onClientConnectionRequest 13");
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_SUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
-
+	TEST_LOG(" aftr onClientConnectionRequest 13");
 	EXPECT_EQ(Core::ERROR_NONE, connectRequest.Lock(10000));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Accept}"), response));
 
@@ -1915,14 +2025,14 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_GENERIC_FAILURE)
 
 	plugin->Deinitialize(nullptr);
 
-	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	removeFile("/var/run/wpa_supplicant/p2p0");
+	//removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//removeFile("/var/run/wpa_supplicant/p2p0");
 }
 
 TEST_F(MiracastServiceEventTest, P2P_GOMode_AutoConnect)
 {
-	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
+	//createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 	createFile("/opt/miracast_autoconnect","GTest");
 
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
@@ -1964,44 +2074,58 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_AutoConnect)
 	EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_recv(::testing::_, ::testing::_, ::testing::_))
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" B4 strncpy: P2P-DEV-FOUND message");		
 				strncpy(reply, "P2P-DEVICE-FOUND 96:52:44:b6:7d:14 p2p_dev_addr=96:52:44:b6:7d:14 pri_dev_type=10-0050F204-5 name='Sample-Test-Android-2' config_methods=0x188 dev_capab=0x25 group_capab=0x0 wfd_dev_info=0x01101c440032 vendor_elems=1 new=1", *reply_len);
+				TEST_LOG(" AFTR strncpy: P2P-DEV-FOUND message");	
 				return false;
 				}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" B4 strncpy: P2P-PROV-DISC-PBC-REQ message");		
 				strncpy(reply, "P2P-PROV-DISC-PBC-REQ 96:52:44:b6:7d:14 p2p_dev_addr=96:52:44:b6:7d:14 pri_dev_type=10-0050F204-5 name='Sample-Test-Android-2' config_methods=0x188 dev_capab=0x25 group_capab=0x0", *reply_len);
+				TEST_LOG(" AFTR strncpy: P2P-PROV-DISC-PBC-REQ message");
 				return false;
 				}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" B4 strncpy: P2P-GO-NEG-REQ message");	
 				strncpy(reply, "P2P-GO-NEG-REQUEST 96:52:44:b6:7d:14 dev_passwd_id=4 go_intent=13", *reply_len);
+				TEST_LOG(" AFTR strncpy: P2P-GO-NEG-REQ message");	
 				return false;
 				}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" B4 strncpy: P2P-GO-NEG-SUCES message");	
 				strncpy(reply, "P2P-GO-NEG-SUCCESS role=client freq=2437 ht40=0 x=96:52:44:b6:7d:14 peer_iface=96:52:44:b6:fd:14 wps_method=PBC", *reply_len);
+				TEST_LOG(" AFTR strncpy: P2P-GO-NEGC-REQ message");
 				return false;
 				}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" B4 strncpy: P2P-GROP-FORM-SUCCESS message");	
 				strncpy(reply, "P2P-GROUP-FORMATION-SUCCESS", *reply_len);
+				TEST_LOG(" AFTR strncpy: P2P-GROP-FORM-SUCCESS message");	
 				return false;
 				}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
+				TEST_LOG(" B4 strncpy: P2P-FIND-STOP message");	
 				strncpy(reply, "P2P-FIND-STOPPED", *reply_len);
+				TEST_LOG(" AFTR strncpy: P2P-FIND-STOP message");		
 				return false;
 				}))
 
 	.WillOnce(::testing::Invoke(
 				[&](struct wpa_ctrl *ctrl, char *reply, size_t *reply_len) {
 				// Here using lo to avoid the operation not permitted error for unknown interfaces
+				TEST_LOG(" B4 strncpy: P2P-GRP-START message");		
 				strncpy(reply, "P2P-GROUP-STARTED lo GO ssid=\"DIRECT-UU-Element-Xumo-TV\" freq=2437 psk=12c3ce3d8976152df796e5f42fc646723471bf1aab8d72a546fa3dce60dc14a3 go_dev_addr=96:52:44:b6:7d:14 ip_addr=192.168.49.200 ip_mask=255.255.255.0 go_ip_addr=192.168.49.1", *reply_len);
+				TEST_LOG(" AFTR strncpy: P2P-GRP-START message");	
 				return false;
 				}))
 
@@ -2014,15 +2138,15 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_AutoConnect)
 
 	plugin->Deinitialize(nullptr);
 
-	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	removeFile("/var/run/wpa_supplicant/p2p0");
+	//removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//removeFile("/var/run/wpa_supplicant/p2p0");
 	removeFile("/opt/miracast_autoconnect");
 }
 
 TEST_F(MiracastServiceEventTest, powerStateChange)
 {
-	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
+	//createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
 	EXPECT_EQ(string(""), plugin->Initialize(&service));
 
@@ -2037,7 +2161,6 @@ TEST_F(MiracastServiceEventTest, powerStateChange)
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
 	plugin->Deinitialize(nullptr);
 
-	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
-	removeFile("/var/run/wpa_supplicant/p2p0");
+	//removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
+	//removeFile("/var/run/wpa_supplicant/p2p0");
 }
-#endif
