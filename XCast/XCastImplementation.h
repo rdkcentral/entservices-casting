@@ -245,6 +245,8 @@ namespace WPEFramework
             bool isTimerActive();
             
             void registerEventHandlers();
+            void unregisterEventHandlers();
+            void checkPowerAndNetworkStandbyStates();
             void InitializePowerManager(PluginHost::IShell *service);
 
             std::string getSecurityToken();
