@@ -122,18 +122,6 @@ protected:
     
     NiceMock<FactoriesImplementation> factoriesImplementation;
 
-	void SetUp() override {
-	TEST_LOG("SetUp before sleep ");
-	std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-	TEST_LOG("SetUp after sleep ");	
-	}
-
-	void TearDown() override {
-	TEST_LOG("TearDown before sleep ");
-	std::this_thread::sleep_for(std::chrono::milliseconds(5000));
-	TEST_LOG("TearDown after sleep ");	
-	}	
-
     MiracastServiceTest()
         : plugin(Core::ProxyType<Plugin::MiracastService>::Create())
         , handler(*(plugin))
@@ -226,8 +214,13 @@ protected:
     {
         dispatcher->Deactivate();
         dispatcher->Release();
-
+		
         PluginHost::IFactories::Assign(nullptr);
+
+		TEST_LOG("Before destructor sleep ");
+		//Wait for all the previous destructor process to complete
+		std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+		TEST_LOG("After destructor sleep ");
     }
 };
 
