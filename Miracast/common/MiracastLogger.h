@@ -25,7 +25,6 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/syscall.h>
-#include "UtilsLogging.h"
 
 #define STR_HELPER(x) #x
 #define STR(x) STR_HELPER(x)
