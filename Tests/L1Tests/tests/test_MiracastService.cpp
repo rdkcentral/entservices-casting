@@ -195,11 +195,11 @@ protected:
 
 class MiracastServiceEventTest : public MiracastServiceTest {
 protected:
-    NiceMock<ServiceMock> service;
-    NiceMock<FactoriesImplementation> factoriesImplementation;
-    Core::JSONRPC::Message message;
-
+    static NiceMock<ServiceMock> service;
+    static NiceMock<FactoriesImplementation> factoriesImplementation;
     static PLUGINHOST_DISPATCHER* dispatcher;
+    static Core::ProxyType<Plugin::MiracastService> plugin;
+    Core::JSONRPC::Message message;
 
     static void SetUpTestSuite() 
     {
@@ -207,8 +207,7 @@ protected:
 
         dispatcher = static_cast<PLUGINHOST_DISPATCHER*>(
         plugin->QueryInterface(PLUGINHOST_DISPATCHER_ID));
-		ASSERT_NE(dispatcher, nullptr);
-        dispatcher->Activate(&service);
+		dispatcher->Activate(&service);
     }
 
     static void TearDownTestSuite() {
