@@ -120,7 +120,8 @@ protected:
 
     static void SetUpTestSuite() {
         plugin = Core::ProxyType<Plugin::MiracastService>::Create();
-        handler = &(*plugin);
+        handler = new Core::JSONRPC::Handler();
+		handler->Register<Plugin::MiracastService>(plugin);
 
         PluginHost::IFactories::Assign(&factoriesImplementation);
 
@@ -183,6 +184,10 @@ protected:
         if (plugin.IsValid()) {
             plugin.Release();
         }
+		if (handler) {
+ 		    delete handler;
+    		handler = nullptr;
+		}	
     }
 };
 
