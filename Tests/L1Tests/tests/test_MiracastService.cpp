@@ -200,7 +200,7 @@ protected:
     PLUGINHOST_DISPATCHER* dispatcher;
     Core::JSONRPC::Message message;
 
-    void SetUp override () 
+    void SetUp() override  
     {
         PluginHost::IFactories::Assign(&factoriesImplementation);
 
@@ -209,7 +209,7 @@ protected:
 		dispatcher->Activate(&service);
     }
 
-    void TearDown override () 
+    void TearDown() override  
     {
         dispatcher->Deactivate();
         dispatcher->Release();
