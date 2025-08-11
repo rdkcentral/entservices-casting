@@ -120,9 +120,6 @@ protected:
 
     static void SetUpTestSuite() {
         plugin = Core::ProxyType<Plugin::MiracastService>::Create();
-        handler = new Core::JSONRPC::Handler();
-		handler->Register<Plugin::MiracastService>(plugin);
-
         PluginHost::IFactories::Assign(&factoriesImplementation);
 
         workerPool = Core::ProxyType<WorkerPoolImplementation>::Create(
@@ -161,6 +158,13 @@ protected:
         dispatcher = static_cast<PLUGINHOST_DISPATCHER*>(
             plugin->QueryInterface(PLUGINHOST_DISPATCHER_ID));
         dispatcher->Activate(&service);
+
+		 // Initialize plugin and register JSON-RPC methods
+        plugin->Initialize(nullptr);  
+
+        handler = new Core::JSONRPC::Handler();
+        handler->Announce(plugin->Dispatcher(), plugin->Information()); 
+    }
     }
 
     static void TearDownTestSuite() {
