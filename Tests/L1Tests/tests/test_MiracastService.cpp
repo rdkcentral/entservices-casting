@@ -195,8 +195,12 @@ protected:
 
 class MiracastServiceEventTest : public MiracastServiceTest {
 protected:
+    NiceMock<ServiceMock> service;
+    NiceMock<FactoriesImplementation> factoriesImplementation;
+    PLUGINHOST_DISPATCHER* dispatcher;
+    Core::JSONRPC::Message message;
 
-    static void SetUpTestSuite() 
+    void SetUp override () 
     {
         PluginHost::IFactories::Assign(&factoriesImplementation);
 
@@ -205,7 +209,8 @@ protected:
 		dispatcher->Activate(&service);
     }
 
-    static void TearDownTestSuite() {
+    void TearDown override () 
+    {
         dispatcher->Deactivate();
         dispatcher->Release();
 		dispatcher = nullptr;
