@@ -200,8 +200,7 @@ protected:
     PLUGINHOST_DISPATCHER* dispatcher;
     Core::JSONRPC::Message message;
 
-    MiracastServiceEventTest()
-        : MiracastServiceTest()
+    static void SetUpTestSuite() 
     {
         PluginHost::IFactories::Assign(&factoriesImplementation);
 
@@ -210,18 +209,16 @@ protected:
         dispatcher->Activate(&service);
     }
 
-    virtual ~MiracastServiceEventTest() override
-    {
+    static void TearDownTestSuite() {
         dispatcher->Deactivate();
         dispatcher->Release();
 		
         PluginHost::IFactories::Assign(nullptr);
-
-		TEST_LOG("Before destructor sleep ");
-		//Wait for all the previous destructor process to complete
-		std::this_thread::sleep_for(std::chrono::milliseconds(3000));
-		TEST_LOG("After destructor sleep ");
     }
+        //TEST_LOG("Before destructor sleep ");
+		//Wait for all the previous destructor process to complete
+		//std::this_thread::sleep_for(std::chrono::milliseconds(3000));
+		//TEST_LOG("After destructor sleep ");
 };
 
 TEST_F(MiracastServiceTest, GetInformation)
