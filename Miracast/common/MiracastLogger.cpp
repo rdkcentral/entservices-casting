@@ -17,7 +17,6 @@
 * limitations under the License.
 */
 #include "MiracastLogger.h"
-#include "UtilsLogging.h"
 #include <cstdio>
 #include <cstring>
 #include <cstdarg>
