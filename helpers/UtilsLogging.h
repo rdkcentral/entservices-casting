@@ -21,7 +21,7 @@
 
 #include <syscall.h>
 
-enum LogLevel {FATAL_LEVEL = 0, ERROR_LEVEL, WARNING_LEVEL, INFO_LEVEL, DEBUG_LEVEL};
+enum LogLevel {FATAL_LEVEL = 0, ERROR_LEVEL, WARNING_LEVEL, INFO_LEVEL, VERBOSE_LEVEL, TRACE_LEVEL};
 
 static int gDefaultLogLevel = ERROR_LEVEL;
 
