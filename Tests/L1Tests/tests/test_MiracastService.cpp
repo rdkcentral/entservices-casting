@@ -110,7 +110,7 @@ protected:
     static Core::ProxyType<WorkerPoolImplementation> workerPool;
     static Core::ProxyType<Plugin::MiracastServiceImplementation> miracastServiceImpl;
     static PLUGINHOST_DISPATCHER* dispatcher;
-    static Core::JSONRPC::Handler& handler = *plugin; 
+    static Core::JSONRPC::Handler* handler;
     static DECL_CORE_JSONRPC_CONX connection;
 
     static NiceMock<COMLinkMock> comLinkMock;
@@ -161,7 +161,7 @@ protected:
 
 		 // Initialize plugin and register JSON-RPC methods
         plugin->Initialize(nullptr);  
-
+		handler = &(*plugin);
         handler->Announce(plugin->Dispatcher(), plugin->Information()); 
     }
 
