@@ -197,22 +197,25 @@ class MiracastServiceEventTest : public MiracastServiceTest {
 protected:
     NiceMock<ServiceMock> service;
     NiceMock<FactoriesImplementation> factoriesImplementation;
-    PLUGINHOST_DISPATCHER* dispatcher;
     Core::JSONRPC::Message message;
+
+    static PLUGINHOST_DISPATCHER* dispatcher;
 
     static void SetUpTestSuite() 
     {
         PluginHost::IFactories::Assign(&factoriesImplementation);
 
         dispatcher = static_cast<PLUGINHOST_DISPATCHER*>(
-            plugin->QueryInterface(PLUGINHOST_DISPATCHER_ID));
+        plugin->QueryInterface(PLUGINHOST_DISPATCHER_ID));
+		ASSERT_NE(dispatcher, nullptr);
         dispatcher->Activate(&service);
     }
 
     static void TearDownTestSuite() {
         dispatcher->Deactivate();
         dispatcher->Release();
-		
+		dispatcher = nullptr;
+
         PluginHost::IFactories::Assign(nullptr);
     }
         //TEST_LOG("Before destructor sleep ");
