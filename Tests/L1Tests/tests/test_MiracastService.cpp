@@ -122,7 +122,6 @@ protected:
     
     NiceMock<FactoriesImplementation> factoriesImplementation;
 
-    void SetUp() override {
     MiracastServiceTest()
         : plugin(Core::ProxyType<Plugin::MiracastService>::Create())
         , handler(*(plugin))
@@ -174,8 +173,7 @@ protected:
         plugin->QueryInterface(PLUGINHOST_DISPATCHER_ID));
         dispatcher->Activate(&service);
     }
-	}
-    void TearDown() override {
+
     virtual ~MiracastServiceTest() override
     {
         TEST_LOG("MiracastServiceTest Destructor");
@@ -194,7 +192,6 @@ protected:
         }
         PluginHost::IFactories::Assign(nullptr);
     }
-	}	
 };
 
 class MiracastServiceEventTest : public MiracastServiceTest {
@@ -204,7 +201,8 @@ protected:
     PLUGINHOST_DISPATCHER* dispatcher;
     Core::JSONRPC::Message message;
 
-    void SetUp() override  
+    MiracastServiceEventTest()
+        : MiracastServiceTest()
     {
         PluginHost::IFactories::Assign(&factoriesImplementation);
 
@@ -213,18 +211,19 @@ protected:
 		dispatcher->Activate(&service);
     }
 
-    void TearDown() override  
+    virtual ~MiracastServiceEventTest() override 
     {
         dispatcher->Deactivate();
         dispatcher->Release();
-		dispatcher = nullptr;
 
         PluginHost::IFactories::Assign(nullptr);
-    }
-        //TEST_LOG("Before destructor sleep ");
+		
+		TEST_LOG("Before destructor sleep ");
 		//Wait for all the previous destructor process to complete
-		//std::this_thread::sleep_for(std::chrono::milliseconds(3000));
-		//TEST_LOG("After destructor sleep ");
+		std::this_thread::sleep_for(std::chrono::milliseconds(3000));
+		TEST_LOG("After destructor sleep ");
+
+    }
 };
 
 
