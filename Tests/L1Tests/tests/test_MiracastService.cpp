@@ -106,121 +106,99 @@ static struct wpa_ctrl global_wpa_ctrl_handle;
 
 class MiracastServiceTest : public ::testing::Test {
 protected:
-    Core::ProxyType<Plugin::MiracastService> plugin;
-    Core::JSONRPC::Handler& handler;
-    DECL_CORE_JSONRPC_CONX connection;
-    Core::JSONRPC::Message message;
-    string response;
+    static Core::ProxyType<Plugin::MiracastService> plugin;
+    static Core::ProxyType<WorkerPoolImplementation> workerPool;
+    static Core::ProxyType<Plugin::MiracastServiceImplementation> miracastServiceImpl;
+    static PLUGINHOST_DISPATCHER* dispatcher;
+    static Core::JSONRPC::Handler* handler;
+    static DECL_CORE_JSONRPC_CONX connection;
 
-    WrapsImplMock *p_wrapsImplMock = nullptr;
-    Core::ProxyType<Plugin::MiracastServiceImplementation> miracastServiceImpl;
+    static NiceMock<COMLinkMock> comLinkMock;
+    static NiceMock<ServiceMock> service;
+    static NiceMock<FactoriesImplementation> factoriesImplementation;
+    static NiceMock<WrapsImplMock>* p_wrapsImplMock;
 
-    NiceMock<COMLinkMock> comLinkMock;
-    NiceMock<ServiceMock> service;
-    PLUGINHOST_DISPATCHER* dispatcher;
-    Core::ProxyType<WorkerPoolImplementation> workerPool;
-    
-    NiceMock<FactoriesImplementation> factoriesImplementation;
+    static void SetUpTestSuite() {
+        plugin = Core::ProxyType<Plugin::MiracastService>::Create();
+        handler = &(*plugin);
 
-    MiracastServiceTest()
-        : plugin(Core::ProxyType<Plugin::MiracastService>::Create())
-        , handler(*(plugin))
-        , INIT_CONX(1, 0)
-        , workerPool(Core::ProxyType<WorkerPoolImplementation>::Create(2, Core::Thread::DefaultStackSize(), 16))
-    {
-        p_wrapsImplMock = new NiceMock<WrapsImplMock>;
-        printf("Pass created wrapsImplMock: %p ", p_wrapsImplMock);
-        Wraps::setImpl(p_wrapsImplMock);
-        
-        ON_CALL(service, COMLink())
-        .WillByDefault(::testing::Invoke(
-              [this]() {
-                    TEST_LOG("Pass created comLinkMock: %p ", &comLinkMock);
-                    return &comLinkMock;
-                }));
-
-
-        #ifdef USE_THUNDER_R4
-            ON_CALL(comLinkMock, Instantiate(::testing::_, ::testing::_, ::testing::_))
-                .WillByDefault(::testing::Invoke(
-                        [&](const RPC::Object& object, const uint32_t waitTime, uint32_t& connectionId) {
-                            miracastServiceImpl = Core::ProxyType<Plugin::MiracastServiceImplementation>::Create();
-                            TEST_LOG("Pass created miracastServiceImpl: %p ", &miracastServiceImpl);
-                            return &miracastServiceImpl;
-                    }));
-         #else
-            ON_CALL(comLinkMock, Instantiate(::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_))
-                 .WillByDefault(::testing::Return(miracastServiceImpl));
-         #endif /*USE_THUNDER_R4 */
-        
-        ON_CALL(*p_wrapsImplMock, wpa_ctrl_open(::testing::_))
-			.WillByDefault(::testing::Invoke([&](const char *ctrl_path) { return &global_wpa_ctrl_handle; }));
-		ON_CALL(*p_wrapsImplMock, wpa_ctrl_close(::testing::_))
-			.WillByDefault(::testing::Invoke([&](struct wpa_ctrl *) { return; }));
-		ON_CALL(*p_wrapsImplMock, wpa_ctrl_pending(::testing::_))
-			.WillByDefault(::testing::Invoke([&](struct wpa_ctrl *ctrl) { return true; }));
-		ON_CALL(*p_wrapsImplMock, wpa_ctrl_attach(::testing::_))
-			.WillByDefault(::testing::Invoke([&](struct wpa_ctrl *ctrl) { return false; }));
-		ON_CALL(*p_wrapsImplMock, system(::testing::_))
-			.WillByDefault(::testing::Invoke([&](const char* command) {return 0;}));
-        
         PluginHost::IFactories::Assign(&factoriesImplementation);
 
+        workerPool = Core::ProxyType<WorkerPoolImplementation>::Create(
+            2, Core::Thread::DefaultStackSize(), 16);
         Core::IWorkerPool::Assign(&(*workerPool));
         workerPool->Run();
 
+        p_wrapsImplMock = new NiceMock<WrapsImplMock>();
+        Wraps::setImpl(p_wrapsImplMock);
+
+        ON_CALL(service, COMLink())
+            .WillByDefault(::testing::Return(&comLinkMock));
+
+    #ifdef USE_THUNDER_R4
+        ON_CALL(comLinkMock, Instantiate(::testing::_, ::testing::_, ::testing::_))
+            .WillByDefault(::testing::Invoke([](const RPC::Object&, const uint32_t, uint32_t&) {
+                miracastServiceImpl = Core::ProxyType<Plugin::MiracastServiceImplementation>::Create();
+                return &miracastServiceImpl;
+            }));
+    #else
+        ON_CALL(comLinkMock, Instantiate(::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_))
+            .WillByDefault(::testing::Return(miracastServiceImpl));
+    #endif
+
+        ON_CALL(*p_wrapsImplMock, wpa_ctrl_open(::testing::_))
+            .WillByDefault(::testing::Return(&global_wpa_ctrl_handle));
+        ON_CALL(*p_wrapsImplMock, wpa_ctrl_close(::testing::_))
+            .WillByDefault(::testing::Return());
+        ON_CALL(*p_wrapsImplMock, wpa_ctrl_pending(::testing::_))
+            .WillByDefault(::testing::Return(true));
+        ON_CALL(*p_wrapsImplMock, wpa_ctrl_attach(::testing::_))
+            .WillByDefault(::testing::Return(false));
+        ON_CALL(*p_wrapsImplMock, system(::testing::_))
+            .WillByDefault(::testing::Return(0));
+
         dispatcher = static_cast<PLUGINHOST_DISPATCHER*>(
-        plugin->QueryInterface(PLUGINHOST_DISPATCHER_ID));
+            plugin->QueryInterface(PLUGINHOST_DISPATCHER_ID));
         dispatcher->Activate(&service);
     }
-    virtual ~MiracastServiceTest() override
-    {
-        TEST_LOG("MiracastServiceTest Destructor");
 
-        dispatcher->Deactivate();
-        dispatcher->Release();
+    static void TearDownTestSuite() {
+        if (dispatcher) {
+            dispatcher->Deactivate();
+            dispatcher->Release();
+            dispatcher = nullptr;
+        }
 
         Core::IWorkerPool::Assign(nullptr);
-        workerPool.Release();
-    
-        Wraps::setImpl(nullptr);
-        if (p_wrapsImplMock != nullptr)
-        {
-            delete p_wrapsImplMock;
-            p_wrapsImplMock = nullptr;
+        if (workerPool.IsValid()) {
+            workerPool.Release();
         }
+
         PluginHost::IFactories::Assign(nullptr);
+
+        Wraps::setImpl(nullptr);
+        delete p_wrapsImplMock;
+        p_wrapsImplMock = nullptr;
+
+        if (plugin.IsValid()) {
+            plugin.Release();
+        }
     }
 };
 
 class MiracastServiceEventTest : public MiracastServiceTest {
 protected:
-    NiceMock<ServiceMock> service;
-    NiceMock<FactoriesImplementation> factoriesImplementation;
-    PLUGINHOST_DISPATCHER* dispatcher;
-    Core::JSONRPC::Message message;
-
-    void SetUp() override  
-    {
-        PluginHost::IFactories::Assign(&factoriesImplementation);
-
-        dispatcher = static_cast<PLUGINHOST_DISPATCHER*>(
-        plugin->QueryInterface(PLUGINHOST_DISPATCHER_ID));
-		dispatcher->Activate(&service);
+    static void SetUpTestSuite() {
+        // Call base class setup
+        MiracastServiceTest::SetUpTestSuite();
     }
 
-    void TearDown() override  
-    {
-        dispatcher->Deactivate();
-        dispatcher->Release();
-		dispatcher = nullptr;
-
-        PluginHost::IFactories::Assign(nullptr);
+    static void TearDownTestSuite() {
+        // Call base class teardown
+        MiracastServiceTest::TearDownTestSuite();
     }
-        //TEST_LOG("Before destructor sleep ");
-		//Wait for all the previous destructor process to complete
-		//std::this_thread::sleep_for(std::chrono::milliseconds(3000));
-		//TEST_LOG("After destructor sleep ");
+
+    Core::JSONRPC::Message message;  
 };
 
 TEST_F(MiracastServiceTest, GetInformation)
