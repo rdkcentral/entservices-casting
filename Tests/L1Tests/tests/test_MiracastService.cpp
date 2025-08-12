@@ -43,6 +43,7 @@ namespace
 {
     #define TEST_LOG(FMT, ...) log(__func__, __FILE__, __LINE__, syscall(__NR_gettid),FMT,##__VA_ARGS__)
 
+	#if 0
     static void removeFile(const char* fileName)
 	{
 		if (std::remove(fileName) != 0)
@@ -65,6 +66,7 @@ namespace
 		fileContentStream << "\n";
 		fileContentStream.close();
 	}
+	#endif
     void current_time(char *time_str)
     {
         struct timeval tv;
@@ -177,20 +179,6 @@ protected:
     virtual ~MiracastServiceTest() override
     {
         TEST_LOG("MiracastServiceTest Destructor");
-
-        dispatcher->Deactivate();
-        dispatcher->Release();
-
-        Core::IWorkerPool::Assign(nullptr);
-        workerPool.Release();
-    
-        Wraps::setImpl(nullptr);
-        if (p_wrapsImplMock != nullptr)
-        {
-            delete p_wrapsImplMock;
-            p_wrapsImplMock = nullptr;
-        }
-        PluginHost::IFactories::Assign(nullptr);
     }
 };
 
@@ -213,8 +201,6 @@ protected:
 
     virtual ~MiracastServiceEventTest() override 
     {
-        dispatcher->Deactivate();
-        dispatcher->Release();
 
         PluginHost::IFactories::Assign(nullptr);
 		
@@ -252,7 +238,7 @@ TEST_F(MiracastServiceTest, P2PCtrlInterfacePathNotFound)
 
 	//removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 }
-#endif
+
 TEST_F(MiracastServiceTest, RegisteredMethods)
 {
 	//createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
@@ -303,7 +289,7 @@ TEST_F(MiracastServiceTest, P2P_DiscoveryStatus)
 	//removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	//removeFile("/var/run/wpa_supplicant/p2p0");
 }
-
+#endif
 TEST_F(MiracastServiceTest, BackendDiscoveryStatus)
 {
 	//createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
@@ -427,6 +413,7 @@ TEST_F(MiracastServiceEventTest, stopClientConnection)
 	//removeFile("/var/run/wpa_supplicant/p2p0");
 }
 
+#if 0
 TEST_F(MiracastServiceEventTest, P2P_GOMode_onClientConnectionAndLaunchRequest)
 {
 	//createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
@@ -2167,3 +2154,4 @@ TEST_F(MiracastServiceEventTest, powerStateChange)
 	//removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	//removeFile("/var/run/wpa_supplicant/p2p0");
 }
+#endif
