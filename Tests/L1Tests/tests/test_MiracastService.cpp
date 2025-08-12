@@ -220,7 +220,7 @@ protected:
 		
 		TEST_LOG("Before destructor sleep ");
 		//Wait for all the previous destructor process to complete
-		std::this_thread::sleep_for(std::chrono::milliseconds(3000));
+		//std::this_thread::sleep_for(std::chrono::milliseconds(3000));
 		TEST_LOG("After destructor sleep ");
 
     }
