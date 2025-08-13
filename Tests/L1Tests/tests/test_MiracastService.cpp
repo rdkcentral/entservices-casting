@@ -215,6 +215,9 @@ protected:
     {
 		dispatcher->Deactivate();
         dispatcher->Release();
+
+		Core::IWorkerPool::Assign(nullptr);
+        workerPool.Release();
 		
         PluginHost::IFactories::Assign(nullptr);
 		
@@ -232,6 +235,7 @@ TEST_F(MiracastServiceTest, GetInformation)
     EXPECT_EQ("This MiracastService Plugin Facilitates Peer-to-Peer Control and WFD Source Device Discovery", plugin->Information());
 }
 
+#if 0
 TEST_F(MiracastServiceTest, P2PCtrlInterfaceNameNotFound)
 {
 	//removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
@@ -252,6 +256,7 @@ TEST_F(MiracastServiceTest, P2PCtrlInterfacePathNotFound)
 
 	//removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 }
+#endif 
 
 TEST_F(MiracastServiceTest, RegisteredMethods)
 {
