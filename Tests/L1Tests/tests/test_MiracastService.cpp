@@ -215,9 +215,6 @@ protected:
     {
 		dispatcher->Deactivate();
         dispatcher->Release();
-
-		Core::IWorkerPool::Assign(nullptr);
-        workerPool.Release();
 		
         PluginHost::IFactories::Assign(nullptr);
 		
