@@ -20,10 +20,18 @@
 #pragma once
 #include "UtilsLogging.h"
 
+#ifdef LOGDBG
 #undef LOGDBG
+#endif
+#ifdef LOGINFO
 #undef LOGINFO
+#endif
+#ifdef LOGWARN
 #undef LOGWARN
+#endif
+#ifdef LOGERR
 #undef LOGERR
+#endif
 
 enum LogLevel {FATAL_LEVEL = 0, ERROR_LEVEL, WARNING_LEVEL, INFO_LEVEL, VERBOSE_LEVEL, TRACE_LEVEL};
 
