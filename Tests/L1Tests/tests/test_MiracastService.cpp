@@ -228,31 +228,17 @@ protected:
 
 class MiracastServiceEventTest : public MiracastServiceTest {
 protected:
-    NiceMock<ServiceMock> service;
-    NiceMock<FactoriesImplementation> factoriesImplementation;
-    PLUGINHOST_DISPATCHER* dispatcher;
-    Core::JSONRPC::Message message;
-
     MiracastServiceEventTest()
         : MiracastServiceTest()
     {
-        PluginHost::IFactories::Assign(&factoriesImplementation);
-
-        dispatcher = static_cast<PLUGINHOST_DISPATCHER*>(
-            plugin->QueryInterface(PLUGINHOST_DISPATCHER_ID));
-        dispatcher->Activate(&service);
     }
 
     virtual ~MiracastServiceEventTest() override
     {
-        dispatcher->Deactivate();
-        dispatcher->Release();
-
-        PluginHost::IFactories::Assign(nullptr);
 
 	TEST_LOG("Before destructor sleep ");
 	//Wait for all the previous destructor process to complete
-	std::this_thread::sleep_for(std::chrono::milliseconds(3000));
+	//std::this_thread::sleep_for(std::chrono::milliseconds(3000));
 	TEST_LOG("After destructor sleep ");
     }
 };
