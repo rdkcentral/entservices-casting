@@ -37,7 +37,10 @@ namespace MIRACAST {
  * It is essental to start with 0 and increase w/o gaps as the value
  * can be used for indexing in a mapping table.
  */
+#ifndef DEFAULT_LOG
+#define DEFAULT_LOG 
 enum LogLevel {FATAL_LEVEL = 0, ERROR_LEVEL, WARNING_LEVEL, INFO_LEVEL, VERBOSE_LEVEL, TRACE_LEVEL};
+#endif
 
 /**
  * @brief Init logging
