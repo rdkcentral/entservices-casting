@@ -142,26 +142,27 @@ protected:
     Core::ProxyType<Plugin::MiracastService> plugin;
     Core::JSONRPC::Handler& handler;
     DECL_CORE_JSONRPC_CONX connection;
-    Core::JSONRPC::Message message;
+    Core::JSONRPC::Message message;	
+	NiceMock<COMLinkMock> comLinkMock;
+    NiceMock<ServiceMock> service;
+    PLUGINHOST_DISPATCHER* dispatcher;
+    Core::ProxyType<WorkerPoolImplementation> workerPool;
     string response;
 
     WrapsImplMock *p_wrapsImplMock = nullptr;
     Core::ProxyType<Plugin::MiracastServiceImplementation> miracastServiceImpl;
-
-    NiceMock<COMLinkMock> comLinkMock;
-    NiceMock<ServiceMock> service;
-    PLUGINHOST_DISPATCHER* dispatcher;
-    Core::ProxyType<WorkerPoolImplementation> workerPool;
+	ServiceMock  *p_serviceMock  = nullptr;
     
     NiceMock<FactoriesImplementation> factoriesImplementation;
 
     MiracastServiceTest()
         : plugin(Core::ProxyType<Plugin::MiracastService>::Create())
-        , handler(*(plugin))
+        , handler(*plugin)
         , INIT_CONX(1, 0)
         , workerPool(Core::ProxyType<WorkerPoolImplementation>::Create(2, Core::Thread::DefaultStackSize(), 16))
     {
-        p_wrapsImplMock = new NiceMock<WrapsImplMock>;
+		p_serviceMock = new NiceMock <ServiceMock>;
+		p_wrapsImplMock = new NiceMock<WrapsImplMock>;
         printf("Pass created wrapsImplMock: %p ", p_wrapsImplMock);
         Wraps::setImpl(p_wrapsImplMock);
 
@@ -211,6 +212,12 @@ protected:
 
         Core::IWorkerPool::Assign(nullptr);
         workerPool.Release();
+
+		if (p_serviceMock != nullptr)
+        {
+            delete p_serviceMock;
+            p_serviceMock = nullptr;
+        }
     
         Wraps::setImpl(nullptr);
         if (p_wrapsImplMock != nullptr)
