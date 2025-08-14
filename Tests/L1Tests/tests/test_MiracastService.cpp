@@ -210,9 +210,6 @@ protected:
     {
         TEST_LOG("MiracastServiceTest Destructor");
 
-        dispatcher->Deactivate();
-        dispatcher->Release();
-
         Core::IWorkerPool::Assign(nullptr);
         workerPool.Release();
     
@@ -222,6 +219,10 @@ protected:
             delete p_wrapsImplMock;
             p_wrapsImplMock = nullptr;
         }
+
+		dispatcher->Deactivate();
+        dispatcher->Release();
+		
         PluginHost::IFactories::Assign(nullptr);
     }
 };
