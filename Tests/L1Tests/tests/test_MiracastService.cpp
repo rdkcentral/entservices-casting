@@ -205,7 +205,7 @@ protected:
         Core::IWorkerPool::Assign(&(*workerPool));
         workerPool->Run();
 
-		plugin->Initialize(&service)
+		plugin->Initialize(&service);
     }
     virtual ~MiracastServiceTest() override
     {
