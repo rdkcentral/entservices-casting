@@ -33,7 +33,7 @@ namespace MIRACAST
             setvbuf(stdout, NULL, _IOLBF, 0);
     }
 
-    inline int gDefaultLogLevel = ERROR_LEVEL;
+    extern int gDefaultLogLevel;
     static std::string service_name = "NOT-DEFINED";
 
     void logger_init(const char* module_name)
