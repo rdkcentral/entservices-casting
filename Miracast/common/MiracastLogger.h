@@ -38,7 +38,6 @@ namespace MIRACAST {
  * can be used for indexing in a mapping table.
  */
 enum LogLevel {FATAL_LEVEL = 0, ERROR_LEVEL, WARNING_LEVEL, INFO_LEVEL, VERBOSE_LEVEL, TRACE_LEVEL};
-//extern int gDefaultLogLevel;
 
 /**
  * @brief Init logging
