@@ -37,7 +37,6 @@
 #include <interfaces/json/JXCast.h>
 #include <interfaces/IConfiguration.h>
 #include "UtilsLogging.h"
-//#include "XCastLogger.h"
 #include "tracing/Logging.h"
 
 
