@@ -42,6 +42,7 @@ namespace WPEFramework
         SERVICE_REGISTRATION(MiracastService, MIRACAST_SERVICE_API_VERSION_NUMBER_MAJOR, MIRACAST_SERVICE_API_VERSION_NUMBER_MINOR, MIRACAST_SERVICE_API_VERSION_NUMBER_PATCH);
 
         MiracastService* MiracastService::_instance = nullptr;
+        int gDefaultLogLevel = ERROR_LEVEL;
 
         MiracastService::MiracastService()
                 : PluginHost::JSONRPC()
