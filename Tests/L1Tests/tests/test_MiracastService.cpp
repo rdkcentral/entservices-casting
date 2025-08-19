@@ -139,6 +139,11 @@ namespace
     }
 }
 
+namespace {
+    std::map<FILE*, void*> g_fileToBufferMap;
+    std::mutex g_mapMutex;
+}
+
 static struct wpa_ctrl global_wpa_ctrl_handle;
 
 class MiracastServiceTest : public ::testing::Test {
@@ -246,10 +251,17 @@ protected:
 
     virtual ~MiracastServiceEventTest() override
     {
-
+		
+	std::lock_guard<std::mutex> lock(g_mapMutex);
+    for (auto& [fp, mem] : g_fileToBufferMap) {
+        if (fp) fclose(fp);
+        if (mem) free(mem);
+    }
+    g_fileToBufferMap.clear();
+	
 	TEST_LOG("Before destructor sleep ");
 	//Wait for all the previous destructor process to complete
-	std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+	std::this_thread::sleep_for(std::chrono::milliseconds(3000));
 	TEST_LOG("After destructor sleep ");
     }
 };
@@ -471,6 +483,11 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_onClientConnectionAndLaunchRequest)
             memcpy(mem, response, len + 1);
 
             FILE* fp = fmemopen(mem, len, "r");
+
+			{
+                std::lock_guard<std::mutex> lock(g_mapMutex);
+                g_fileToBufferMap[fp] = mem;
+            }
 
             return fp;
         }));
@@ -1064,6 +1081,10 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_onClientConnectionAndLaunchReque
             memcpy(mem, response, len + 1);
             FILE* fp = fmemopen(mem, len, "r");
 
+			{
+                std::lock_guard<std::mutex> lock(g_mapMutex);
+                g_fileToBufferMap[fp] = mem;
+            }
             // Optional: Keep track of `mem` to free it later when FILE* is closed.
             return fp;
         }));
@@ -1223,7 +1244,10 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectonClientConnectionAndLaunc
             char* mem = static_cast<char*>(malloc(len + 1));
             memcpy(mem, response, len + 1);
             FILE* fp = fmemopen(mem, len, "r");
-
+			{
+                std::lock_guard<std::mutex> lock(g_mapMutex);
+                g_fileToBufferMap[fp] = mem;
+            }
             // Optional: Keep track of `mem` to free it later when FILE* is closed.
             return fp;
         }));
@@ -1335,7 +1359,10 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithName)
             char* mem = static_cast<char*>(malloc(len + 1));
             memcpy(mem, response, len + 1);
             FILE* fp = fmemopen(mem, len, "r");
-
+			{
+                std::lock_guard<std::mutex> lock(g_mapMutex);
+                g_fileToBufferMap[fp] = mem;
+            }
             // Optional: Keep track of `mem` to free it later when FILE* is closed.
             return fp;
         }));
@@ -1441,7 +1468,10 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithoutName)
             char* mem = static_cast<char*>(malloc(len + 1));
             memcpy(mem, response, len + 1);
             FILE* fp = fmemopen(mem, len, "r");
-
+			{
+                std::lock_guard<std::mutex> lock(g_mapMutex);
+                g_fileToBufferMap[fp] = mem;
+            }
             // Optional: Keep track of `mem` to free it later when FILE* is closed.
             return fp;
         }));
@@ -1547,7 +1577,10 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectP2PGoNegotiationGroupStart
             char* mem = static_cast<char*>(malloc(len + 1));
             memcpy(mem, response, len + 1);
             FILE* fp = fmemopen(mem, len, "r");
-
+			{
+                std::lock_guard<std::mutex> lock(g_mapMutex);
+                g_fileToBufferMap[fp] = mem;
+            }
             // Optional: Keep track of `mem` to free it later when FILE* is closed.
             return fp;
         }));
@@ -1678,7 +1711,10 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_GENERIC_FAILURE)
             memcpy(mem, response, len + 1);
 
             FILE* fp = fmemopen(mem, len, "r");
-
+			{
+                std::lock_guard<std::mutex> lock(g_mapMutex);
+                g_fileToBufferMap[fp] = mem;
+            }
             return fp;
         }));
 
@@ -1845,7 +1881,10 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_GENERIC_FAILURE)
             memcpy(mem, response, len + 1);
 
             FILE* fp = fmemopen(mem, len, "r");
-
+			{
+                std::lock_guard<std::mutex> lock(g_mapMutex);
+                g_fileToBufferMap[fp] = mem;
+            }
             return fp;
         }));
 
@@ -1987,7 +2026,10 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_AutoConnect)
             memcpy(mem, response, len + 1);
 
             FILE* fp = fmemopen(mem, len, "r");
-
+			{
+                std::lock_guard<std::mutex> lock(g_mapMutex);
+                g_fileToBufferMap[fp] = mem;
+            }
             return fp;
         }));
 
