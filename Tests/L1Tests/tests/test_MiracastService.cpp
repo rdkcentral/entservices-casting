@@ -249,16 +249,17 @@ protected:
     {
     }
 
-    virtual ~MiracastServiceEventTest() override
-    {
-		
-	std::lock_guard<std::mutex> lock(g_mapMutex);
+	void TearDown() override {
+    std::lock_guard<std::mutex> lock(g_mapMutex);
     for (auto& [fp, mem] : g_fileToBufferMap) {
         if (fp) fclose(fp);
         if (mem) free(mem);
     }
     g_fileToBufferMap.clear();
-	
+	}
+
+    virtual ~MiracastServiceEventTest() override
+    {
 	TEST_LOG("Before destructor sleep ");
 	//Wait for all the previous destructor process to complete
 	std::this_thread::sleep_for(std::chrono::milliseconds(3000));
