@@ -251,11 +251,13 @@ protected:
 
 	void TearDown() override {
     std::lock_guard<std::mutex> lock(g_mapMutex);
-    for (auto& [fp, mem] : g_fileToBufferMap) {
-        if (fp) fclose(fp);
-        if (mem) free(mem);
-    }
-    g_fileToBufferMap.clear();
+    for (auto& pair : g_fileToBufferMap) {
+    FILE* fp = pair.first;
+    void* mem = pair.second;
+    if (fp) fclose(fp);
+    if (mem) free(mem);
+	}
+	g_fileToBufferMap.clear();
 	}
 
     virtual ~MiracastServiceEventTest() override
