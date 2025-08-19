@@ -36,6 +36,8 @@
 #include "MiracastServiceImplementation.h"
 #include <sys/time.h>
 #include <future>
+#include <map>
+#include <mutex>
 
 using namespace WPEFramework;
 using ::testing::NiceMock;
@@ -138,7 +140,10 @@ namespace
         fflush(stderr);
     }
 }
-
+namespace {
+    std::map<FILE*, void*> g_fileToBufferMap;
+    std::mutex g_mapMutex;
+}
 static struct wpa_ctrl global_wpa_ctrl_handle;
 
 class MiracastServiceTest : public ::testing::Test {
@@ -146,17 +151,16 @@ protected:
     Core::ProxyType<Plugin::MiracastService> plugin;
     Core::JSONRPC::Handler& handler;
     DECL_CORE_JSONRPC_CONX connection;
-    Core::JSONRPC::Message message;	
+    Core::JSONRPC::Message message;
     string response;
 
     WrapsImplMock *p_wrapsImplMock = nullptr;
     Core::ProxyType<Plugin::MiracastServiceImplementation> miracastServiceImpl;
 
-	NiceMock<COMLinkMock> comLinkMock;
+    NiceMock<COMLinkMock> comLinkMock;
     NiceMock<ServiceMock> service;
     PLUGINHOST_DISPATCHER* dispatcher;
     Core::ProxyType<WorkerPoolImplementation> workerPool;
-
     NiceMock<FactoriesImplementation> factoriesImplementation;
 
     MiracastServiceTest()
@@ -165,7 +169,7 @@ protected:
         , INIT_CONX(1, 0)
         , workerPool(Core::ProxyType<WorkerPoolImplementation>::Create(2, Core::Thread::DefaultStackSize(), 16))
     {
-		p_wrapsImplMock = new NiceMock<WrapsImplMock>;
+        p_wrapsImplMock = new NiceMock<WrapsImplMock>;
         printf("Pass created wrapsImplMock: %p ", p_wrapsImplMock);
         Wraps::setImpl(p_wrapsImplMock);
         
@@ -199,14 +203,13 @@ protected:
 			.WillByDefault(::testing::Invoke([&](struct wpa_ctrl *ctrl) { return false; }));
 		ON_CALL(*p_wrapsImplMock, system(::testing::_))
 			.WillByDefault(::testing::Invoke([&](const char* command) {return 0;}));
-
 		
-		PluginHost::IFactories::Assign(&factoriesImplementation);
+        PluginHost::IFactories::Assign(&factoriesImplementation);
 
         Core::IWorkerPool::Assign(&(*workerPool));
         workerPool->Run();
 
-		dispatcher = static_cast<PLUGINHOST_DISPATCHER*>(
+        dispatcher = static_cast<PLUGINHOST_DISPATCHER*>(
         plugin->QueryInterface(PLUGINHOST_DISPATCHER_ID));
         dispatcher->Activate(&service);
     }
@@ -214,26 +217,25 @@ protected:
     {
         TEST_LOG("MiracastServiceTest Destructor");
 
-		dispatcher->Deactivate();
+        dispatcher->Deactivate();
         dispatcher->Release();
 
         Core::IWorkerPool::Assign(nullptr);
         workerPool.Release();
-
+		
         Wraps::setImpl(nullptr);
         if (p_wrapsImplMock != nullptr)
         {
             delete p_wrapsImplMock;
             p_wrapsImplMock = nullptr;
         }
-		
         PluginHost::IFactories::Assign(nullptr);
     }
 };
 
 class MiracastServiceEventTest : public MiracastServiceTest {
 protected:
-	NiceMock<ServiceMock> service;
+    NiceMock<ServiceMock> service;
     NiceMock<FactoriesImplementation> factoriesImplementation;
     PLUGINHOST_DISPATCHER* dispatcher;
     Core::JSONRPC::Message message;
@@ -241,7 +243,7 @@ protected:
     MiracastServiceEventTest()
         : MiracastServiceTest()
     {
-		PluginHost::IFactories::Assign(&factoriesImplementation);
+        PluginHost::IFactories::Assign(&factoriesImplementation);
 
         dispatcher = static_cast<PLUGINHOST_DISPATCHER*>(
             plugin->QueryInterface(PLUGINHOST_DISPATCHER_ID));
@@ -250,7 +252,7 @@ protected:
 
     virtual ~MiracastServiceEventTest() override
     {
-		dispatcher->Deactivate();
+        dispatcher->Deactivate();
         dispatcher->Release();
 
         PluginHost::IFactories::Assign(nullptr);
@@ -461,25 +463,32 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_onClientConnectionAndLaunchRequest)
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
 
 	EXPECT_CALL(*p_wrapsImplMock, popen(::testing::_, ::testing::_))
-		.Times(::testing::AnyNumber())
-		.WillRepeatedly(::testing::Invoke(
-					[&](const char* command, const char* type)
-					{
-					char buffer[1024] = {0};
-					if ( 0 == strncmp(command,"awk '$4 == ",strlen("awk '$4 == ")))
-					{
-						strncpy(buffer, "192.168.59.165",sizeof(buffer));
-					}
-					else if ( 0 == strncmp(command,"awk '$1 == ",strlen("awk '$1 == ")))
-					{
-						// Need to return as empty
-					}
-					else if ( 0 == strncmp(command,"arping",strlen("arping")))
-					{
-						strncpy(buffer, "Unicast reply from 192.168.59.165 [96:52:44:b6:7d:14]  2.189ms\nReceived 1 response",sizeof(buffer));
-					}
-					return (fmemopen(buffer, strlen(buffer), "r"));
-					}));
+    .Times(::testing::AnyNumber())
+    .WillRepeatedly(::testing::Invoke(
+        [](const char* command, const char* type) -> FILE* {
+            const char* response = "";
+
+            if (strncmp(command, "awk '$4 == ", strlen("awk '$4 == ")) == 0) {
+                response = "192.168.59.165";
+			} else if (strncmp(command, "awk '$1 == ", strlen("awk '$1 == ")) == 0) {
+                   // Empty response    	
+            } else if (strncmp(command, "arping", strlen("arping")) == 0) {
+                response = "Unicast reply from 192.168.59.165 [96:52:44:b6:7d:14]  2.189ms\nReceived 1 response";
+            }
+            
+            size_t len = strlen(response);
+            char* mem = static_cast<char*>(malloc(len + 1));
+            memcpy(mem, response, len + 1);
+
+            FILE* fp = fmemopen(mem, len, "r");
+
+            {
+                std::lock_guard<std::mutex> lock(g_mapMutex);
+                g_fileToBufferMap[fp] = mem;
+            }
+
+            return fp;
+        }));
 	
 	EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_request(::testing::_, ::testing::_, ::testing::_,::testing::_, ::testing::_, ::testing::_))
 		.Times(::testing::AnyNumber())
@@ -628,6 +637,26 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_onClientConnectionAndLaunchRequest)
 	EVENT_UNSUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
 
 	plugin->Deinitialize(nullptr);
+						
+	EXPECT_CALL(*p_wrapsImplMock, pclose(::testing::_))
+    .Times(::testing::AnyNumber())
+    .WillRepeatedly(::testing::Invoke([](FILE* fp) -> int {
+        void* mem = nullptr;
+
+        {
+            std::lock_guard<std::mutex> lock(g_mapMutex);
+            auto it = g_fileToBufferMap.find(fp);
+            if (it != g_fileToBufferMap.end()) {
+                mem = it->second;
+                g_fileToBufferMap.erase(it);
+            }
+        }
+
+        if (fp) fclose(fp);
+        if (mem) free(mem);
+
+        return 0;
+    }));
 
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	removeFile("/var/run/wpa_supplicant/p2p0");
@@ -1056,17 +1085,33 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_onClientConnectionAndLaunchReque
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
 
 	EXPECT_CALL(*p_wrapsImplMock, popen(::testing::_, ::testing::_))
-		.Times(::testing::AnyNumber())
-		.WillRepeatedly(::testing::Invoke(
-					[&](const char* command, const char* type)
-					{
-					char buffer[1024] = {0};
-					if ( 0 == strncmp(command,"/sbin/udhcpc -v -i",strlen("/sbin/udhcpc -v -i")))
-					{
-						strncpy(buffer, "udhcpc: sending select for 192.168.49.165\tudhcpc: lease of 192.168.49.165 obtained, lease time 3599\tdeleting routers\troute add default gw 192.168.49.1 dev lo\tadding dns 192.168.49.1",sizeof(buffer));
-					}
-					return (fmemopen(buffer, strlen(buffer), "r"));
-					}));
+    .Times(::testing::AnyNumber())
+    .WillRepeatedly(::testing::Invoke(
+        [](const char* command, const char* type) -> FILE*
+        {
+            const char* response = "";
+
+            if (strncmp(command, "/sbin/udhcpc -v -i", strlen("/sbin/udhcpc -v -i")) == 0) {
+                response = "udhcpc: sending select for 192.168.49.165\t"
+                           "udhcpc: lease of 192.168.49.165 obtained, lease time 3599\t"
+                           "deleting routers\t"
+                           "route add default gw 192.168.49.1 dev lo\t"
+                           "adding dns 192.168.49.1";
+            }
+
+            size_t len = strlen(response);
+            char* mem = static_cast<char*>(malloc(len + 1));
+            memcpy(mem, response, len + 1);
+
+            FILE* fp = fmemopen(mem, len, "r");
+
+            {
+                std::lock_guard<std::mutex> lock(g_mapMutex);
+                g_fileToBufferMap[fp] = mem;
+            }
+
+            return fp;
+        }));
 
 	EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_request(::testing::_, ::testing::_, ::testing::_,::testing::_, ::testing::_, ::testing::_))
 		.Times(::testing::AnyNumber())
@@ -1197,6 +1242,35 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_onClientConnectionAndLaunchReque
 
 	plugin->Deinitialize(nullptr);
 
+	EXPECT_CALL(*p_wrapsImplMock, popen(::testing::_, ::testing::_))
+    .Times(::testing::AnyNumber())
+    .WillRepeatedly(::testing::Invoke(
+        [](const char* command, const char* type) -> FILE*
+        {
+            const char* response = "";
+
+            if (strncmp(command, "/sbin/udhcpc -v -i", strlen("/sbin/udhcpc -v -i")) == 0) {
+                response = "udhcpc: sending select for 192.168.49.165\t"
+                           "udhcpc: lease of 192.168.49.165 obtained, lease time 3599\t"
+                           "deleting routers\t"
+                           "route add default gw 192.168.49.1 dev lo\t"
+                           "adding dns 192.168.49.1";
+            }
+
+            size_t len = strlen(response);
+            char* mem = static_cast<char*>(malloc(len + 1));
+            memcpy(mem, response, len + 1);
+
+            FILE* fp = fmemopen(mem, len, "r");
+
+            {
+                std::lock_guard<std::mutex> lock(g_mapMutex);
+                g_fileToBufferMap[fp] = mem;
+            }
+
+            return fp;
+        }));
+
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	removeFile("/var/run/wpa_supplicant/p2p0");
 }
@@ -1210,17 +1284,33 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectonClientConnectionAndLaunc
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
 
 	EXPECT_CALL(*p_wrapsImplMock, popen(::testing::_, ::testing::_))
-		.Times(::testing::AnyNumber())
-		.WillRepeatedly(::testing::Invoke(
-					[&](const char* command, const char* type)
-					{
-					char buffer[1024] = {0};
-					if ( 0 == strncmp(command,"/sbin/udhcpc -v -i",strlen("/sbin/udhcpc -v -i")))
-					{
-						strncpy(buffer, "udhcpc: sending select for 192.168.49.165\tudhcpc: lease of 192.168.49.165 obtained, lease time 3599\tdeleting routers\troute add default gw 192.168.49.1 dev lo\tadding dns 192.168.49.1",sizeof(buffer));
-					}
-					return (fmemopen(buffer, strlen(buffer), "r"));
-					}));
+    .Times(::testing::AnyNumber())
+    .WillRepeatedly(::testing::Invoke(
+        [](const char* command, const char* type) -> FILE*
+        {
+            const char* response = "";
+
+            if (strncmp(command, "/sbin/udhcpc -v -i", strlen("/sbin/udhcpc -v -i")) == 0) {
+                response = "udhcpc: sending select for 192.168.49.165\t"
+                           "udhcpc: lease of 192.168.49.165 obtained, lease time 3599\t"
+                           "deleting routers\t"
+                           "route add default gw 192.168.49.1 dev lo\t"
+                           "adding dns 192.168.49.1";
+            }
+
+            size_t len = strlen(response);
+            char* mem = static_cast<char*>(malloc(len + 1));
+            memcpy(mem, response, len + 1);
+
+            FILE* fp = fmemopen(mem, len, "r");
+
+            {
+                std::lock_guard<std::mutex> lock(g_mapMutex);
+                g_fileToBufferMap[fp] = mem;
+            }
+
+            return fp;
+        }));
 
 	EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_request(::testing::_, ::testing::_, ::testing::_,::testing::_, ::testing::_, ::testing::_))
 		.Times(::testing::AnyNumber())
@@ -1303,6 +1393,27 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectonClientConnectionAndLaunc
 
 	plugin->Deinitialize(nullptr);
 
+	EXPECT_CALL(*p_wrapsImplMock, pclose(::testing::_))
+    .Times(::testing::AnyNumber())
+    .WillRepeatedly(::testing::Invoke(
+        [](FILE* fp) -> int {
+            void* mem = nullptr;
+
+            {
+                std::lock_guard<std::mutex> lock(g_mapMutex);
+                auto it = g_fileToBufferMap.find(fp);
+                if (it != g_fileToBufferMap.end()) {
+                    mem = it->second;
+                    g_fileToBufferMap.erase(it);
+                }
+            }
+
+            if (fp) fclose(fp);
+            if (mem) free(mem);
+
+            return 0;
+        }));
+
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	removeFile("/var/run/wpa_supplicant/p2p0");
 }
@@ -1316,17 +1427,33 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithName)
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
 
 	EXPECT_CALL(*p_wrapsImplMock, popen(::testing::_, ::testing::_))
-		.Times(::testing::AnyNumber())
-		.WillRepeatedly(::testing::Invoke(
-					[&](const char* command, const char* type)
-					{
-					char buffer[1024] = {0};
-					if ( 0 == strncmp(command,"/sbin/udhcpc -v -i",strlen("/sbin/udhcpc -v -i")))
-					{
-						strncpy(buffer, "udhcpc: sending select for 192.168.49.165\tudhcpc: lease of 192.168.49.165 obtained, lease time 3599\tdeleting routers\troute add default gw 192.168.49.1 dev lo\tadding dns 192.168.49.1",sizeof(buffer));
-					}
-					return (fmemopen(buffer, strlen(buffer), "r"));
-					}));
+    .Times(::testing::AnyNumber())
+    .WillRepeatedly(::testing::Invoke(
+        [](const char* command, const char* type) -> FILE*
+        {
+            const char* response = "";
+
+            if (strncmp(command, "/sbin/udhcpc -v -i", strlen("/sbin/udhcpc -v -i")) == 0) {
+                response = "udhcpc: sending select for 192.168.49.165\t"
+                           "udhcpc: lease of 192.168.49.165 obtained, lease time 3599\t"
+                           "deleting routers\t"
+                           "route add default gw 192.168.49.1 dev lo\t"
+                           "adding dns 192.168.49.1";
+            }
+
+            size_t len = strlen(response);
+            char* mem = static_cast<char*>(malloc(len + 1));
+            memcpy(mem, response, len + 1);
+
+            FILE* fp = fmemopen(mem, len, "r");
+
+            {
+                std::lock_guard<std::mutex> lock(g_mapMutex);
+                g_fileToBufferMap[fp] = mem;
+            }
+
+            return fp;
+        }));
 
 	EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_request(::testing::_, ::testing::_, ::testing::_,::testing::_, ::testing::_, ::testing::_))
 		.Times(::testing::AnyNumber())
@@ -1403,6 +1530,27 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithName)
 
 	plugin->Deinitialize(nullptr);
 
+	EXPECT_CALL(*p_wrapsImplMock, pclose(::testing::_))
+    .Times(::testing::AnyNumber())
+    .WillRepeatedly(::testing::Invoke(
+        [](FILE* fp) -> int {
+            void* mem = nullptr;
+
+            {
+                std::lock_guard<std::mutex> lock(g_mapMutex);
+                auto it = g_fileToBufferMap.find(fp);
+                if (it != g_fileToBufferMap.end()) {
+                    mem = it->second;
+                    g_fileToBufferMap.erase(it);
+                }
+            }
+
+            if (fp) fclose(fp);
+            if (mem) free(mem);
+
+            return 0;
+        }));
+
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	removeFile("/var/run/wpa_supplicant/p2p0");
 }
@@ -1416,18 +1564,34 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithoutName)
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
 
 	EXPECT_CALL(*p_wrapsImplMock, popen(::testing::_, ::testing::_))
-		.Times(::testing::AnyNumber())
-		.WillRepeatedly(::testing::Invoke(
-					[&](const char* command, const char* type)
-					{
-					char buffer[1024] = {0};
-					if ( 0 == strncmp(command,"/sbin/udhcpc -v -i",strlen("/sbin/udhcpc -v -i")))
-					{
-						strncpy(buffer, "udhcpc: sending select for 192.168.49.165\tudhcpc: lease of 192.168.49.165 obtained, lease time 3599\tdeleting routers\troute add default gw 192.168.49.1 dev lo\tadding dns 192.168.49.1",sizeof(buffer));
-					}
-					return (fmemopen(buffer, strlen(buffer), "r"));
-					}));
-	
+    .Times(::testing::AnyNumber())
+    .WillRepeatedly(::testing::Invoke(
+        [](const char* command, const char* type) -> FILE*
+        {
+            const char* response = "";
+
+            if (strncmp(command, "/sbin/udhcpc -v -i", strlen("/sbin/udhcpc -v -i")) == 0) {
+                response = "udhcpc: sending select for 192.168.49.165\t"
+                           "udhcpc: lease of 192.168.49.165 obtained, lease time 3599\t"
+                           "deleting routers\t"
+                           "route add default gw 192.168.49.1 dev lo\t"
+                           "adding dns 192.168.49.1";
+            }
+
+            size_t len = strlen(response);
+            char* mem = static_cast<char*>(malloc(len + 1));
+            memcpy(mem, response, len + 1);
+
+            FILE* fp = fmemopen(mem, len, "r");
+
+            {
+                std::lock_guard<std::mutex> lock(g_mapMutex);
+                g_fileToBufferMap[fp] = mem;
+            }
+
+            return fp;
+        }));
+
 	EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_request(::testing::_, ::testing::_, ::testing::_,::testing::_, ::testing::_, ::testing::_))
 		.Times(::testing::AnyNumber())
 		.WillRepeatedly(::testing::Invoke(
@@ -1503,6 +1667,27 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithoutName)
 
 	plugin->Deinitialize(nullptr);
 
+	EXPECT_CALL(*p_wrapsImplMock, pclose(::testing::_))
+    .Times(::testing::AnyNumber())
+    .WillRepeatedly(::testing::Invoke(
+        [](FILE* fp) -> int {
+            void* mem = nullptr;
+
+            {
+                std::lock_guard<std::mutex> lock(g_mapMutex);
+                auto it = g_fileToBufferMap.find(fp);
+                if (it != g_fileToBufferMap.end()) {
+                    mem = it->second;
+                    g_fileToBufferMap.erase(it);
+                }
+            }
+
+            if (fp) fclose(fp);
+            if (mem) free(mem);
+
+            return 0;
+        }));
+	
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	removeFile("/var/run/wpa_supplicant/p2p0");
 }
@@ -1516,17 +1701,33 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectP2PGoNegotiationGroupStart
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
 
 	EXPECT_CALL(*p_wrapsImplMock, popen(::testing::_, ::testing::_))
-		.Times(::testing::AnyNumber())
-		.WillRepeatedly(::testing::Invoke(
-					[&](const char* command, const char* type)
-					{
-					char buffer[1024] = {0};
-					if ( 0 == strncmp(command,"/sbin/udhcpc -v -i",strlen("/sbin/udhcpc -v -i")))
-					{
-						strncpy(buffer, "udhcpc: sending select for 192.168.49.165\tudhcpc: lease of 192.168.49.165 obtained, lease time 3599\tdeleting routers\troute add default gw 192.168.49.1 dev lo\tadding dns 192.168.49.1",sizeof(buffer));
-					}
-					return (fmemopen(buffer, strlen(buffer), "r"));
-					}));
+    .Times(::testing::AnyNumber())
+    .WillRepeatedly(::testing::Invoke(
+        [](const char* command, const char* type) -> FILE*
+        {
+            const char* response = "";
+
+            if (strncmp(command, "/sbin/udhcpc -v -i", strlen("/sbin/udhcpc -v -i")) == 0) {
+                response = "udhcpc: sending select for 192.168.49.165\t"
+                           "udhcpc: lease of 192.168.49.165 obtained, lease time 3599\t"
+                           "deleting routers\t"
+                           "route add default gw 192.168.49.1 dev lo\t"
+                           "adding dns 192.168.49.1";
+            }
+
+            size_t len = strlen(response);
+            char* mem = static_cast<char*>(malloc(len + 1));
+            memcpy(mem, response, len + 1);
+
+            FILE* fp = fmemopen(mem, len, "r");
+
+            {
+                std::lock_guard<std::mutex> lock(g_mapMutex);
+                g_fileToBufferMap[fp] = mem;
+            }
+
+            return fp;
+        }));
 
 	EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_request(::testing::_, ::testing::_, ::testing::_,::testing::_, ::testing::_, ::testing::_))
 		.Times(::testing::AnyNumber())
@@ -1627,6 +1828,27 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectP2PGoNegotiationGroupStart
 
 	plugin->Deinitialize(nullptr);
 
+	EXPECT_CALL(*p_wrapsImplMock, pclose(::testing::_))
+    .Times(::testing::AnyNumber())
+    .WillRepeatedly(::testing::Invoke(
+        [](FILE* fp) -> int {
+            void* mem = nullptr;
+
+            {
+                std::lock_guard<std::mutex> lock(g_mapMutex);
+                auto it = g_fileToBufferMap.find(fp);
+                if (it != g_fileToBufferMap.end()) {
+                    mem = it->second;
+                    g_fileToBufferMap.erase(it);
+                }
+            }
+
+            if (fp) fclose(fp);
+            if (mem) free(mem);
+
+            return 0;
+        }));
+	
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	removeFile("/var/run/wpa_supplicant/p2p0");
 }
@@ -1640,17 +1862,29 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_GENERIC_FAILURE)
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
 
 	EXPECT_CALL(*p_wrapsImplMock, popen(::testing::_, ::testing::_))
-		.Times(::testing::AnyNumber())
-		.WillRepeatedly(::testing::Invoke(
-					[&](const char* command, const char* type)
-					{
-					char buffer[1024] = {0};
-					if ( 0 == strncmp(command,"/sbin/udhcpc -v -i",strlen("/sbin/udhcpc -v -i")))
-					{
-						strncpy(buffer, "P2P GENERIC FAILURE",sizeof(buffer));
-					}
-					return (fmemopen(buffer, strlen(buffer), "r"));
-					}));
+	.Times(::testing::AnyNumber())
+	.WillRepeatedly(::testing::Invoke(
+		[](const char* command, const char* type) -> FILE* {
+			const char* response = "";
+
+			if (strncmp(command, "/sbin/udhcpc -v -i", strlen("/sbin/udhcpc -v -i")) == 0) {
+				response = "P2P GENERIC FAILURE";
+			}
+
+			size_t len = strlen(response);
+			char* mem = static_cast<char*>(malloc(len + 1));
+			memcpy(mem, response, len + 1);
+
+			FILE* fp = fmemopen(mem, len, "r");
+
+			{
+				std::lock_guard<std::mutex> lock(g_mapMutex);
+				g_fileToBufferMap[fp] = mem;
+			}
+
+			return fp;
+		}));
+
 
 	EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_request(::testing::_, ::testing::_, ::testing::_,::testing::_, ::testing::_, ::testing::_))
 		.Times(::testing::AnyNumber())
@@ -1783,12 +2017,59 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_GENERIC_FAILURE)
 
 	plugin->Deinitialize(nullptr);
 
+	EXPECT_CALL(*p_wrapsImplMock, pclose(::testing::_))
+	.Times(::testing::AnyNumber())
+	.WillRepeatedly(::testing::Invoke(
+		[](FILE* fp) -> int {
+			void* mem = nullptr;
+
+			{
+				std::lock_guard<std::mutex> lock(g_mapMutex);
+				auto it = g_fileToBufferMap.find(fp);
+				if (it != g_fileToBufferMap.end()) {
+					mem = it->second;
+					g_fileToBufferMap.erase(it);
+				}
+			}
+
+			if (fp) fclose(fp);
+			if (mem) free(mem);
+
+			return 0;
+		}));
+
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	removeFile("/var/run/wpa_supplicant/p2p0");
 }
 
 TEST_F(MiracastServiceEventTest, P2P_GOMode_GENERIC_FAILURE)
-{
+{EXPECT_CALL(*p_wrapsImplMock, popen(::testing::_, ::testing::_))
+    .Times(::testing::AnyNumber())
+    .WillRepeatedly(::testing::Invoke(
+        [](const char* command, const char* type) -> FILE* {
+            const char* response = "";
+
+            if (strncmp(command, "awk '$4 == ", strlen("awk '$4 == ")) == 0) {
+                response = "192.168.59.165";
+			} else if (strncmp(command, "awk '$1 == ", strlen("awk '$1 == ")) == 0) {
+                   // Empty response    	
+            } else if (strncmp(command, "arping", strlen("arping")) == 0) {
+                response = "Unicast reply from 192.168.59.165 [96:52:44:b6:7d:14]  2.189ms\nReceived 1 response";
+            }
+            
+            size_t len = strlen(response);
+            char* mem = static_cast<char*>(malloc(len + 1));
+            memcpy(mem, response, len + 1);
+
+            FILE* fp = fmemopen(mem, len, "r");
+
+            {
+                std::lock_guard<std::mutex> lock(g_mapMutex);
+                g_fileToBufferMap[fp] = mem;
+            }
+
+            return fp;
+        }));
 	createFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	createFile("/var/run/wpa_supplicant/p2p0","p2p0");
 
@@ -1796,26 +2077,32 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_GENERIC_FAILURE)
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
 
 	EXPECT_CALL(*p_wrapsImplMock, popen(::testing::_, ::testing::_))
-		.Times(::testing::AnyNumber())
-		.WillRepeatedly(::testing::Invoke(
-					[&](const char* command, const char* type)
-					{
-					char buffer[1024] = {0};
-					if ( 0 == strncmp(command,"awk '$4 == ",strlen("awk '$4 == ")))
-					{
-						strncpy(buffer, "192.168.59.165",sizeof(buffer));
-					}
-					else if ( 0 == strncmp(command,"awk '$1 == ",strlen("awk '$1 == ")))
-					{
-						// Need to return as empty
-					}
-					else if ( 0 == strncmp(command,"arping",strlen("arping")))
-					{
-						strncpy(buffer, "Received 0 response",sizeof(buffer));
-					}
-					return (fmemopen(buffer, strlen(buffer), "r"));
-					}));
-	
+    .Times(::testing::AnyNumber())
+    .WillRepeatedly(::testing::Invoke([](const char* command, const char* type) -> FILE* {
+        const char* response = "";
+
+        if (strncmp(command, "awk '$4 == ", strlen("awk '$4 == ")) == 0) {
+            response = "192.168.59.165";
+        } else if (strncmp(command, "awk '$1 == ", strlen("awk '$1 == ")) == 0) {
+            response = "";  // empty response
+        } else if (strncmp(command, "arping", strlen("arping")) == 0) {
+            response = "Received 0 response";
+        }
+
+        size_t len = strlen(response);
+        char* mem = static_cast<char*>(malloc(len + 1));
+        memcpy(mem, response, len + 1);
+
+        FILE* fp = fmemopen(mem, len, "r");
+
+        {
+            std::lock_guard<std::mutex> lock(g_mapMutex);
+            g_fileToBufferMap[fp] = mem;
+        }
+
+        return fp;
+    }));
+
 	EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_request(::testing::_, ::testing::_, ::testing::_,::testing::_, ::testing::_, ::testing::_))
 		.Times(::testing::AnyNumber())
 		.WillRepeatedly(::testing::Invoke(
@@ -1922,6 +2209,26 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_GENERIC_FAILURE)
 
 	plugin->Deinitialize(nullptr);
 
+	EXPECT_CALL(*p_wrapsImplMock, pclose(::testing::_))
+    .Times(::testing::AnyNumber())
+    .WillRepeatedly(::testing::Invoke([](FILE* fp) -> int {
+        void* mem = nullptr;
+
+        {
+            std::lock_guard<std::mutex> lock(g_mapMutex);
+            auto it = g_fileToBufferMap.find(fp);
+            if (it != g_fileToBufferMap.end()) {
+                mem = it->second;
+                g_fileToBufferMap.erase(it);
+            }
+        }
+
+        if (fp) fclose(fp);
+        if (mem) free(mem);
+
+        return 0;
+    }));
+
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	removeFile("/var/run/wpa_supplicant/p2p0");
 }
@@ -1936,25 +2243,32 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_AutoConnect)
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
 
 	EXPECT_CALL(*p_wrapsImplMock, popen(::testing::_, ::testing::_))
-		.Times(::testing::AnyNumber())
-		.WillRepeatedly(::testing::Invoke(
-					[&](const char* command, const char* type)
-					{
-					char buffer[1024] = {0};
-					if ( 0 == strncmp(command,"awk '$4 == ",strlen("awk '$4 == ")))
-					{
-						strncpy(buffer, "192.168.59.165",sizeof(buffer));
-					}
-					else if ( 0 == strncmp(command,"awk '$1 == ",strlen("awk '$1 == ")))
-					{
-						// Need to return as empty
-					}
-					else if ( 0 == strncmp(command,"arping",strlen("arping")))
-					{
-						strncpy(buffer, "Unicast reply from 192.168.59.165 [96:52:44:b6:7d:14]  2.189ms\nReceived 1 response",sizeof(buffer));
-					}
-					return (fmemopen(buffer, strlen(buffer), "r"));
-					}));
+    .Times(::testing::AnyNumber())
+    .WillRepeatedly(::testing::Invoke(
+        [](const char* command, const char* type) -> FILE* {
+            const char* response = "";
+
+            if (strncmp(command, "awk '$4 == ", strlen("awk '$4 == ")) == 0) {
+                response = "192.168.59.165";
+			} else if (strncmp(command, "awk '$1 == ", strlen("awk '$1 == ")) == 0) {
+                   // Empty response    	
+            } else if (strncmp(command, "arping", strlen("arping")) == 0) {
+                response = "Unicast reply from 192.168.59.165 [96:52:44:b6:7d:14]  2.189ms\nReceived 1 response";
+            }
+            
+            size_t len = strlen(response);
+            char* mem = static_cast<char*>(malloc(len + 1));
+            memcpy(mem, response, len + 1);
+
+            FILE* fp = fmemopen(mem, len, "r");
+
+            {
+                std::lock_guard<std::mutex> lock(g_mapMutex);
+                g_fileToBufferMap[fp] = mem;
+            }
+
+            return fp;
+        }));
 
 	EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_request(::testing::_, ::testing::_, ::testing::_,::testing::_, ::testing::_, ::testing::_))
 		.Times(::testing::AnyNumber())
@@ -2021,6 +2335,26 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_AutoConnect)
 
 	plugin->Deinitialize(nullptr);
 
+	EXPECT_CALL(*p_wrapsImplMock, pclose(::testing::_))
+    .Times(::testing::AnyNumber())
+    .WillRepeatedly(::testing::Invoke([](FILE* fp) -> int {
+        void* mem = nullptr;
+
+        {
+            std::lock_guard<std::mutex> lock(g_mapMutex);
+            auto it = g_fileToBufferMap.find(fp);
+            if (it != g_fileToBufferMap.end()) {
+                mem = it->second;
+                g_fileToBufferMap.erase(it);
+            }
+        }
+
+        if (fp) fclose(fp);
+        if (mem) free(mem);
+
+        return 0;
+    }));
+	
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	removeFile("/var/run/wpa_supplicant/p2p0");
 	removeFile("/opt/miracast_autoconnect");
