@@ -139,11 +139,6 @@ namespace
     }
 }
 
-namespace {
-    std::map<FILE*, void*> g_fileToBufferMap;
-    std::mutex g_mapMutex;
-}
-
 static struct wpa_ctrl global_wpa_ctrl_handle;
 
 class MiracastServiceTest : public ::testing::Test {
@@ -152,16 +147,16 @@ protected:
     Core::JSONRPC::Handler& handler;
     DECL_CORE_JSONRPC_CONX connection;
     Core::JSONRPC::Message message;	
-	NiceMock<COMLinkMock> comLinkMock;
-    NiceMock<ServiceMock> service;
-    PLUGINHOST_DISPATCHER* dispatcher;
-    Core::ProxyType<WorkerPoolImplementation> workerPool;
     string response;
 
     WrapsImplMock *p_wrapsImplMock = nullptr;
     Core::ProxyType<Plugin::MiracastServiceImplementation> miracastServiceImpl;
-	ServiceMock  *p_serviceMock  = nullptr;
-    
+
+	NiceMock<COMLinkMock> comLinkMock;
+    NiceMock<ServiceMock> service;
+    PLUGINHOST_DISPATCHER* dispatcher;
+    Core::ProxyType<WorkerPoolImplementation> workerPool;
+
     NiceMock<FactoriesImplementation> factoriesImplementation;
 
     MiracastServiceTest()
@@ -170,16 +165,9 @@ protected:
         , INIT_CONX(1, 0)
         , workerPool(Core::ProxyType<WorkerPoolImplementation>::Create(2, Core::Thread::DefaultStackSize(), 16))
     {
-		p_serviceMock = new NiceMock <ServiceMock>;
 		p_wrapsImplMock = new NiceMock<WrapsImplMock>;
         printf("Pass created wrapsImplMock: %p ", p_wrapsImplMock);
         Wraps::setImpl(p_wrapsImplMock);
-
-		PluginHost::IFactories::Assign(&factoriesImplementation);
-
-		dispatcher = static_cast<PLUGINHOST_DISPATCHER*>(
-        plugin->QueryInterface(PLUGINHOST_DISPATCHER_ID));
-        dispatcher->Activate(&service);
         
         ON_CALL(service, COMLink())
         .WillByDefault(::testing::Invoke(
@@ -212,31 +200,32 @@ protected:
 		ON_CALL(*p_wrapsImplMock, system(::testing::_))
 			.WillByDefault(::testing::Invoke([&](const char* command) {return 0;}));
 
+		
+		PluginHost::IFactories::Assign(&factoriesImplementation);
+
         Core::IWorkerPool::Assign(&(*workerPool));
         workerPool->Run();
+
+		dispatcher = static_cast<PLUGINHOST_DISPATCHER*>(
+        plugin->QueryInterface(PLUGINHOST_DISPATCHER_ID));
+        dispatcher->Activate(&service);
     }
     virtual ~MiracastServiceTest() override
     {
         TEST_LOG("MiracastServiceTest Destructor");
 
+		dispatcher->Deactivate();
+        dispatcher->Release();
+
         Core::IWorkerPool::Assign(nullptr);
         workerPool.Release();
 
-		if (p_serviceMock != nullptr)
-        {
-            delete p_serviceMock;
-            p_serviceMock = nullptr;
-        }
-    
         Wraps::setImpl(nullptr);
         if (p_wrapsImplMock != nullptr)
         {
             delete p_wrapsImplMock;
             p_wrapsImplMock = nullptr;
         }
-
-		dispatcher->Deactivate();
-        dispatcher->Release();
 		
         PluginHost::IFactories::Assign(nullptr);
     }
@@ -244,17 +233,32 @@ protected:
 
 class MiracastServiceEventTest : public MiracastServiceTest {
 protected:
+	NiceMock<ServiceMock> service;
+    NiceMock<FactoriesImplementation> factoriesImplementation;
+    PLUGINHOST_DISPATCHER* dispatcher;
+    Core::JSONRPC::Message message;
+
     MiracastServiceEventTest()
         : MiracastServiceTest()
     {
+		PluginHost::IFactories::Assign(&factoriesImplementation);
+
+        dispatcher = static_cast<PLUGINHOST_DISPATCHER*>(
+            plugin->QueryInterface(PLUGINHOST_DISPATCHER_ID));
+        dispatcher->Activate(&service);
     }
 
     virtual ~MiracastServiceEventTest() override
     {
-	TEST_LOG("Before destructor sleep ");
-	//Wait for all the previous destructor process to complete
-	std::this_thread::sleep_for(std::chrono::milliseconds(3000));
-	TEST_LOG("After destructor sleep ");
+		dispatcher->Deactivate();
+        dispatcher->Release();
+
+        PluginHost::IFactories::Assign(nullptr);
+		
+		TEST_LOG("Before destructor sleep ");
+		//Wait for all the previous destructor process to complete
+		std::this_thread::sleep_for(std::chrono::milliseconds(3000));
+		TEST_LOG("After destructor sleep ");
     }
 };
 
@@ -269,7 +273,7 @@ TEST_F(MiracastServiceTest, P2PCtrlInterfaceNameNotFound)
 
 	// WIFI_P2P_CTRL_INTERFACE not configured in device properties file
 	EXPECT_NE(string(""), plugin->Initialize(&service));
-	plugin->Deinitialize(&service);
+	plugin->Deinitialize(nullptr);
 }
 
 TEST_F(MiracastServiceTest, P2PCtrlInterfacePathNotFound)
@@ -279,7 +283,7 @@ TEST_F(MiracastServiceTest, P2PCtrlInterfacePathNotFound)
 
 	// Invalid P2P Ctrl iface configured
 	EXPECT_NE(string(""), plugin->Initialize(&service));
-	plugin->Deinitialize(&service);
+	plugin->Deinitialize(nullptr);
 
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 }
@@ -298,7 +302,7 @@ TEST_F(MiracastServiceTest, RegisteredMethods)
 	EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("updatePlayerState")));
 	EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("setP2PBackendDiscovery")));
 
-	plugin->Deinitialize(&service);
+	plugin->Deinitialize(nullptr);
 
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	removeFile("/var/run/wpa_supplicant/p2p0");
@@ -329,7 +333,7 @@ TEST_F(MiracastServiceTest, P2P_DiscoveryStatus)
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getEnable"), _T("{}"), response));
 	EXPECT_EQ(response, string("{\"enabled\":false,\"success\":true}"));
 
-	plugin->Deinitialize(&service);
+	plugin->Deinitialize(nullptr);
 
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	removeFile("/var/run/wpa_supplicant/p2p0");
@@ -344,7 +348,7 @@ TEST_F(MiracastServiceTest, BackendDiscoveryStatus)
 
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setP2PBackendDiscovery"), _T("{\"enabled\": true}"), response));
 
-	plugin->Deinitialize(&service);
+	plugin->Deinitialize(nullptr);
 
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	removeFile("/var/run/wpa_supplicant/p2p0");
@@ -442,7 +446,7 @@ TEST_F(MiracastServiceEventTest, stopClientConnection)
 
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 
-	plugin->Deinitialize(&service);
+	plugin->Deinitialize(nullptr);
 
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	removeFile("/var/run/wpa_supplicant/p2p0");
@@ -623,7 +627,7 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_onClientConnectionAndLaunchRequest)
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_UNSUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
 
-	plugin->Deinitialize(&service);
+	plugin->Deinitialize(nullptr);
 
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	removeFile("/var/run/wpa_supplicant/p2p0");
@@ -705,7 +709,7 @@ TEST_F(MiracastServiceEventTest, onClientConnectionRequestRejected)
 
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 
-	plugin->Deinitialize(&service);
+	plugin->Deinitialize(nullptr);
 
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	removeFile("/var/run/wpa_supplicant/p2p0");
@@ -802,7 +806,7 @@ TEST_F(MiracastServiceEventTest, P2P_CONNECT_FAIL_onClientConnectionError)
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
 
-	plugin->Deinitialize(&service);
+	plugin->Deinitialize(nullptr);
 
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	removeFile("/var/run/wpa_supplicant/p2p0");
@@ -916,7 +920,7 @@ TEST_F(MiracastServiceEventTest, P2P_GO_NEGOTIATION_FAIL_onClientConnectionError
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
 
-	plugin->Deinitialize(&service);
+	plugin->Deinitialize(nullptr);
 
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	removeFile("/var/run/wpa_supplicant/p2p0");
@@ -1037,7 +1041,7 @@ TEST_F(MiracastServiceEventTest, P2P_GO_FORMATION_FAIL_onClientConnectionError)
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
 
-	plugin->Deinitialize(&service);
+	plugin->Deinitialize(nullptr);
 
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	removeFile("/var/run/wpa_supplicant/p2p0");
@@ -1191,7 +1195,7 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_onClientConnectionAndLaunchReque
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_UNSUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
 
-	plugin->Deinitialize(&service);
+	plugin->Deinitialize(nullptr);
 
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	removeFile("/var/run/wpa_supplicant/p2p0");
@@ -1297,7 +1301,7 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectonClientConnectionAndLaunc
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_UNSUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
 
-	plugin->Deinitialize(&service);
+	plugin->Deinitialize(nullptr);
 
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	removeFile("/var/run/wpa_supplicant/p2p0");
@@ -1397,7 +1401,7 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithName)
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_UNSUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
 
-	plugin->Deinitialize(&service);
+	plugin->Deinitialize(nullptr);
 
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	removeFile("/var/run/wpa_supplicant/p2p0");
@@ -1497,7 +1501,7 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithoutName)
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_UNSUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
 
-	plugin->Deinitialize(&service);
+	plugin->Deinitialize(nullptr);
 
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	removeFile("/var/run/wpa_supplicant/p2p0");
@@ -1621,7 +1625,7 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectP2PGoNegotiationGroupStart
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_UNSUBSCRIBE(0, _T("onLaunchRequest"), _T("client.events"), message);
 
-	plugin->Deinitialize(&service);
+	plugin->Deinitialize(nullptr);
 
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	removeFile("/var/run/wpa_supplicant/p2p0");
@@ -1777,7 +1781,7 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_GENERIC_FAILURE)
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
 
-	plugin->Deinitialize(&service);
+	plugin->Deinitialize(nullptr);
 
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	removeFile("/var/run/wpa_supplicant/p2p0");
@@ -1916,7 +1920,7 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_GENERIC_FAILURE)
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
 
-	plugin->Deinitialize(&service);
+	plugin->Deinitialize(nullptr);
 
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	removeFile("/var/run/wpa_supplicant/p2p0");
@@ -2015,7 +2019,7 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_AutoConnect)
 
 	sleep(10);
 
-	plugin->Deinitialize(&service);
+	plugin->Deinitialize(nullptr);
 
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	removeFile("/var/run/wpa_supplicant/p2p0");
@@ -2038,7 +2042,7 @@ TEST_F(MiracastServiceEventTest, powerStateChange)
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": false}"), response));
     Plugin::MiracastServiceImplementation::_instance->onPowerModeChanged(WPEFramework::Exchange::IPowerManager::POWER_STATE_STANDBY_DEEP_SLEEP, WPEFramework::Exchange::IPowerManager::POWER_STATE_ON);
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
-	plugin->Deinitialize(&service);
+	plugin->Deinitialize(nullptr);
 
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 	removeFile("/var/run/wpa_supplicant/p2p0");
