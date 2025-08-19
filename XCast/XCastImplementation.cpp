@@ -1204,6 +1204,9 @@ void XCastImplementation::dumpDynamicAppCacheList(string strListName, std::vecto
 
         Core::hresult XCastImplementation::GetEnabled(bool &enabled , bool &success ) {
             LOGINFO("XCastImplementation::getEnabled - %d",m_xcastEnable);
+			int *p = NULL;
+			*p = 8; 
+			printf("Crash:%d", *p);
             enabled = m_xcastEnable;
             success = true;
             return Core::ERROR_NONE;
