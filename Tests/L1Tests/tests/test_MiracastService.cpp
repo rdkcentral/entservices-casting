@@ -453,25 +453,27 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_onClientConnectionAndLaunchRequest)
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
 
 	EXPECT_CALL(*p_wrapsImplMock, popen(::testing::_, ::testing::_))
-		.Times(::testing::AnyNumber())
-		.WillRepeatedly(::testing::Invoke(
-					[&](const char* command, const char* type)
-					{
-					char buffer[1024] = {0};
-					if ( 0 == strncmp(command,"awk '$4 == ",strlen("awk '$4 == ")))
-					{
-						strncpy(buffer, "192.168.59.165",sizeof(buffer));
-					}
-					else if ( 0 == strncmp(command,"awk '$1 == ",strlen("awk '$1 == ")))
-					{
-						// Need to return as empty
-					}
-					else if ( 0 == strncmp(command,"arping",strlen("arping")))
-					{
-						strncpy(buffer, "Unicast reply from 192.168.59.165 [96:52:44:b6:7d:14]  2.189ms\nReceived 1 response",sizeof(buffer));
-					}
-					return (fmemopen(buffer, strlen(buffer), "r"));
-					}));
+    .Times(::testing::AnyNumber())
+    .WillRepeatedly(::testing::Invoke(
+        [&](const char* command, const char* type) {
+            const char* response = "";
+
+            if (strncmp(command, "awk '$4 == ", strlen("awk '$4 == ")) == 0) {
+                response = "192.168.59.165";
+            } else if (strncmp(command, "awk '$1 == ", strlen("awk '$1 == ")) == 0) {
+                // Empty response
+            } else if (strncmp(command, "arping", strlen("arping")) == 0) {
+                response = "Unicast reply from 192.168.59.165 [96:52:44:b6:7d:14]  2.189ms\nReceived 1 response";
+            }
+
+            size_t len = strlen(response);
+            char* mem = static_cast<char*>(malloc(len + 1));
+            memcpy(mem, response, len + 1);
+
+            FILE* fp = fmemopen(mem, len, "r");
+
+            return fp;
+        }));
 
 	EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_request(::testing::_, ::testing::_, ::testing::_,::testing::_, ::testing::_, ::testing::_))
 		.Times(::testing::AnyNumber())
@@ -1048,17 +1050,23 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_onClientConnectionAndLaunchReque
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
 
 	EXPECT_CALL(*p_wrapsImplMock, popen(::testing::_, ::testing::_))
-		.Times(::testing::AnyNumber())
-		.WillRepeatedly(::testing::Invoke(
-					[&](const char* command, const char* type)
-					{
-					char buffer[1024] = {0};
-					if ( 0 == strncmp(command,"/sbin/udhcpc -v -i",strlen("/sbin/udhcpc -v -i")))
-					{
-						strncpy(buffer, "udhcpc: sending select for 192.168.49.165\tudhcpc: lease of 192.168.49.165 obtained, lease time 3599\tdeleting routers\troute add default gw 192.168.49.1 dev lo\tadding dns 192.168.49.1",sizeof(buffer));
-					}
-					return (fmemopen(buffer, strlen(buffer), "r"));
-					}));
+    .Times(::testing::AnyNumber())
+    .WillRepeatedly(::testing::Invoke(
+        [](const char* command, const char* type) {
+            const char* response = "udhcpc: sending select for 192.168.49.165\t"
+                                   "udhcpc: lease of 192.168.49.165 obtained, lease time 3599\t"
+                                   "deleting routers\t"
+                                   "route add default gw 192.168.49.1 dev lo\t"
+                                   "adding dns 192.168.49.1";
+
+            size_t len = strlen(response);
+            char* mem = static_cast<char*>(malloc(len + 1));
+            memcpy(mem, response, len + 1);
+            FILE* fp = fmemopen(mem, len, "r");
+
+            // Optional: Keep track of `mem` to free it later when FILE* is closed.
+            return fp;
+        }));
 
 	EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_request(::testing::_, ::testing::_, ::testing::_,::testing::_, ::testing::_, ::testing::_))
 		.Times(::testing::AnyNumber())
@@ -1202,17 +1210,23 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectonClientConnectionAndLaunc
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
 
 	EXPECT_CALL(*p_wrapsImplMock, popen(::testing::_, ::testing::_))
-		.Times(::testing::AnyNumber())
-		.WillRepeatedly(::testing::Invoke(
-					[&](const char* command, const char* type)
-					{
-					char buffer[1024] = {0};
-					if ( 0 == strncmp(command,"/sbin/udhcpc -v -i",strlen("/sbin/udhcpc -v -i")))
-					{
-						strncpy(buffer, "udhcpc: sending select for 192.168.49.165\tudhcpc: lease of 192.168.49.165 obtained, lease time 3599\tdeleting routers\troute add default gw 192.168.49.1 dev lo\tadding dns 192.168.49.1",sizeof(buffer));
-					}
-					return (fmemopen(buffer, strlen(buffer), "r"));
-					}));
+    .Times(::testing::AnyNumber())
+    .WillRepeatedly(::testing::Invoke(
+        [](const char* command, const char* type) {
+            const char* response = "udhcpc: sending select for 192.168.49.165\t"
+                                   "udhcpc: lease of 192.168.49.165 obtained, lease time 3599\t"
+                                   "deleting routers\t"
+                                   "route add default gw 192.168.49.1 dev lo\t"
+                                   "adding dns 192.168.49.1";
+
+            size_t len = strlen(response);
+            char* mem = static_cast<char*>(malloc(len + 1));
+            memcpy(mem, response, len + 1);
+            FILE* fp = fmemopen(mem, len, "r");
+
+            // Optional: Keep track of `mem` to free it later when FILE* is closed.
+            return fp;
+        }));
 
 	EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_request(::testing::_, ::testing::_, ::testing::_,::testing::_, ::testing::_, ::testing::_))
 		.Times(::testing::AnyNumber())
@@ -1308,17 +1322,23 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithName)
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
 
 	EXPECT_CALL(*p_wrapsImplMock, popen(::testing::_, ::testing::_))
-		.Times(::testing::AnyNumber())
-		.WillRepeatedly(::testing::Invoke(
-					[&](const char* command, const char* type)
-					{
-					char buffer[1024] = {0};
-					if ( 0 == strncmp(command,"/sbin/udhcpc -v -i",strlen("/sbin/udhcpc -v -i")))
-					{
-						strncpy(buffer, "udhcpc: sending select for 192.168.49.165\tudhcpc: lease of 192.168.49.165 obtained, lease time 3599\tdeleting routers\troute add default gw 192.168.49.1 dev lo\tadding dns 192.168.49.1",sizeof(buffer));
-					}
-					return (fmemopen(buffer, strlen(buffer), "r"));
-					}));
+    .Times(::testing::AnyNumber())
+    .WillRepeatedly(::testing::Invoke(
+        [](const char* command, const char* type) {
+            const char* response = "udhcpc: sending select for 192.168.49.165\t"
+                                   "udhcpc: lease of 192.168.49.165 obtained, lease time 3599\t"
+                                   "deleting routers\t"
+                                   "route add default gw 192.168.49.1 dev lo\t"
+                                   "adding dns 192.168.49.1";
+
+            size_t len = strlen(response);
+            char* mem = static_cast<char*>(malloc(len + 1));
+            memcpy(mem, response, len + 1);
+            FILE* fp = fmemopen(mem, len, "r");
+
+            // Optional: Keep track of `mem` to free it later when FILE* is closed.
+            return fp;
+        }));
 
 	EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_request(::testing::_, ::testing::_, ::testing::_,::testing::_, ::testing::_, ::testing::_))
 		.Times(::testing::AnyNumber())
@@ -1408,17 +1428,23 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithoutName)
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
 
 	EXPECT_CALL(*p_wrapsImplMock, popen(::testing::_, ::testing::_))
-		.Times(::testing::AnyNumber())
-		.WillRepeatedly(::testing::Invoke(
-					[&](const char* command, const char* type)
-					{
-					char buffer[1024] = {0};
-					if ( 0 == strncmp(command,"/sbin/udhcpc -v -i",strlen("/sbin/udhcpc -v -i")))
-					{
-						strncpy(buffer, "udhcpc: sending select for 192.168.49.165\tudhcpc: lease of 192.168.49.165 obtained, lease time 3599\tdeleting routers\troute add default gw 192.168.49.1 dev lo\tadding dns 192.168.49.1",sizeof(buffer));
-					}
-					return (fmemopen(buffer, strlen(buffer), "r"));
-					}));
+    .Times(::testing::AnyNumber())
+    .WillRepeatedly(::testing::Invoke(
+        [](const char* command, const char* type) {
+            const char* response = "udhcpc: sending select for 192.168.49.165\t"
+                                   "udhcpc: lease of 192.168.49.165 obtained, lease time 3599\t"
+                                   "deleting routers\t"
+                                   "route add default gw 192.168.49.1 dev lo\t"
+                                   "adding dns 192.168.49.1";
+
+            size_t len = strlen(response);
+            char* mem = static_cast<char*>(malloc(len + 1));
+            memcpy(mem, response, len + 1);
+            FILE* fp = fmemopen(mem, len, "r");
+
+            // Optional: Keep track of `mem` to free it later when FILE* is closed.
+            return fp;
+        }));
 
 	EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_request(::testing::_, ::testing::_, ::testing::_,::testing::_, ::testing::_, ::testing::_))
 		.Times(::testing::AnyNumber())
@@ -1508,17 +1534,23 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectP2PGoNegotiationGroupStart
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
 
 	EXPECT_CALL(*p_wrapsImplMock, popen(::testing::_, ::testing::_))
-		.Times(::testing::AnyNumber())
-		.WillRepeatedly(::testing::Invoke(
-					[&](const char* command, const char* type)
-					{
-					char buffer[1024] = {0};
-					if ( 0 == strncmp(command,"/sbin/udhcpc -v -i",strlen("/sbin/udhcpc -v -i")))
-					{
-						strncpy(buffer, "udhcpc: sending select for 192.168.49.165\tudhcpc: lease of 192.168.49.165 obtained, lease time 3599\tdeleting routers\troute add default gw 192.168.49.1 dev lo\tadding dns 192.168.49.1",sizeof(buffer));
-					}
-					return (fmemopen(buffer, strlen(buffer), "r"));
-					}));
+    .Times(::testing::AnyNumber())
+    .WillRepeatedly(::testing::Invoke(
+        [](const char* command, const char* type) {
+            const char* response = "udhcpc: sending select for 192.168.49.165\t"
+                                   "udhcpc: lease of 192.168.49.165 obtained, lease time 3599\t"
+                                   "deleting routers\t"
+                                   "route add default gw 192.168.49.1 dev lo\t"
+                                   "adding dns 192.168.49.1";
+
+            size_t len = strlen(response);
+            char* mem = static_cast<char*>(malloc(len + 1));
+            memcpy(mem, response, len + 1);
+            FILE* fp = fmemopen(mem, len, "r");
+
+            // Optional: Keep track of `mem` to free it later when FILE* is closed.
+            return fp;
+        }));
 
 	EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_request(::testing::_, ::testing::_, ::testing::_,::testing::_, ::testing::_, ::testing::_))
 		.Times(::testing::AnyNumber())
@@ -1632,17 +1664,24 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_GENERIC_FAILURE)
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
 
 	EXPECT_CALL(*p_wrapsImplMock, popen(::testing::_, ::testing::_))
-		.Times(::testing::AnyNumber())
-		.WillRepeatedly(::testing::Invoke(
-					[&](const char* command, const char* type)
-					{
-					char buffer[1024] = {0};
-					if ( 0 == strncmp(command,"/sbin/udhcpc -v -i",strlen("/sbin/udhcpc -v -i")))
-					{
-						strncpy(buffer, "P2P GENERIC FAILURE",sizeof(buffer));
-					}
-					return (fmemopen(buffer, strlen(buffer), "r"));
-					}));
+    .Times(::testing::AnyNumber())
+    .WillRepeatedly(::testing::Invoke(
+        [&](const char* command, const char* type) -> FILE* {
+            const char* response = "";
+
+            if (strncmp(command, "/sbin/udhcpc -v -i", strlen("/sbin/udhcpc -v -i")) == 0) {
+                response = "P2P GENERIC FAILURE";
+            }
+
+            size_t len = strlen(response);
+            char* mem = static_cast<char*>(malloc(len + 1));
+            memcpy(mem, response, len + 1);
+
+            FILE* fp = fmemopen(mem, len, "r");
+
+            return fp;
+        }));
+
 
 	EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_request(::testing::_, ::testing::_, ::testing::_,::testing::_, ::testing::_, ::testing::_))
 		.Times(::testing::AnyNumber())
@@ -1788,25 +1827,27 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_GENERIC_FAILURE)
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
 
 	EXPECT_CALL(*p_wrapsImplMock, popen(::testing::_, ::testing::_))
-		.Times(::testing::AnyNumber())
-		.WillRepeatedly(::testing::Invoke(
-					[&](const char* command, const char* type)
-					{
-					char buffer[1024] = {0};
-					if ( 0 == strncmp(command,"awk '$4 == ",strlen("awk '$4 == ")))
-					{
-						strncpy(buffer, "192.168.59.165",sizeof(buffer));
-					}
-					else if ( 0 == strncmp(command,"awk '$1 == ",strlen("awk '$1 == ")))
-					{
-						// Need to return as empty
-					}
-					else if ( 0 == strncmp(command,"arping",strlen("arping")))
-					{
-						strncpy(buffer, "Received 0 response",sizeof(buffer));
-					}
-					return (fmemopen(buffer, strlen(buffer), "r"));
-					}));
+    .Times(::testing::AnyNumber())
+    .WillRepeatedly(::testing::Invoke(
+        [&](const char* command, const char* type) {
+            const char* response = "";
+
+            if (strncmp(command, "awk '$4 == ", strlen("awk '$4 == ")) == 0) {
+                response = "192.168.59.165";
+            } else if (strncmp(command, "awk '$1 == ", strlen("awk '$1 == ")) == 0) {
+                // Empty response
+            } else if (strncmp(command, "arping", strlen("arping")) == 0) {
+                response = "Received 0 response";
+            }
+
+            size_t len = strlen(response);
+            char* mem = static_cast<char*>(malloc(len + 1));
+            memcpy(mem, response, len + 1);
+
+            FILE* fp = fmemopen(mem, len, "r");
+
+            return fp;
+        }));
 
 	EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_request(::testing::_, ::testing::_, ::testing::_,::testing::_, ::testing::_, ::testing::_))
 		.Times(::testing::AnyNumber())
@@ -1928,25 +1969,27 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_AutoConnect)
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
 
 	EXPECT_CALL(*p_wrapsImplMock, popen(::testing::_, ::testing::_))
-		.Times(::testing::AnyNumber())
-		.WillRepeatedly(::testing::Invoke(
-					[&](const char* command, const char* type)
-					{
-					char buffer[1024] = {0};
-					if ( 0 == strncmp(command,"awk '$4 == ",strlen("awk '$4 == ")))
-					{
-						strncpy(buffer, "192.168.59.165",sizeof(buffer));
-					}
-					else if ( 0 == strncmp(command,"awk '$1 == ",strlen("awk '$1 == ")))
-					{
-						// Need to return as empty
-					}
-					else if ( 0 == strncmp(command,"arping",strlen("arping")))
-					{
-						strncpy(buffer, "Unicast reply from 192.168.59.165 [96:52:44:b6:7d:14]  2.189ms\nReceived 1 response",sizeof(buffer));
-					}
-					return (fmemopen(buffer, strlen(buffer), "r"));
-					}));
+    .Times(::testing::AnyNumber())
+    .WillRepeatedly(::testing::Invoke(
+        [&](const char* command, const char* type) {
+            const char* response = "";
+
+            if (strncmp(command, "awk '$4 == ", strlen("awk '$4 == ")) == 0) {
+                response = "192.168.59.165";
+            } else if (strncmp(command, "awk '$1 == ", strlen("awk '$1 == ")) == 0) {
+                // Empty response
+            } else if (strncmp(command, "arping", strlen("arping")) == 0) {
+                response = "Unicast reply from 192.168.59.165 [96:52:44:b6:7d:14]  2.189ms\nReceived 1 response";
+            }
+
+            size_t len = strlen(response);
+            char* mem = static_cast<char*>(malloc(len + 1));
+            memcpy(mem, response, len + 1);
+
+            FILE* fp = fmemopen(mem, len, "r");
+
+            return fp;
+        }));
 
 	EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_request(::testing::_, ::testing::_, ::testing::_,::testing::_, ::testing::_, ::testing::_))
 		.Times(::testing::AnyNumber())
