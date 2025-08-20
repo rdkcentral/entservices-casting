@@ -1,4 +1,3 @@
-#if 0
 /**
 * If not stated otherwise in this file or this component's LICENSE
 * file the following copyright and licenses apply:
@@ -1310,4 +1309,3 @@ TEST_F(MiracastPlayerTest, SetOrUnsetEnvArguments)
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnvArguments"), _T("{\"envArgs\":[{\"argName\":\"DISPLAY\",\"argValue\":\"display-testplayer-0\"},{\"argName\":\"XDG_RUNTIME_DIR\",\"argValue\":\"/tmp\"}],\"appName\":\"MiracastApp\"}"), response));
     EXPECT_EQ(response, string("{\"message\":\"Failed, Missing Wayland Display Name\",\"success\":false}"));
 }
-#endif
