@@ -44,7 +44,7 @@ namespace
     #define TEST_LOG(FMT, ...) log(__func__, __FILE__, __LINE__, syscall(__NR_gettid),FMT,##__VA_ARGS__)
 
     //Commented out the functions below because some test cases that use them have also been commented out. Since those test cases are disabled, these functions are now unused.
-	#if 0 
+	#if 1 
 	static void removeFile(const char* fileName)
 	{
 		if (std::remove(fileName) != 0)
@@ -252,6 +252,11 @@ protected:
         dispatcher->Release();
 
         PluginHost::IFactories::Assign(nullptr);
+		TEST_LOG("predebug Before destructor sleep ");
+		//Wait for all the previous destructor process to complete
+		std::this_thread::sleep_for(std::chrono::milliseconds(3000));
+		TEST_LOG("predebug After destructor sleep ");
+		
     }
 };
 
@@ -259,7 +264,7 @@ TEST_F(MiracastServiceTest, GetInformation)
 {
     EXPECT_EQ("This MiracastService Plugin Facilitates Peer-to-Peer Control and WFD Source Device Discovery", plugin->Information());
 }
-#if 0
+#if 1
 TEST_F(MiracastServiceTest, P2PCtrlInterfaceNameNotFound)
 {
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
