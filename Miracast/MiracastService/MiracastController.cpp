@@ -785,19 +785,19 @@ void MiracastController::Controller_Thread(void *args)
             session_restart_required = false,
             p2p_group_instance_alive = false;
 
-    MIRACASTLOG_TRACE("Entering...");
+    MIRACASTLOG_INFO("Entering...");
 
     while (nullptr != m_controller_thread)
     {
         std::string event_buffer;
         event_buffer.clear();
 
-        MIRACASTLOG_TRACE("!!! Waiting for Event !!!\n");
+        MIRACASTLOG_INFO("!!! Waiting for Event !!!\n");
         m_controller_thread->receive_message(&controller_msgq_data, CONTROLLER_MSGQ_SIZE, THREAD_RECV_MSG_INDEFINITE_WAIT);
 
         event_buffer = controller_msgq_data.msg_buffer;
 
-        MIRACASTLOG_TRACE("!!! Received Action[%#08X]Data[%s] !!!\n", controller_msgq_data.state, event_buffer.c_str());
+        MIRACASTLOG_INFO("!!! Received Action[%#08X]Data[%s] !!!\n", controller_msgq_data.state, event_buffer.c_str());
 
         if (CONTROLLER_SELF_ABORT == controller_msgq_data.state)
         {
