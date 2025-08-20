@@ -96,7 +96,7 @@ namespace WPEFramework
                 m_SystemPluginObj = nullptr;
             }
 
-            MIRACASTLOG_INFO("Disconnect from the COM-RPC socket");
+            MIRACASTLOG_INFO("predebug Disconnect from the COM-RPC socket");
 
             if (m_isServiceInitialized)
             {
@@ -114,6 +114,7 @@ namespace WPEFramework
             }
             MIRACAST::logger_deinit();
             MiracastServiceImplementation::_instance = nullptr;
+            MIRACASTLOG_INFO("predebug destruction done");
         }
 
         /**
