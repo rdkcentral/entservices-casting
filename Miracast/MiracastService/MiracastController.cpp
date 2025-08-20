@@ -71,7 +71,7 @@ MiracastController::MiracastController(void)
 
 MiracastController::~MiracastController()
 {
-    MIRACASTLOG_TRACE("Entering...");
+    MIRACASTLOG_INFO("Entering...");
 
     while (!m_deviceInfoList.empty())
     {
@@ -85,7 +85,7 @@ MiracastController::~MiracastController()
         m_groupInfo = nullptr;
     }
 
-    MIRACASTLOG_TRACE("Exiting...");
+    MIRACASTLOG_INFO("Exiting...");
 }
 
 MiracastError MiracastController::create_ControllerFramework(std::string p2p_ctrl_iface)
@@ -642,7 +642,7 @@ bool MiracastController::get_connection_status()
 void MiracastController::create_DeviceCacheData(std::string deviceMAC,std::string authType,std::string modelName,std::string deviceType, bool force_overwrite)
 {
     bool new_device_entry = false;
-    MIRACASTLOG_TRACE("Entering...");
+    MIRACASTLOG_INFO("Entering...");
     DeviceInfo *cur_device_info_ptr = MiracastController::get_device_details(deviceMAC);
 
     // Allocate memory and update the device cache info
@@ -651,7 +651,7 @@ void MiracastController::create_DeviceCacheData(std::string deviceMAC,std::strin
         cur_device_info_ptr = new DeviceInfo;
         new_device_entry = true;
         force_overwrite = true;
-        MIRACASTLOG_VERBOSE("#### Creating Device Cache ####");
+        MIRACASTLOG_INFO("#### Creating Device Cache ####");
     }
 
     if (( nullptr != cur_device_info_ptr ) && (force_overwrite))
@@ -673,16 +673,17 @@ void MiracastController::create_DeviceCacheData(std::string deviceMAC,std::strin
     {
         m_deviceInfoList.push_back(cur_device_info_ptr);
     }
-    MIRACASTLOG_TRACE("Exiting...");
+    MIRACASTLOG_INFO("Exiting...");
 }
 
 DeviceInfo *MiracastController::get_device_details(std::string MAC)
 {
     DeviceInfo *deviceInfo = nullptr;
     std::size_t found;
-    MIRACASTLOG_TRACE("Entering...");
+    MIRACASTLOG_INFO("Entering...");
     for (auto device : m_deviceInfoList)
     {
+         MIRACASTLOG_INFO("Entering device info list");
         found = device->deviceMAC.find(MAC);
         if (found != std::string::npos)
         {
@@ -690,7 +691,7 @@ DeviceInfo *MiracastController::get_device_details(std::string MAC)
             break;
         }
     }
-    MIRACASTLOG_TRACE("Exiting...");
+    MIRACASTLOG_INFO("Exiting...");
     return deviceInfo;
 }
 
@@ -1099,6 +1100,7 @@ void MiracastController::Controller_Thread(void *args)
                             else
                             {
                                 error_code = WPEFramework::Exchange::IMiracastService::REASON_CODE_GENERIC_FAILURE;
+                                MIRACASTLOG_INFO("predebug session restart");
                                 session_restart_required = true;
                                 MIRACASTLOG_ERROR("!!!! Unable to get the Source Device IP and Terminating Group Here !!!!");
                                 remove_P2PGroupInstance();
@@ -1247,6 +1249,7 @@ void MiracastController::Controller_Thread(void *args)
                         }
                         new_thunder_req_client_connection_sent = false;
                         another_thunder_req_client_connection_sent = false;
+                        MIRACASTLOG_INFO("predebug session_restart_required\n");
                         session_restart_required = true;
                         p2p_group_instance_alive = false;
                         m_connect_req_notified = false;
