@@ -46,14 +46,14 @@ MiracastController *MiracastController::getInstance(MiracastError &error_code, M
 
 void MiracastController::destroyInstance()
 {
-    MIRACASTLOG_TRACE("Entering...");
+    MIRACASTLOG_INFO("Entering...");
     if (nullptr != m_miracast_ctrl_obj)
     {
         m_miracast_ctrl_obj->destroy_ControllerFramework();
         delete m_miracast_ctrl_obj;
         m_miracast_ctrl_obj = nullptr;
     }
-    MIRACASTLOG_TRACE("Exiting...");
+    MIRACASTLOG_INFO("Exiting...");
 }
 
 MiracastController::MiracastController(void)
@@ -84,14 +84,14 @@ MiracastController::~MiracastController()
         delete m_groupInfo;
         m_groupInfo = nullptr;
     }
-
+     destroy_ControllerFramework();
     MIRACASTLOG_INFO("Exiting...");
 }
 
 MiracastError MiracastController::create_ControllerFramework(std::string p2p_ctrl_iface)
 {
     MiracastError ret_code = MIRACAST_OK;
-    MIRACASTLOG_TRACE("Entering...");
+    MIRACASTLOG_INFO("Entering...start controller thread");
 
     m_controller_thread = new MiracastThread(CONTROLLER_THREAD_NAME,
                                              CONTROLLER_THREAD_STACK,
