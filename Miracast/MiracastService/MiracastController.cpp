@@ -511,7 +511,7 @@ void MiracastController::event_handler(P2P_EVENTS eventId, void *data, size_t le
     std::string event_buffer;
     MIRACASTLOG_TRACE("Entering...");
 
-    event_buffer = (char *)data;
+    event_buffer = static_cast<char*>(data);
     free(data);
 
     if ( false == m_start_discovering_enabled )
@@ -527,7 +527,7 @@ void MiracastController::event_handler(P2P_EVENTS eventId, void *data, size_t le
         strncpy(controller_msgq_data.msg_buffer, event_buffer.c_str(), sizeof(controller_msgq_data.msg_buffer));
         controller_msgq_data.msg_buffer[sizeof(controller_msgq_data.msg_buffer) - 1] = '\0';
         
-        MIRACASTLOG_INFO("event_handler to Controller Action[%#08X] buffer:%s  size%d", controller_msgq_data.state, event_buffer.c_str(), strlen(event_buffer));
+        MIRACASTLOG_INFO("event_handler to Controller Action[%#08X] buffer:%s ", controller_msgq_data.state, event_buffer.c_str());
         m_controller_thread->send_message(&controller_msgq_data, sizeof(controller_msgq_data));
         MIRACASTLOG_VERBOSE("event received : %d buffer:%s  ", eventId, event_buffer.c_str());
     }
