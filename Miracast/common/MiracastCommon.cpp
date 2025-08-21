@@ -91,7 +91,7 @@ void MiracastThread::send_message(void *message, size_t msg_size)
 
     if (nullptr != m_g_queue){
 
-			
+	#if 0		
         MIRACASTLOG_TRACE("msg size %d", msg_size);
 			
        void *buffer = malloc(msg_size);
@@ -106,10 +106,17 @@ void MiracastThread::send_message(void *message, size_t msg_size)
         MIRACASTLOG_TRACE("");
         memcpy(buffer, message, msg_size);
 		MIRACASTLOG_TRACE("copied");
-        g_async_queue_push(m_g_queue, buffer);
+	#endif
+		auto buffer = std::make_shared<std::vector<char>>((char*)message, (char*)message + msg_size);
+
+    
+    // Allocate wrapper and push to queue
+    auto* wrapper = new std::shared_ptr<std::vector<char>>(buffer);
+        g_async_queue_push(m_g_queue, wrapper);
 		MIRACASTLOG_TRACE("pushed");
         sem_post(&m_empty_msgq_sem_obj);
 		MIRACASTLOG_TRACE("sempost");
+		
     }
     MIRACASTLOG_TRACE("Exiting...");
 }
@@ -125,6 +132,7 @@ int8_t MiracastThread::receive_message(void *message, size_t msg_size, int sem_w
             int count = 0;
 	        sem_getvalue(&m_empty_msgq_sem_obj,&count);
             if ((0 < count ) || (THREAD_RECV_MSG_INDEFINITE_WAIT == sem_wait_timedout)){
+				
                 sem_wait(&m_empty_msgq_sem_obj);
                 status = true;
             }
@@ -147,6 +155,17 @@ int8_t MiracastThread::receive_message(void *message, size_t msg_size, int sem_w
 
         if (true == status)
         {
+			void *data_ptr = static_cast<void *>(g_async_queue_pop(m_g_queue));
+			auto* buffer_ptr = static_cast<std::shared_ptr<std::vector<char>>*>(data_ptr);
+             if (buffer_ptr && *buffer_ptr) {
+                std::shared_ptr<std::vector<char>> buffer = *buffer_ptr;
+                message.assign(buffer->data(), buffer->size());
+			  }
+			 delete buffer_ptr;  // Clean up the wrapper 
+         
+            }
+        
+			#if 0
             void *data_ptr = static_cast<void *>(g_async_queue_pop(m_g_queue));
             if ((nullptr != message) && (nullptr != data_ptr))
             {
@@ -154,6 +173,7 @@ int8_t MiracastThread::receive_message(void *message, size_t msg_size, int sem_w
                 memcpy(message, data_ptr, msg_size);
                 free(data_ptr);
             }
+			#endif
         }
     }
     MIRACASTLOG_TRACE("Exiting...");
