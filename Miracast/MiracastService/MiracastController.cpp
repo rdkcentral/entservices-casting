@@ -87,10 +87,7 @@ MiracastController::~MiracastController()
     }
 
 
-    if (m_controller_thread !=NULL) {
-        delete m_controller_thread;
-        m_controller_thread = NULL:
-            } 
+    
   //  ControllerThreadCallback(this);
      //destroy_ControllerFramework();
     MIRACASTLOG_INFO("Exiting...");
