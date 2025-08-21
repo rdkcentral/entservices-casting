@@ -85,7 +85,12 @@ MiracastError MiracastThread::start(void)
 void MiracastThread::send_message(void *message, size_t msg_size)
 {
     MIRACASTLOG_TRACE("Entering...");
+
     if (nullptr != m_g_queue){
+
+			
+        MIRACASTLOG_WARN("Queue size", g_async_queue_length(m_g_queue));
+			
         void *buffer = malloc(msg_size);
         if (nullptr == buffer)
         {
@@ -95,7 +100,7 @@ void MiracastThread::send_message(void *message, size_t msg_size)
         }
         memset(buffer, 0x00, msg_size);
         // Send message to queue
-
+        MIRACASTLOG_TRACE("");
         memcpy(buffer, message, msg_size);
         g_async_queue_push(m_g_queue, buffer);
         sem_post(&m_empty_msgq_sem_obj);
@@ -139,6 +144,7 @@ int8_t MiracastThread::receive_message(void *message, size_t msg_size, int sem_w
             void *data_ptr = static_cast<void *>(g_async_queue_pop(m_g_queue));
             if ((nullptr != message) && (nullptr != data_ptr))
             {
+				 MIRACASTLOG_TRACE("dequeue...");
                 memcpy(message, data_ptr, msg_size);
                 free(data_ptr);
             }
