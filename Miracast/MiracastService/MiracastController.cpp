@@ -502,8 +502,11 @@ void MiracastController::event_handler(P2P_EVENTS eventId, void *data, size_t le
     std::string event_buffer;
     MIRACASTLOG_TRACE("Entering...");
 
-    event_buffer = (char *)data;
-    free(data);
+    if (data != nullptr && len > 0) {
+        // Safe copy of data into event_buffer
+        event_buffer.assign(static_cast<char*>(data), len);
+        free(data);
+    }
 
     if ( false == m_start_discovering_enabled )
     {
