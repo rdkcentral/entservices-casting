@@ -524,7 +524,7 @@ void MiracastController::event_handler(P2P_EVENTS eventId, void *data, size_t le
         strncpy(controller_msgq_data.msg_buffer, event_buffer.c_str(), sizeof(controller_msgq_data.msg_buffer));
         controller_msgq_data.msg_buffer[sizeof(controller_msgq_data.msg_buffer) - 1] = '\0';
         
-        MIRACASTLOG_INFO("event_handler to Controller Action[%#08X] buffer:%s ", controller_msgq_data.state, event_buffer.c_str());
+        MIRACASTLOG_INFO("event_handler to Controller Action[%#08X] buffer:%s len %d", controller_msgq_data.state, event_buffer.c_str(),len);
         m_controller_thread->send_message(&controller_msgq_data, sizeof(controller_msgq_data));
         MIRACASTLOG_VERBOSE("event received : %d buffer:%s  ", eventId, event_buffer.c_str());
     }
