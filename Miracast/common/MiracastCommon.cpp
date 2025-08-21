@@ -91,7 +91,9 @@ void MiracastThread::send_message(void *message, size_t msg_size)
 			
         MIRACASTLOG_TRACE("Queue size %d", g_async_queue_length(m_g_queue));
 			
-        void *buffer = malloc(msg_size);
+      //  void *buffer = malloc(msg_size);
+		void* buffer = calloc(1, msg_size);
+
         if (nullptr == buffer)
         {
             MIRACASTLOG_ERROR("Memory Allocation Failed for %u\n", msg_size);
