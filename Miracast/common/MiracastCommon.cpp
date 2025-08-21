@@ -48,11 +48,12 @@ MiracastThread::MiracastThread(std::string thread_name, size_t stack_size, size_
 
 MiracastThread::~MiracastThread()
 {
-    MIRACASTLOG_TRACE("Entering...");
+    MIRACASTLOG_INFO("Entering...");
 
     if ( 0 != m_pthread_id ){
         // Join thread
         pthread_join(m_pthread_id, nullptr);
+		MIRACASTLOG_INFO("Exit from joining...");
         m_pthread_id = 0;
         pthread_attr_destroy(&m_pthread_attr);
     }
@@ -63,7 +64,7 @@ MiracastThread::~MiracastThread()
         sem_destroy(&m_empty_msgq_sem_obj);
         m_g_queue = nullptr;
     }
-    MIRACASTLOG_TRACE("Exiting...");
+    MIRACASTLOG_INFO("Exiting...");
 }
 
 MiracastError MiracastThread::start(void)
