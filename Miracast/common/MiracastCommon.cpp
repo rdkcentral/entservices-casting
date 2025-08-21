@@ -94,7 +94,7 @@ void MiracastThread::send_message(void *message, size_t msg_size)
             MIRACASTLOG_TRACE("Exiting...");
             return;
         }
-        memset(buffer, 0x00, msg_size);
+        //memset(buffer, 0x00, msg_size);
         // Send message to queue
 
         memcpy(buffer, message, msg_size);
