@@ -52,7 +52,10 @@ MiracastThread::~MiracastThread()
 
     if ( 0 != m_pthread_id ){
         // Join thread
-        pthread_join(m_pthread_id, nullptr);
+       int ret =  pthread_join(m_pthread_id, nullptr);
+		if (ret !=0) {
+			MIRACASTLOG_INFO("pthread join failed");
+		}
 		MIRACASTLOG_INFO("Exit from joining...");
         m_pthread_id = 0;
         pthread_attr_destroy(&m_pthread_attr);
@@ -89,12 +92,10 @@ void MiracastThread::send_message(void *message, size_t msg_size)
     if (nullptr != m_g_queue){
 
 			
-        MIRACASTLOG_TRACE("Queue size %d", g_async_queue_length(m_g_queue));
+        MIRACASTLOG_TRACE("msg size %d", msg_size);
 			
-      //  void *buffer = malloc(msg_size);
-		void* buffer = calloc(1, msg_size);
-
-        if (nullptr == buffer)
+       void *buffer = malloc(msg_size);
+	   if (nullptr == buffer)
         {
             MIRACASTLOG_ERROR("Memory Allocation Failed for %u\n", msg_size);
             MIRACASTLOG_TRACE("Exiting...");
