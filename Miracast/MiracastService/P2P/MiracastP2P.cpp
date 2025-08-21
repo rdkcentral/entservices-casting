@@ -362,7 +362,7 @@ int MiracastP2P::p2pExecute(char *cmd, enum INTERFACE iface, char *ret_buf, size
 MiracastError MiracastP2P::executeCommand(std::string command, int interface, std::string &retBuffer)
 {
     MIRACASTLOG_INFO("Entering..");
- std::thread t([] {
+ std::thread t([this]() {
         MIRACASTLOG_INFO("Executing P2P command %s", command.c_str());
     {
         char ret_buffer[2048] = {0};
