@@ -89,7 +89,7 @@ void MiracastThread::send_message(void *message, size_t msg_size)
     if (nullptr != m_g_queue){
 
 			
-        MIRACASTLOG_TRACE("Queue size", g_async_queue_length(m_g_queue));
+        MIRACASTLOG_TRACE("Queue size %d", g_async_queue_length(m_g_queue));
 			
         void *buffer = malloc(msg_size);
         if (nullptr == buffer)
