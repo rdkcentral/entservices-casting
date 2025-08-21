@@ -159,7 +159,7 @@ int8_t MiracastThread::receive_message(void *message, size_t msg_size, int sem_w
 			auto* buffer_ptr = static_cast<std::shared_ptr<std::vector<char>>*>(data_ptr);
              if (buffer_ptr && *buffer_ptr) {
                 std::shared_ptr<std::vector<char>> buffer = *buffer_ptr;
-                message.assign(buffer->data(), buffer->size());
+                memcpy(message, buffer->data(), buffer->size());
 			  }
 			 delete buffer_ptr;  // Clean up the wrapper 
          
@@ -175,7 +175,7 @@ int8_t MiracastThread::receive_message(void *message, size_t msg_size, int sem_w
             }
 			#endif
         }
-    }
+   
     MIRACASTLOG_TRACE("Exiting...");
     return status;
 }
