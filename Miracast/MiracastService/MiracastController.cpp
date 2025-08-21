@@ -1609,7 +1609,7 @@ void ControllerThreadCallback(void *args)
 {
     MiracastController *miracast_ctrler_obj = (MiracastController *)args;
     MIRACASTLOG_TRACE("Entering...");
-    sleep(1);
+   // sleep(1);
     if ( nullptr != miracast_ctrler_obj )
     {
         miracast_ctrler_obj->Controller_Thread(nullptr);
