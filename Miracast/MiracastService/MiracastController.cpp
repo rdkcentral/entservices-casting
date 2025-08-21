@@ -84,7 +84,7 @@ MiracastController::~MiracastController()
         delete m_groupInfo;
         m_groupInfo = nullptr;
     }
-     destroy_ControllerFramework();
+     //destroy_ControllerFramework();
     MIRACASTLOG_INFO("Exiting...");
 }
 
