@@ -243,14 +243,6 @@ protected:
         dispatcher->Activate(&service);
     }
 
-
-    void TearDown() override {
-        // Sleep for 3 seconds
-	TEST_LOG("Before sleep in teardown");
-        std::this_thread::sleep_for(std::chrono::seconds(3));
-	TEST_LOG("After sleep in teardown");
-    }
-
     virtual ~MiracastServiceEventTest() override
     {
         dispatcher->Deactivate();
