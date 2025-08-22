@@ -858,6 +858,7 @@ namespace WPEFramework
                 eventDetails["source_dev_name"] = client_name;
                 eventDetails["reason_code"] = static_cast<int>(reason_code);
                 dispatchEvent(MIRACASTSERVICE_EVENT_CLIENT_CONNECTION_ERROR, eventDetails);
+                MIRACASTLOG_TRACE("dispatched ...");
             }
             MIRACASTLOG_TRACE("Exiting ...");
         }
