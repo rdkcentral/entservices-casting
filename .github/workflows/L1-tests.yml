@@ -192,8 +192,6 @@ jobs:
           -DBINDING=127.0.0.1
           -DPORT=55555
           -DEXCEPTIONS_ENABLE=ON
-          -DENABLED_TRACING_LEVEL=4
-          -DCMAKE_BUILD_TYPE=RelWithDebInfo
           &&
           cmake --build build/Thunder -j8
           &&
@@ -673,11 +671,3 @@ jobs:
             rdkL1TestResultsWithValgrind.json
           if-no-files-found: warn
           
-       # The below steps are for uploading full build results for debugging purposes.
-      - name: Upload build
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-         name: Build results
-         path: |
-          ./
