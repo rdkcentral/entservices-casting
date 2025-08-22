@@ -248,14 +248,16 @@ protected:
 
     virtual ~MiracastServiceEventTest() override
     {
-        dispatcher->Deactivate();
-        dispatcher->Release();
-
-        PluginHost::IFactories::Assign(nullptr);
+       
 		TEST_LOG("predebug Before destructor sleep ");
 		//Wait for all the previous destructor process to complete
 		std::this_thread::sleep_for(std::chrono::milliseconds(3000));
 		TEST_LOG("predebug After destructor sleep ");
+
+		 dispatcher->Deactivate();
+         dispatcher->Release();
+
+         PluginHost::IFactories::Assign(nullptr);
 		
     }
 };
