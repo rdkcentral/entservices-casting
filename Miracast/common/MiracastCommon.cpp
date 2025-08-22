@@ -49,22 +49,20 @@ MiracastThread::MiracastThread(std::string thread_name, size_t stack_size, size_
 MiracastThread::~MiracastThread()
 {
     MIRACASTLOG_TRACE("Entering...");
-	MIRACASTLOG_TRACE("before- pthread join...");
+
     if ( 0 != m_pthread_id ){
         // Join thread
         pthread_join(m_pthread_id, nullptr);
         m_pthread_id = 0;
         pthread_attr_destroy(&m_pthread_attr);
     }
-	MIRACASTLOG_TRACE("after- pthread join...");
-	MIRACASTLOG_TRACE("before- m_g_queue...");
+
     if ( nullptr != m_g_queue ){
         // Close message queue
         g_async_queue_unref(m_g_queue);
         sem_destroy(&m_empty_msgq_sem_obj);
         m_g_queue = nullptr;
     }
-	MIRACASTLOG_TRACE("after- m_g_queue...");
     MIRACASTLOG_TRACE("Exiting...");
 }
 
