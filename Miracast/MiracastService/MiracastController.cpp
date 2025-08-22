@@ -84,6 +84,7 @@ MiracastController::~MiracastController()
         delete m_groupInfo;
         m_groupInfo = nullptr;
     }
+    
     MIRACASTLOG_TRACE("Exiting...");
 }
 
@@ -515,7 +516,7 @@ void MiracastController::event_handler(P2P_EVENTS eventId, void *data, size_t le
     if (nullptr != m_controller_thread){
         controller_msgq_data.msg_type = P2P_MSG;
         controller_msgq_data.state = convertP2PtoSessionActions(eventId);
-        strncpy(controller_msgq_data.msg_buffer, event_buffer.c_str(),sizeof(controller_msgq_data.msg_buffer));
+        strncpy(controller_msgq_data.msg_buffer, event_buffer.c_str(), sizeof(controller_msgq_data.msg_buffer));
         controller_msgq_data.msg_buffer[sizeof(controller_msgq_data.msg_buffer) - 1] = '\0';
 
         MIRACASTLOG_INFO("event_handler to Controller Action[%#08X] buffer:%s  ", controller_msgq_data.state, event_buffer.c_str());
