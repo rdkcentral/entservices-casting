@@ -106,7 +106,7 @@ void MiracastThread::send_message(void *message, size_t msg_size)
         MIRACASTLOG_TRACE("");
         memcpy(buffer, message, msg_size);
 		MIRACASTLOG_TRACE("copied");
-        g_async_queue_push(m_g_queue, wrapper);
+        g_async_queue_push(m_g_queue, buffer);
 		MIRACASTLOG_TRACE("pushed");
         sem_post(&m_empty_msgq_sem_obj);
 		MIRACASTLOG_TRACE("sempost");
