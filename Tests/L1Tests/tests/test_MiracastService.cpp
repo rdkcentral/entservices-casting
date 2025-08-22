@@ -708,7 +708,7 @@ TEST_F(MiracastServiceEventTest, onClientConnectionRequestRejected)
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Reject}"), response));
 
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
-
+    sleep(3);
 	plugin->Deinitialize(nullptr);
 
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
@@ -805,7 +805,7 @@ TEST_F(MiracastServiceEventTest, P2P_CONNECT_FAIL_onClientConnectionError)
 
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
-
+    sleep(3);
 	plugin->Deinitialize(nullptr);
 
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
@@ -919,7 +919,7 @@ TEST_F(MiracastServiceEventTest, P2P_GO_NEGOTIATION_FAIL_onClientConnectionError
 
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
-
+    sleep(3);
 	plugin->Deinitialize(nullptr);
 
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
@@ -1040,7 +1040,7 @@ TEST_F(MiracastServiceEventTest, P2P_GO_FORMATION_FAIL_onClientConnectionError)
 
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
-
+     sleep(3);
 	plugin->Deinitialize(nullptr);
 
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
