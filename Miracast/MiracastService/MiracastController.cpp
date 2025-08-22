@@ -502,11 +502,8 @@ void MiracastController::event_handler(P2P_EVENTS eventId, void *data, size_t le
     std::string event_buffer;
     MIRACASTLOG_TRACE("Entering...");
 
-    if (data != nullptr && len > 0) {
-        // Safe copy of data into event_buffer
-        event_buffer.assign(static_cast<char*>(data), len);
-        free(data);
-    }
+    event_buffer = (char *)data;
+    free(data);
 
     if ( false == m_start_discovering_enabled )
     {
@@ -518,7 +515,7 @@ void MiracastController::event_handler(P2P_EVENTS eventId, void *data, size_t le
     if (nullptr != m_controller_thread){
         controller_msgq_data.msg_type = P2P_MSG;
         controller_msgq_data.state = convertP2PtoSessionActions(eventId);
-        strncpy(controller_msgq_data.msg_buffer, event_buffer.c_str(),sizeof(controller_msgq_data.msg_buffer)-1);
+        strncpy(controller_msgq_data.msg_buffer, event_buffer.c_str(),sizeof(controller_msgq_data.msg_buffer));
         controller_msgq_data.msg_buffer[sizeof(controller_msgq_data.msg_buffer) - 1] = '\0';
 
         MIRACASTLOG_INFO("event_handler to Controller Action[%#08X] buffer:%s  ", controller_msgq_data.state, event_buffer.c_str());
