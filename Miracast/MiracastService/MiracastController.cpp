@@ -1131,6 +1131,7 @@ void MiracastController::Controller_Thread(void *args)
                                 p2p_group_instance_alive = false;
                             }
                             m_connect_req_notified = false;
+                            MIRACASTLOG_ERROR("####exit from failure condition");
                         }
 
                         if ( true == session_restart_required )
@@ -1149,6 +1150,7 @@ void MiracastController::Controller_Thread(void *args)
                             session_restart_required = false;
                         }
                     }
+                     MIRACASTLOG_ERROR("####exit from CONTROLLER_GO_GROUP_FORMATION_FAILURE");   
                     break;
                     case CONTROLLER_GO_GROUP_REMOVED:
                     {
@@ -1344,7 +1346,8 @@ void MiracastController::Controller_Thread(void *args)
                 MIRACASTLOG_ERROR("!!! Invalid MsgType Received[%#08X]Data[%s]  !!!", controller_msgq_data.msg_type, event_buffer.c_str());
             }
             break;
-        }        
+        }  
+         MIRACASTLOG_ERROR("!!! exit from outer switch");
     }
     MIRACASTLOG_TRACE("Exiting...");
 }
