@@ -96,16 +96,15 @@ namespace
         }
     }
 
-    static void createFile(const char* fileName, const char* fileContent)
-    {
-        removeFile(fileName);
-
-        std::ofstream fileContentStream(fileName);
-        fileContentStream << fileContent;
-        fileContentStream << "\n";
-        fileContentStream.close();
-        TEST_LOG("File %s successfully created", fileName);
-    }
+    // static void createFile(const char* fileName, const char* fileContent)
+    // {
+    //     removeFile(fileName);
+    //     std::ofstream fileContentStream(fileName);
+    //     fileContentStream << fileContent;
+    //     fileContentStream << "\n";
+    //     fileContentStream.close();
+    //     TEST_LOG("File %s successfully created", fileName);
+    // }
 }
 
 class XCastTest : public ::testing::Test {
@@ -143,9 +142,9 @@ protected:
         printf("Pass created RfcApiImplMock: %p ", p_rfcApiImplMock);
         RfcApi::setImpl(p_rfcApiImplMock);
 
-        p_gdialserviceImplMock  = new NiceMock <gdialserviceImplMock>;
-        printf("Pass created gdialserviceImplMock: %p ", p_gdialserviceImplMock);
-        gdialService::setImpl(p_gdialserviceImplMock);
+    p_gdialserviceImplMock  = new NiceMock<gdialserviceImplMock>;
+    printf("Pass created gdialserviceImplMock: %p ", p_gdialserviceImplMock);
+    gdialService::setImpl(static_cast<gdialserviceImpl*>(p_gdialserviceImplMock));
         
         ON_CALL(service, COMLink())
         .WillByDefault(::testing::Invoke(
@@ -328,10 +327,10 @@ TEST_F(XCastTest, setApplicationState)
 
 TEST_F(XCastTest, getProtocolVersion)
 {
-    EXPECT_CALL(*p_gdialserviceImplMock, getProtocolVersion(void))
+    EXPECT_CALL(*p_gdialserviceImplMock, getProtocolVersion())
             .WillOnce(::testing::Invoke(
-                [](void) {
-                    return (std::string("test"));
+                []() {
+                    return std::string("test");
                 }));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getProtocolVersion"), _T("{}"), response));
     EXPECT_EQ(response, string("{\"version\":\"test\",\"success\":true}"));
@@ -398,7 +397,7 @@ TEST_F(XCastEventTest, onApplicationHideRequest)
             }));
 
     EVENT_SUBSCRIBE(0, _T("onApplicationHideRequest"), _T("client.events"), message);
-    plugin->onXcastApplicationHideRequest("Netflix", "1234");
+    plugin->onApplicationHideRequest("Netflix", "1234");
     EVENT_UNSUBSCRIBE(0, _T("onApplicationHideRequest"), _T("client.events"), message);
 }
 TEST_F(XCastEventTest, onApplicationStateRequest)
@@ -413,7 +412,7 @@ TEST_F(XCastEventTest, onApplicationStateRequest)
                 return Core::ERROR_NONE;
             }));
     EVENT_SUBSCRIBE(0, _T("onApplicationStateRequest"), _T("client.events"), message);
-    plugin->onXcastApplicationStateRequest("Netflix", "1234");
+    plugin->onApplicationStateRequest("Netflix", "1234");
     EVENT_UNSUBSCRIBE(0, _T("onApplicationStateRequest"), _T("client.events"), message);
 }
 TEST_F(XCastEventTest, onApplicationLaunchRequest)
@@ -429,7 +428,7 @@ TEST_F(XCastEventTest, onApplicationLaunchRequest)
             }));
 
     EVENT_SUBSCRIBE(0, _T("onApplicationLaunchRequest"), _T("client.events"), message);
-    plugin->onXcastApplicationLaunchRequest("Netflix", "1234");
+    plugin->onApplicationLaunchRequest("Netflix", "1234");
     EVENT_UNSUBSCRIBE(0, _T("onApplicationLaunchRequest"), _T("client.events"), message);
 }
 TEST_F(XCastEventTest, onApplicationResumeRequest)
@@ -445,7 +444,7 @@ TEST_F(XCastEventTest, onApplicationResumeRequest)
             }));
 
     EVENT_SUBSCRIBE(0, _T("onApplicationResumeRequest"), _T("client.events"), message);
-    plugin->onXcastApplicationResumeRequest("Netflix", "1234");
+    plugin->onApplicationResumeRequest("Netflix", "1234");
     EVENT_UNSUBSCRIBE(0, _T("onApplicationResumeRequest"), _T("client.events"), message);
 }
 TEST_F(XCastEventTest, onApplicationStopRequest)
@@ -461,6 +460,6 @@ TEST_F(XCastEventTest, onApplicationStopRequest)
             }));
 
     EVENT_SUBSCRIBE(0, _T("onApplicationStopRequest"), _T("client.events"), message);
-    plugin->onXcastApplicationStopRequest("Netflix", "1234");
+    plugin->onApplicationStopRequest("Netflix", "1234");
     EVENT_UNSUBSCRIBE(0, _T("onApplicationStopRequest"), _T("client.events"), message);
 }
