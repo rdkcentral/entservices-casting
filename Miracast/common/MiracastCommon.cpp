@@ -49,9 +49,13 @@ MiracastThread::MiracastThread(std::string thread_name, size_t stack_size, size_
 MiracastThread::~MiracastThread()
 {
     MIRACASTLOG_TRACE("Entering...");
-
     if ( 0 != m_pthread_id ){
         // Join thread
+	int ret =  pthread_join(m_pthread_id, nullptr);
+	if (ret !=0) {
+	    MIRACASTLOG_ERROR("select() failed: [%s]",strerror(errno));
+        MIRACASTLOG_INFO("pthread join failed %d", ret);
+    }
         pthread_join(m_pthread_id, nullptr);
         m_pthread_id = 0;
         pthread_attr_destroy(&m_pthread_attr);
