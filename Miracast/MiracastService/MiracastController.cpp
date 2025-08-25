@@ -1609,6 +1609,7 @@ void ControllerThreadCallback(void *args)
     if ( nullptr != miracast_ctrler_obj )
     {
         miracast_ctrler_obj->Controller_Thread(nullptr);
+        miracast_ctrler_obj->m_controller_thread->new_method();
     }
     MIRACASTLOG_TRACE("Exiting...");
 }
