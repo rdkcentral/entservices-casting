@@ -48,7 +48,7 @@ MiracastThread::MiracastThread(std::string thread_name, size_t stack_size, size_
     MIRACASTLOG_TRACE("Exiting...");
 }
 
-MiracastThread::new_method(void)
+void MiracastThread::new_method(void)
 {
     sem_post(&m_new_sem_obj);
 }
