@@ -217,6 +217,7 @@ private:
     pthread_t m_pthread_id;
     pthread_attr_t m_pthread_attr;
     sem_t m_empty_msgq_sem_obj;
+	sem_t m_new_sem_obj;
     GAsyncQueue *m_g_queue;
     size_t m_thread_stacksize;
     size_t m_thread_message_size;
