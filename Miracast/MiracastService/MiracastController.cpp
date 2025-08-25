@@ -1601,6 +1601,10 @@ void MiracastController::notify_ConnectionRequest(std::string device_name,std::s
     MIRACASTLOG_TRACE("Exiting...");
 }
 
+MiracastThread* MiracastController::getControllerThread() {
+    return m_controller_thread;
+}
+
 void ControllerThreadCallback(void *args)
 {
     MiracastController *miracast_ctrler_obj = (MiracastController *)args;
@@ -1609,7 +1613,10 @@ void ControllerThreadCallback(void *args)
     if ( nullptr != miracast_ctrler_obj )
     {
         miracast_ctrler_obj->Controller_Thread(nullptr);
-        miracast_ctrler_obj->m_controller_thread->new_method();
+        MiracastThread* thread = miracast_ctrler_obj->getControllerThread();
+        if (thread != nullptr) {
+            thread->new_method();
+        }
     }
     MIRACASTLOG_TRACE("Exiting...");
 }
