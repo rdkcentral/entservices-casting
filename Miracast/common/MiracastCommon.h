@@ -211,6 +211,7 @@ public:
     MiracastError start(void);
     void send_message(void *message, size_t msg_size);
     int8_t receive_message(void *message, size_t msg_size, int sem_wait_timedout);
+	void new_method();
 
 private:
     std::string m_thread_name;
