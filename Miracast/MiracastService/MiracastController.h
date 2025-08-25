@@ -80,6 +80,8 @@ public:
     bool get_connection_status();
     DeviceInfo *get_device_details(std::string mac);
 
+    MiracastThread* getControllerThread();
+
     void send_thundermsg_to_controller_thread(CONTROLLER_MSGQ_STRUCT controller_msgq_data);
 
     void Controller_Thread(void *args);
