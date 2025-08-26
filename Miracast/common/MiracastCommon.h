@@ -34,6 +34,8 @@
 #include <mutex>
 #include <condition_variable>
 #include <MiracastLogger.h>
+#include <thread>
+#include <chrono>
 
 using namespace std;
 using namespace MIRACAST;
