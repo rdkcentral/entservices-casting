@@ -319,7 +319,9 @@ namespace WPEFramework
 
         void MiracastServiceImplementation::dispatchEvent(Event event, const JsonObject &params)
         {
+            MIRACASTLOG_TRACE("Entering dispatchEvent...");
             Core::IWorkerPool::Instance().Submit(Job::Create(this, event, params));
+            MIRACASTLOG_TRACE("Exiting dispatchEvent...");
         }
 
         void MiracastServiceImplementation::Dispatch(Event event,const JsonObject& params)
@@ -869,6 +871,7 @@ namespace WPEFramework
 
             if ( !is_connect_req_reported )
             {
+                MIRACASTLOG_TRACE("Entering onMiracastServiceLaunchRequest after INFO inside if log...");
                 changeServiceState(MIRACAST_SERVICE_STATE_DIRECT_LAUCH_REQUESTED);
                 m_src_dev_ip = std::move(src_dev_ip);
                 m_src_dev_mac = std::move(src_dev_mac);
@@ -876,6 +879,7 @@ namespace WPEFramework
                 m_sink_dev_ip = std::move(sink_dev_ip);
                 MIRACASTLOG_INFO("Direct Launch request has received. So need to notify connect Request");
                 onMiracastServiceClientConnectionRequest( m_src_dev_mac, m_src_dev_name );
+                MIRACASTLOG_TRACE("Entering onMiracastServiceLaunchRequest after if log...");           
             }
             else if ( MIRACAST_SERVICE_STATE_CONNECTION_ACCEPTED != current_state )
             {
@@ -888,6 +892,7 @@ namespace WPEFramework
 
                 if (0 == access("/opt/miracast_autoconnect", F_OK))
                 {
+                    MIRACASTLOG_TRACE("Entering onMiracastServiceLaunchRequest start auto tupleParam ...");
                     char commandBuffer[768] = {0};
                     snprintf( commandBuffer,
                             sizeof(commandBuffer),
@@ -897,18 +902,24 @@ namespace WPEFramework
                             src_dev_name.c_str(),
                             sink_dev_ip.c_str());
                     MIRACASTLOG_INFO("System Command [%s]",commandBuffer);
+                    MIRACASTLOG_TRACE("Entering onMiracastServiceLaunchRequest middle auto tupleParam ...");
                     MiracastCommon::execute_SystemCommand(commandBuffer);
+                    MIRACASTLOG_TRACE("Entering onMiracastServiceLaunchRequest end auto tupleParam ...");
                 }
                 else
                 {
+                    MIRACASTLOG_TRACE("Entering onMiracastServiceLaunchRequest before dispatchEvent...");
                     JsonObject eventDetails;
                     eventDetails["source_dev_mac"] = src_dev_mac;
                     eventDetails["source_dev_name"] = src_dev_name;
                     eventDetails["source_dev_ip"] = src_dev_ip;
                     eventDetails["sink_dev_ip"] = sink_dev_ip;
                     dispatchEvent(MIRACASTSERVICE_EVENT_PLAYER_LAUNCH_REQUEST, eventDetails);
+                    MIRACASTLOG_TRACE("exiting onMiracastServiceLaunchRequest after dispatchEvent...");
                 }
+                MIRACASTLOG_TRACE(" onMiracastServiceLaunchRequest after dispatchEvent else...");
                 changeServiceState(MIRACAST_SERVICE_STATE_PLAYER_LAUNCHED);
+                MIRACASTLOG_TRACE(" onMiracastServiceLaunchRequest after dispatchEvent else after changeservice...");
             }
             MIRACASTLOG_INFO("Exiting ...");
         }
