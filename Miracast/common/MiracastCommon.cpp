@@ -96,7 +96,7 @@ MiracastError MiracastThread::start(void)
     MIRACASTLOG_TRACE("Entering...");
     if ( 0 != pthread_create(   &m_pthread_id,
                                 &m_pthread_attr,
-                                reinterpret_cast<void *(*)(void *)>(m_thread_callback),
+                                &MiracastThread::commonThreadEntry,
                                 this))
     {
         ret_code = MIRACAST_FAIL;
