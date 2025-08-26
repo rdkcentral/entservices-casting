@@ -201,29 +201,32 @@ typedef struct controller_msgq_st
 #define CONTROLLER_THREAD_STACK (256 * 1024)
 #define CONTROLLER_MSGQ_COUNT (5)
 #define CONTROLLER_MSGQ_SIZE (sizeof(CONTROLLER_MSGQ_STRUCT))
+typedef void (*UserThreadCallback)(void*);
 
 class MiracastThread
 {
 public:
     MiracastThread();
-    MiracastThread(std::string thread_name, size_t stack_size, size_t msg_size, size_t queue_depth, void (*callback)(void *), void *user_data);
+    //MiracastThread(std::string thread_name, size_t stack_size, size_t msg_size, size_t queue_depth, void (*callback)(void *), void *user_data);
+	MiracastThread(std::string thread_name, size_t stack_size, size_t msg_size, size_t queue_depth, UserThreadCallback callback, void *user_data);
     ~MiracastThread();
     MiracastError start(void);
     void send_message(void *message, size_t msg_size);
     int8_t receive_message(void *message, size_t msg_size, int sem_wait_timedout);
-	void new_method();
 
 private:
     std::string m_thread_name;
     pthread_t m_pthread_id;
     pthread_attr_t m_pthread_attr;
     sem_t m_empty_msgq_sem_obj;
-	sem_t m_new_sem_obj;
+	sem_t m_thread_stop_sync;
     GAsyncQueue *m_g_queue;
     size_t m_thread_stacksize;
     size_t m_thread_message_size;
     size_t m_thread_message_count;
-    void (*m_thread_callback)(void *);
+    //void (*m_thread_callback)(void *);
+	UserThreadCallback m_thread_callback;
+    static void* commonThreadEntry(void* arg);
     void *m_thread_user_data;
 };
 
