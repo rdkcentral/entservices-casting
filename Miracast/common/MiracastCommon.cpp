@@ -33,7 +33,7 @@ MiracastThread::MiracastThread(std::string thread_name, size_t stack_size, size_
     m_g_queue = nullptr;
     m_pthread_id = 0;
 	
-	sem_init(&m_new_sem_obj, 0, 0);
+	sem_init(&m_thread_stop_sync, 0, 1);
 
     if ((0 != queue_depth) && (0 != msg_size)){
         // Create message queue
@@ -48,23 +48,34 @@ MiracastThread::MiracastThread(std::string thread_name, size_t stack_size, size_
     MIRACASTLOG_TRACE("Exiting...");
 }
 
-void MiracastThread::new_method(void)
+void* MiracastThread::commonThreadEntry(void* arg)
 {
-    sem_post(&m_new_sem_obj);
+    MIRACASTLOG_TRACE("Entering...");
+    MiracastThread* instance = static_cast<MiracastThread*>(arg);
+    if (instance && instance->m_thread_callback)
+    {
+        MIRACASTLOG_INFO("Thread [%s] started", instance->m_thread_name.c_str());
+        sem_wait(&instance->m_thread_stop_sync);
+        instance->m_thread_callback();  // Call the user-defined function
+        sem_post(&instance->m_thread_stop_sync);
+    }
+    MIRACASTLOG_TRACE("Exiting...");
+    return nullptr;
 }
 
 MiracastThread::~MiracastThread()
 {
     MIRACASTLOG_TRACE("Entering...");
     if ( 0 != m_pthread_id ){
-		sem_wait(&m_new_sem_obj);	
+		sem_wait(&m_thread_stop_sync);	
         // Join thread
-		int ret =  pthread_join(m_pthread_id, nullptr);
-		if (ret !=0) {
-	    MIRACASTLOG_ERROR("select() failed: [%s]",strerror(errno));
-        MIRACASTLOG_INFO("pthread join failed %d", ret);
-   		}
         pthread_join(m_pthread_id, nullptr);
+		int ret = pthread_join(m_pthread_id, nullptr);
+        if (0 != ret)
+        {
+            MIRACASTLOG_ERROR("pthread_join() failed with [%d]",ret);
+            perror("pthread_join() failed");
+        }
         m_pthread_id = 0;
         pthread_attr_destroy(&m_pthread_attr);
     }
@@ -75,6 +86,7 @@ MiracastThread::~MiracastThread()
         sem_destroy(&m_empty_msgq_sem_obj);
         m_g_queue = nullptr;
     }
+	sem_destroy(&m_thread_stop_sync);
     MIRACASTLOG_TRACE("Exiting...");
 }
 
