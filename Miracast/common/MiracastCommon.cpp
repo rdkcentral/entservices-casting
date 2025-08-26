@@ -56,7 +56,7 @@ void* MiracastThread::commonThreadEntry(void* arg)
     {
         MIRACASTLOG_INFO("Thread [%s] started", instance->m_thread_name.c_str());
         sem_wait(&instance->m_thread_stop_sync);
-        instance->m_thread_callback(instance);  // Call the user-defined function
+        instance->m_thread_callback(instance->m_thread_user_data);  // Call the user-defined function
         sem_post(&instance->m_thread_stop_sync);
     }
     MIRACASTLOG_TRACE("Exiting...");
@@ -97,7 +97,7 @@ MiracastError MiracastThread::start(void)
     if ( 0 != pthread_create(   &m_pthread_id,
                                 &m_pthread_attr,
                                 reinterpret_cast<void *(*)(void *)>(m_thread_callback),
-                                m_thread_user_data))
+                                this))
     {
         ret_code = MIRACAST_FAIL;
     }
