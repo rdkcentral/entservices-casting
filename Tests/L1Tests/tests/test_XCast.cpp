@@ -84,6 +84,7 @@ namespace
         fflush(stderr);
     }
 
+    #if 0
     static void removeFile(const char* fileName)
     {
         if (std::remove(fileName) != 0)
@@ -96,15 +97,16 @@ namespace
         }
     }
 
-    // static void createFile(const char* fileName, const char* fileContent)
-    // {
-    //     removeFile(fileName);
-    //     std::ofstream fileContentStream(fileName);
-    //     fileContentStream << fileContent;
-    //     fileContentStream << "\n";
-    //     fileContentStream.close();
-    //     TEST_LOG("File %s successfully created", fileName);
-    // }
+    static void createFile(const char* fileName, const char* fileContent)
+    {
+        removeFile(fileName);
+        std::ofstream fileContentStream(fileName);
+        fileContentStream << fileContent;
+        fileContentStream << "\n";
+        fileContentStream.close();
+        TEST_LOG("File %s successfully created", fileName);
+    }
+    #endif
 }
 
 class XCastTest : public ::testing::Test {
@@ -183,8 +185,9 @@ protected:
                     }
                     else {
                         EXPECT_EQ(string(pcParameterName), string("RFC mocks required for this parameter"));
+                        wdmpStatus = WDMP_ERR_INVALID_PARAMETER_NAME;
                     }
-                    return WDMP_SUCCESS;
+                    return wdmpStatus;
                 }));
 
         PluginHost::IFactories::Assign(&factoriesImplementation);
