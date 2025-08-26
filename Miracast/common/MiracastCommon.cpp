@@ -104,6 +104,7 @@ MiracastError MiracastThread::start(void)
 	else
 	{
 		MIRACASTLOG_TRACE("Entering else in start...");	
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		sem_post(&m_thread_stop_sync);
 		MIRACASTLOG_TRACE("Exiting.else in start..");
 	}
