@@ -67,15 +67,20 @@ MiracastThread::~MiracastThread()
 {
     MIRACASTLOG_TRACE("Entering...");
     if ( 0 != m_pthread_id ){
+		MIRACASTLOG_TRACE("Entering before sem_wait...");
 		sem_wait(&m_thread_stop_sync);	
         // Join thread
+		MIRACASTLOG_TRACE("Entering before pthread_join...");
         pthread_join(m_pthread_id, nullptr);
+		MIRACASTLOG_TRACE(" after pthread_join...");
 		int ret = pthread_join(m_pthread_id, nullptr);
         if (0 != ret)
-        {
+        {	
+			MIRACASTLOG_TRACE(" after pthread_join.inside if..");
             MIRACASTLOG_ERROR("pthread_join() failed with [%d]",ret);
             perror("pthread_join() failed");
         }
+		MIRACASTLOG_TRACE(" after pthread_join.outside if..");
         m_pthread_id = 0;
         pthread_attr_destroy(&m_pthread_attr);
     }
@@ -104,8 +109,8 @@ MiracastError MiracastThread::start(void)
 	else
 	{
 		MIRACASTLOG_TRACE("Entering else in start...");	
-		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		sem_post(&m_thread_stop_sync);
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		MIRACASTLOG_TRACE("Exiting.else in start..");
 	}
 	
