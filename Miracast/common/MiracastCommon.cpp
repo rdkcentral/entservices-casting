@@ -33,7 +33,7 @@ MiracastThread::MiracastThread(std::string thread_name, size_t stack_size, size_
     m_g_queue = nullptr;
     m_pthread_id = 0;
 	
-	sem_init(&m_thread_stop_sync, 0, 1);
+	sem_init(&m_thread_stop_sync, 0, 0);
 
     if ((0 != queue_depth) && (0 != msg_size)){
         // Create message queue
@@ -101,6 +101,13 @@ MiracastError MiracastThread::start(void)
     {
         ret_code = MIRACAST_FAIL;
     }
+	else
+	{
+		MIRACASTLOG_TRACE("Entering else in start...");	
+		sem_post(&m_thread_stop_sync);
+		MIRACASTLOG_TRACE("Exiting.else in start..");
+	}
+	
     MIRACASTLOG_TRACE("Exiting...");
     return ret_code;
 }
