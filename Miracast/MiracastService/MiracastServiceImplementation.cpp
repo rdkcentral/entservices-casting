@@ -320,13 +320,16 @@ namespace WPEFramework
 
         void MiracastServiceImplementation::dispatchEvent(Event event, const JsonObject &params)
         {
+            MIRACASTLOG_TRACE("Entering ...");
             Core::IWorkerPool::Instance().Submit(Job::Create(this, event, params));
+            MIRACASTLOG_TRACE("Exiting ...");
         }
 
         void MiracastServiceImplementation::Dispatch(Event event,const JsonObject& params)
         {
+            MIRACASTLOG_TRACE("Entering ...");
             _adminLock.Lock();
-
+            MIRACASTLOG_TRACE("get lock ...");
             std::list<Exchange::IMiracastService::INotification *>::const_iterator index(_miracastServiceNotification.begin());
 
             switch (event)
@@ -426,6 +429,7 @@ namespace WPEFramework
                 break;
             }
             _adminLock.Unlock();
+            MIRACASTLOG_TRACE("Exiting ...");
         }
 
         /*  COMRPC Methods Start */
