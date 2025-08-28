@@ -21,6 +21,7 @@
 
 #include "XCast.h"
 
+#include "DispatcherMock.h"
 #include "FactoriesImplementation.h"
 #include "ServiceMock.h"
 #include "ThunderPortability.h"
@@ -175,8 +176,9 @@ protected:
                     {
                         Core::ProxyType<Core::JSONRPC::Message> mockResponse = Core::ProxyType<Core::JSONRPC::Message>::Create();
                         Core::JSONRPC::Message resp;
+                        std::string methodName = message.Designator.Value();
 
-                        TEST_LOG("message.Designator is [%s]", message.Designator.c_str());
+                        TEST_LOG("message.Designator is [%s]", methodName.c_str());
                         mockResponse->Result = resp.Result;
                         return mockResponse;
                     }));
