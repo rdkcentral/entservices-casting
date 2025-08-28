@@ -172,7 +172,22 @@ LOGINFO("MiracastService::Deinitialize in");
             if (nullptr != mCurrentService)
             {
                 /* Make sure the Activated and Deactivated are no longer called before we start cleaning up.. */
-                mCurrentService->Unregister(&mMiracastServiceNotification);
+                   mCurrentService->Unregister(&mMiracastServiceNotification);
+                   mConfigure = mMiracastServiceImpl->QueryInterface<Exchange::IConfiguration>();
+                    if (mConfigure)
+                    {
+                        uint32_t result = mConfigure->Configure(NULL);
+                        if(result != Core::ERROR_NONE)
+                        {
+                            SYSLOG(Logging::Startup, (_T("MiracastService::DeInitialize: Failed to Configure %s"), PLUGIN_MIRACAST_SERVICE_IMPLEMENTATION_NAME));
+                            retStatus = _T("MiracastService plugin could not be deinitialised");
+                        }
+                        else
+                        {
+                           LOGINFO("Successfully deinitialized");
+                        }
+                        mConfigure->Release();
+                    } 
                 mCurrentService->Release();
                 mCurrentService = nullptr;
             }
