@@ -119,7 +119,7 @@ protected:
 
     WrapsImplMock   *p_wrapsImplMock = nullptr;
     RfcApiImplMock  *p_rfcApiImplMock = nullptr;
-    gdialserviceImplMock *p_gdialserviceImplMock = nullptr;
+    gdialServiceImplMock *p_gdialserviceImplMock = nullptr;
 
     Core::ProxyType<Plugin::XCastImplementation> xcastImpl;
 
@@ -144,8 +144,8 @@ protected:
         printf("Pass created RfcApiImplMock: %p ", p_rfcApiImplMock);
         RfcApi::setImpl(p_rfcApiImplMock);
 
-        p_gdialserviceImplMock  = new NiceMock<gdialserviceImplMock>;
-        printf("Pass created gdialserviceImplMock: %p ", p_gdialserviceImplMock);
+        p_gdialserviceImplMock  = new NiceMock<gdialServiceImplMock>;
+        printf("Pass created gdialServiceImplMock: %p ", p_gdialserviceImplMock);
         gdialService::setImpl(p_gdialserviceImplMock);
         
         ON_CALL(service, COMLink())
