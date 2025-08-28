@@ -130,7 +130,7 @@ namespace WPEFramework
         void MiracastService::Deinitialize(PluginHost::IShell* service)
         {
             SYSLOG(Logging::Startup, (_T("MiracastService::Deinitialize: PID=%u"), getpid()));
-
+LOGINFO("MiracastService::Deinitialize in");
             ASSERT(mCurrentService == service);
             ASSERT(0 == mConnectionId);
 
@@ -177,6 +177,7 @@ namespace WPEFramework
                 mCurrentService = nullptr;
             }
             mConnectionId = 0;
+            LOGINFO("MiracastService::Deinitialize out");
             SYSLOG(Logging::Shutdown, (string(_T("MiracastService de-initialised"))));
         }
 
