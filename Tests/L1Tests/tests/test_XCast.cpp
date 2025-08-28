@@ -120,6 +120,7 @@ protected:
     WrapsImplMock   *p_wrapsImplMock = nullptr;
     RfcApiImplMock  *p_rfcApiImplMock = nullptr;
     gdialServiceImplMock *p_gdialserviceImplMock = nullptr;
+    DispatcherMock  *dispatcherImplMock = nullptr;
 
     Core::ProxyType<Plugin::XCastImplementation> xcastImpl;
 
@@ -147,6 +148,9 @@ protected:
         p_gdialserviceImplMock  = new NiceMock<gdialServiceImplMock>;
         printf("Pass created gdialServiceImplMock: %p ", p_gdialserviceImplMock);
         gdialService::setImpl(p_gdialserviceImplMock);
+
+        dispatcherImplMock = new DispatcherMock();
+        printf("Created DispatcherMock: %p ", dispatcherImplMock);
         
         ON_CALL(service, COMLink())
         .WillByDefault(::testing::Invoke(
@@ -154,6 +158,30 @@ protected:
                     TEST_LOG("Pass created comLinkMock: %p ", &comLinkMock);
                     return &comLinkMock;
                 }));
+
+        EXPECT_CALL(service, QueryInterfaceByCallsign(::testing::_, ::testing::_))
+        .Times(::testing::AnyNumber())
+        .WillRepeatedly(::testing::Invoke(
+            [&](const uint32_t, const string& name) -> void* {
+                return (reinterpret_cast<void*>(dispatcherImplMock));
+            }));
+
+        EXPECT_CALL(*dispatcherImplMock, Invoke(::testing::_, ::testing::_, ::testing::_))
+            .Times(::testing::AnyNumber())
+            .WillRepeatedly(::testing::Invoke(
+                [&](const std::string&,
+                    uint32_t,
+                    const Core::JSONRPC::Message& message) ->Core::ProxyType<Core::JSONRPC::Message> 
+                    {
+                        Core::ProxyType<Core::JSONRPC::Message> mockResponse = Core::ProxyType<Core::JSONRPC::Message>::Create();
+                        Core::JSONRPC::Message resp;
+
+                        TEST_LOG("message.Designator is [%s]", message.Designator.c_str());
+                        mockResponse->Result = resp.Result;
+                        return mockResponse;
+                    }));
+        EXPECT_CALL(*dispatcherImplMock, Release())
+        .Times(::testing::AnyNumber());
 
         #ifdef USE_THUNDER_R4
             ON_CALL(comLinkMock, Instantiate(::testing::_, ::testing::_, ::testing::_))
