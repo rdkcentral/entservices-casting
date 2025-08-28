@@ -180,7 +180,7 @@ LOGINFO("MiracastService::Deinitialize in");
                         if(result != Core::ERROR_NONE)
                         {
                             SYSLOG(Logging::Startup, (_T("MiracastService::DeInitialize: Failed to Configure %s"), PLUGIN_MIRACAST_SERVICE_IMPLEMENTATION_NAME));
-                            retStatus = _T("MiracastService plugin could not be deinitialised");
+                           // retStatus = _T("MiracastService plugin could not be deinitialised");
                         }
                         else
                         {
