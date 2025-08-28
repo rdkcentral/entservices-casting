@@ -121,7 +121,6 @@ protected:
     WrapsImplMock   *p_wrapsImplMock = nullptr;
     RfcApiImplMock  *p_rfcApiImplMock = nullptr;
     gdialServiceImplMock *p_gdialserviceImplMock = nullptr;
-    DispatcherMock  *dispatcherImplMock = nullptr;
 
     Core::ProxyType<Plugin::XCastImplementation> xcastImpl;
 
@@ -149,9 +148,6 @@ protected:
         p_gdialserviceImplMock  = new NiceMock<gdialServiceImplMock>;
         printf("Pass created gdialServiceImplMock: %p ", p_gdialserviceImplMock);
         gdialService::setImpl(p_gdialserviceImplMock);
-
-        dispatcherImplMock = new DispatcherMock();
-        printf("Created DispatcherMock: %p ", dispatcherImplMock);
         
         ON_CALL(service, COMLink())
         .WillByDefault(::testing::Invoke(
@@ -159,31 +155,6 @@ protected:
                     TEST_LOG("Pass created comLinkMock: %p ", &comLinkMock);
                     return &comLinkMock;
                 }));
-
-        EXPECT_CALL(service, QueryInterfaceByCallsign(::testing::_, ::testing::_))
-        .Times(::testing::AnyNumber())
-        .WillRepeatedly(::testing::Invoke(
-            [&](const uint32_t, const string& name) -> void* {
-                return (reinterpret_cast<void*>(dispatcherImplMock));
-            }));
-
-        EXPECT_CALL(*dispatcherImplMock, Invoke(::testing::_, ::testing::_, ::testing::_))
-            .Times(::testing::AnyNumber())
-            .WillRepeatedly(::testing::Invoke(
-                [&](const std::string&,
-                    uint32_t,
-                    const Core::JSONRPC::Message& message) ->Core::ProxyType<Core::JSONRPC::Message> 
-                    {
-                        Core::ProxyType<Core::JSONRPC::Message> mockResponse = Core::ProxyType<Core::JSONRPC::Message>::Create();
-                        Core::JSONRPC::Message resp;
-                        std::string methodName = message.Designator.Value();
-
-                        TEST_LOG("message.Designator is [%s]", methodName.c_str());
-                        mockResponse->Result = resp.Result;
-                        return mockResponse;
-                    }));
-        EXPECT_CALL(*dispatcherImplMock, Release())
-        .Times(::testing::AnyNumber());
 
         #ifdef USE_THUNDER_R4
             ON_CALL(comLinkMock, Instantiate(::testing::_, ::testing::_, ::testing::_))
@@ -225,8 +196,7 @@ protected:
         Core::IWorkerPool::Assign(&(*workerPool));
         workerPool->Run();
 
-        dispatcher = static_cast<PLUGINHOST_DISPATCHER*>(
-        plugin->QueryInterface(PLUGINHOST_DISPATCHER_ID));
+        dispatcher = static_cast<PLUGINHOST_DISPATCHER*>(plugin->QueryInterface(PLUGINHOST_DISPATCHER_ID));
         dispatcher->Activate(&service);
 
         EXPECT_EQ(string(""), plugin->Initialize(&service));
@@ -308,43 +278,260 @@ TEST_F(XCastTest, RegisteredMethods)
 
 TEST_F(XCastTest, getsetFriendlyName)
 {
+    DispatcherMock* dispatcherImplMock = new DispatcherMock();
+    EXPECT_CALL(service, QueryInterfaceByCallsign(::testing::_, ::testing::_))
+        .Times(::testing::AnyNumber())
+        .WillRepeatedly(::testing::Invoke(
+            [&](const uint32_t, const string& name) -> void* {
+                return (reinterpret_cast<void*>(dispatcherImplMock));
+            }));
+#ifdef USE_THUNDER_R4
+    EXPECT_CALL(*dispatcherImplMock, Local())
+        .Times(::testing::AnyNumber())
+        .WillRepeatedly(::testing::Invoke(
+            [&]() -> WPEFramework::PluginHost::ILocalDispatcher* {
+                return (reinterpret_cast<WPEFramework::PluginHost::ILocalDispatcher*>(dispatcherImplMock));
+            }));
+
+    EXPECT_CALL(*dispatcherImplMock, Invoke(::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_))
+        .Times(::testing::AnyNumber())
+        .WillRepeatedly(::testing::Invoke(
+            [&](const uint32_t, const uint32_t, const string&, const string& method, const string&, string& response) -> uint32_t 
+            {
+                std::string methodName = message.Designator.Value();
+                TEST_LOG("message.Designator is [%s]", methodName.c_str());
+                return Core::ERROR_NONE;
+            }));
+#else
+    Core::ProxyType<Core::JSONRPC::Message> mockResponse = Core::ProxyType<Core::JSONRPC::Message>::Create();
+    Core::JSONRPC::Message resp;
+
+    EXPECT_CALL(*dispatcherImplMock, Invoke(::testing::_, ::testing::_, ::testing::_))
+        .Times(::testing::AnyNumber())
+        .WillRepeatedly(::testing::Invoke(
+            [&](const std::string&,
+                uint32_t,
+                const Core::JSONRPC::Message& message) -> Core::ProxyType<Core::JSONRPC::Message> {
+                std::string methodName = message.Designator.Value();
+                TEST_LOG("message.Designator is [%s]", methodName.c_str());
+                return mockResponse;
+            }));
+#endif /*USE_THUNDER_R4 */
+    EXPECT_CALL(*dispatcherImplMock, Release())
+    .Times(::testing::AnyNumber());
+
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setFriendlyName"), _T("{\"friendlyname\": \"friendlyTest\"}"), response));
     EXPECT_EQ(response, string("{\"success\":true}"));
 
-
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getFriendlyName"), _T("{}"), response));
     EXPECT_EQ(response, string("{\"friendlyname\":\"friendlyTest\",\"success\":true}"));
+
+    delete dispatcherImplMock;
 }
 
 TEST_F(XCastTest, getsetStandbyBehavoir)
 {
+    DispatcherMock* dispatcherImplMock = new DispatcherMock();
+    EXPECT_CALL(service, QueryInterfaceByCallsign(::testing::_, ::testing::_))
+        .Times(::testing::AnyNumber())
+        .WillRepeatedly(::testing::Invoke(
+            [&](const uint32_t, const string& name) -> void* {
+                return (reinterpret_cast<void*>(dispatcherImplMock));
+            }));
+#ifdef USE_THUNDER_R4
+    EXPECT_CALL(*dispatcherImplMock, Local())
+        .Times(::testing::AnyNumber())
+        .WillRepeatedly(::testing::Invoke(
+            [&]() -> WPEFramework::PluginHost::ILocalDispatcher* {
+                return (reinterpret_cast<WPEFramework::PluginHost::ILocalDispatcher*>(dispatcherImplMock));
+            }));
+
+    EXPECT_CALL(*dispatcherImplMock, Invoke(::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_))
+        .Times(::testing::AnyNumber())
+        .WillRepeatedly(::testing::Invoke(
+            [&](const uint32_t, const uint32_t, const string&, const string& method, const string&, string& response) -> uint32_t 
+            {
+                std::string methodName = message.Designator.Value();
+                TEST_LOG("message.Designator is [%s]", methodName.c_str());
+                return Core::ERROR_NONE;
+            }));
+#else
+    Core::ProxyType<Core::JSONRPC::Message> mockResponse = Core::ProxyType<Core::JSONRPC::Message>::Create();
+    Core::JSONRPC::Message resp;
+
+    EXPECT_CALL(*dispatcherImplMock, Invoke(::testing::_, ::testing::_, ::testing::_))
+        .Times(::testing::AnyNumber())
+        .WillRepeatedly(::testing::Invoke(
+            [&](const std::string&,
+                uint32_t,
+                const Core::JSONRPC::Message& message) -> Core::ProxyType<Core::JSONRPC::Message> {
+                std::string methodName = message.Designator.Value();
+                TEST_LOG("message.Designator is [%s]", methodName.c_str());
+                return mockResponse;
+            }));
+#endif /*USE_THUNDER_R4 */
+    EXPECT_CALL(*dispatcherImplMock, Release())
+    .Times(::testing::AnyNumber());
+
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setStandbyBehavior"), _T("{\"standbybehavior\": \"active\"}"), response));
     EXPECT_EQ(response, string("{\"success\":true}"));
 
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getStandbyBehavior"), _T("{}"), response));
     EXPECT_EQ(response, string("{\"standbybehavior\":\"active\",\"success\":true}"));
+
+    delete dispatcherImplMock;
 }
 
 TEST_F(XCastTest, getsetManufacturerName)
 {
+    DispatcherMock* dispatcherImplMock = new DispatcherMock();
+    EXPECT_CALL(service, QueryInterfaceByCallsign(::testing::_, ::testing::_))
+        .Times(::testing::AnyNumber())
+        .WillRepeatedly(::testing::Invoke(
+            [&](const uint32_t, const string& name) -> void* {
+                return (reinterpret_cast<void*>(dispatcherImplMock));
+            }));
+#ifdef USE_THUNDER_R4
+    EXPECT_CALL(*dispatcherImplMock, Local())
+        .Times(::testing::AnyNumber())
+        .WillRepeatedly(::testing::Invoke(
+            [&]() -> WPEFramework::PluginHost::ILocalDispatcher* {
+                return (reinterpret_cast<WPEFramework::PluginHost::ILocalDispatcher*>(dispatcherImplMock));
+            }));
+
+    EXPECT_CALL(*dispatcherImplMock, Invoke(::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_))
+        .Times(::testing::AnyNumber())
+        .WillRepeatedly(::testing::Invoke(
+            [&](const uint32_t, const uint32_t, const string&, const string& method, const string&, string& response) -> uint32_t 
+            {
+                std::string methodName = message.Designator.Value();
+                TEST_LOG("message.Designator is [%s]", methodName.c_str());
+                return Core::ERROR_NONE;
+            }));
+#else
+    Core::ProxyType<Core::JSONRPC::Message> mockResponse = Core::ProxyType<Core::JSONRPC::Message>::Create();
+    Core::JSONRPC::Message resp;
+
+    EXPECT_CALL(*dispatcherImplMock, Invoke(::testing::_, ::testing::_, ::testing::_))
+        .Times(::testing::AnyNumber())
+        .WillRepeatedly(::testing::Invoke(
+            [&](const std::string&,
+                uint32_t,
+                const Core::JSONRPC::Message& message) -> Core::ProxyType<Core::JSONRPC::Message> {
+                std::string methodName = message.Designator.Value();
+                TEST_LOG("message.Designator is [%s]", methodName.c_str());
+                return mockResponse;
+            }));
+#endif /*USE_THUNDER_R4 */
+    EXPECT_CALL(*dispatcherImplMock, Release())
+    .Times(::testing::AnyNumber());
+
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setManufacturerName"), _T("{\"manufacturer\": \"manufacturerTest\"}"), response));
     EXPECT_EQ(response, string("{\"success\":true}"));
 
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getManufacturerName"), _T("{}"), response));
     EXPECT_EQ(response, string("{\"manufacturer\":\"manufacturerTest\",\"success\":true}"));
+
+    delete dispatcherImplMock;
 }
 
 TEST_F(XCastTest, getsetModelName)
 {
+    DispatcherMock* dispatcherImplMock = new DispatcherMock();
+    EXPECT_CALL(service, QueryInterfaceByCallsign(::testing::_, ::testing::_))
+        .Times(::testing::AnyNumber())
+        .WillRepeatedly(::testing::Invoke(
+            [&](const uint32_t, const string& name) -> void* {
+                return (reinterpret_cast<void*>(dispatcherImplMock));
+            }));
+#ifdef USE_THUNDER_R4
+    EXPECT_CALL(*dispatcherImplMock, Local())
+        .Times(::testing::AnyNumber())
+        .WillRepeatedly(::testing::Invoke(
+            [&]() -> WPEFramework::PluginHost::ILocalDispatcher* {
+                return (reinterpret_cast<WPEFramework::PluginHost::ILocalDispatcher*>(dispatcherImplMock));
+            }));
+
+    EXPECT_CALL(*dispatcherImplMock, Invoke(::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_))
+        .Times(::testing::AnyNumber())
+        .WillRepeatedly(::testing::Invoke(
+            [&](const uint32_t, const uint32_t, const string&, const string& method, const string&, string& response) -> uint32_t 
+            {
+                std::string methodName = message.Designator.Value();
+                TEST_LOG("message.Designator is [%s]", methodName.c_str());
+                return Core::ERROR_NONE;
+            }));
+#else
+    Core::ProxyType<Core::JSONRPC::Message> mockResponse = Core::ProxyType<Core::JSONRPC::Message>::Create();
+    Core::JSONRPC::Message resp;
+
+    EXPECT_CALL(*dispatcherImplMock, Invoke(::testing::_, ::testing::_, ::testing::_))
+        .Times(::testing::AnyNumber())
+        .WillRepeatedly(::testing::Invoke(
+            [&](const std::string&,
+                uint32_t,
+                const Core::JSONRPC::Message& message) -> Core::ProxyType<Core::JSONRPC::Message> {
+                std::string methodName = message.Designator.Value();
+                TEST_LOG("message.Designator is [%s]", methodName.c_str());
+                return mockResponse;
+            }));
+#endif /*USE_THUNDER_R4 */
+    EXPECT_CALL(*dispatcherImplMock, Release())
+    .Times(::testing::AnyNumber());
+
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setModelName"), _T("{\"model\": \"modelTest\"}"), response));
     EXPECT_EQ(response, string("{\"success\":true}"));
 
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getModelName"), _T("{}"), response));
     EXPECT_EQ(response, string("{\"model\":\"modelTest\",\"success\":true}"));
+
+    delete dispatcherImplMock;
 }
 
 TEST_F(XCastTest, setApplicationState)
 {
+    DispatcherMock* dispatcherImplMock = new DispatcherMock();
+    EXPECT_CALL(service, QueryInterfaceByCallsign(::testing::_, ::testing::_))
+        .Times(::testing::AnyNumber())
+        .WillRepeatedly(::testing::Invoke(
+            [&](const uint32_t, const string& name) -> void* {
+                return (reinterpret_cast<void*>(dispatcherImplMock));
+            }));
+#ifdef USE_THUNDER_R4
+    EXPECT_CALL(*dispatcherImplMock, Local())
+        .Times(::testing::AnyNumber())
+        .WillRepeatedly(::testing::Invoke(
+            [&]() -> WPEFramework::PluginHost::ILocalDispatcher* {
+                return (reinterpret_cast<WPEFramework::PluginHost::ILocalDispatcher*>(dispatcherImplMock));
+            }));
+
+    EXPECT_CALL(*dispatcherImplMock, Invoke(::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_))
+        .Times(::testing::AnyNumber())
+        .WillRepeatedly(::testing::Invoke(
+            [&](const uint32_t, const uint32_t, const string&, const string& method, const string&, string& response) -> uint32_t 
+            {
+                std::string methodName = message.Designator.Value();
+                TEST_LOG("message.Designator is [%s]", methodName.c_str());
+                return Core::ERROR_NONE;
+            }));
+#else
+    Core::ProxyType<Core::JSONRPC::Message> mockResponse = Core::ProxyType<Core::JSONRPC::Message>::Create();
+    Core::JSONRPC::Message resp;
+
+    EXPECT_CALL(*dispatcherImplMock, Invoke(::testing::_, ::testing::_, ::testing::_))
+        .Times(::testing::AnyNumber())
+        .WillRepeatedly(::testing::Invoke(
+            [&](const std::string&,
+                uint32_t,
+                const Core::JSONRPC::Message& message) -> Core::ProxyType<Core::JSONRPC::Message> {
+                std::string methodName = message.Designator.Value();
+                TEST_LOG("message.Designator is [%s]", methodName.c_str());
+                return mockResponse;
+            }));
+#endif /*USE_THUNDER_R4 */
+    EXPECT_CALL(*dispatcherImplMock, Release())
+    .Times(::testing::AnyNumber());
+
     EXPECT_CALL(*p_gdialserviceImplMock, ApplicationStateChanged(::testing::_, ::testing::_, ::testing::_, ::testing::_))
             .WillOnce(::testing::Invoke(
                 [](string applicationName, string appState, string applicationId, string error) {
@@ -356,10 +543,54 @@ TEST_F(XCastTest, setApplicationState)
                 }));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setApplicationState"), _T("{\"applicationName\": \"NetflixApp\", \"state\":\"running\", \"applicationId\": \"1234\", \"error\": \"\"}"), response));
     EXPECT_EQ(response, string("{\"success\":true}"));
+
+    delete dispatcherImplMock;
 }
 
 TEST_F(XCastTest, getProtocolVersion)
 {
+    DispatcherMock* dispatcherImplMock = new DispatcherMock();
+    EXPECT_CALL(service, QueryInterfaceByCallsign(::testing::_, ::testing::_))
+        .Times(::testing::AnyNumber())
+        .WillRepeatedly(::testing::Invoke(
+            [&](const uint32_t, const string& name) -> void* {
+                return (reinterpret_cast<void*>(dispatcherImplMock));
+            }));
+#ifdef USE_THUNDER_R4
+    EXPECT_CALL(*dispatcherImplMock, Local())
+        .Times(::testing::AnyNumber())
+        .WillRepeatedly(::testing::Invoke(
+            [&]() -> WPEFramework::PluginHost::ILocalDispatcher* {
+                return (reinterpret_cast<WPEFramework::PluginHost::ILocalDispatcher*>(dispatcherImplMock));
+            }));
+
+    EXPECT_CALL(*dispatcherImplMock, Invoke(::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_))
+        .Times(::testing::AnyNumber())
+        .WillRepeatedly(::testing::Invoke(
+            [&](const uint32_t, const uint32_t, const string&, const string& method, const string&, string& response) -> uint32_t 
+            {
+                std::string methodName = message.Designator.Value();
+                TEST_LOG("message.Designator is [%s]", methodName.c_str());
+                return Core::ERROR_NONE;
+            }));
+#else
+    Core::ProxyType<Core::JSONRPC::Message> mockResponse = Core::ProxyType<Core::JSONRPC::Message>::Create();
+    Core::JSONRPC::Message resp;
+
+    EXPECT_CALL(*dispatcherImplMock, Invoke(::testing::_, ::testing::_, ::testing::_))
+        .Times(::testing::AnyNumber())
+        .WillRepeatedly(::testing::Invoke(
+            [&](const std::string&,
+                uint32_t,
+                const Core::JSONRPC::Message& message) -> Core::ProxyType<Core::JSONRPC::Message> {
+                std::string methodName = message.Designator.Value();
+                TEST_LOG("message.Designator is [%s]", methodName.c_str());
+                return mockResponse;
+            }));
+#endif /*USE_THUNDER_R4 */
+    EXPECT_CALL(*dispatcherImplMock, Release())
+    .Times(::testing::AnyNumber());
+
     EXPECT_CALL(*p_gdialserviceImplMock, getProtocolVersion())
             .WillOnce(::testing::Invoke(
                 []() {
@@ -367,10 +598,54 @@ TEST_F(XCastTest, getProtocolVersion)
                 }));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getProtocolVersion"), _T("{}"), response));
     EXPECT_EQ(response, string("{\"version\":\"test\",\"success\":true}"));
+
+    delete dispatcherImplMock;
 }
 
 TEST_F(XCastTest, unRegisterAllApplications)
 {
+    DispatcherMock* dispatcherImplMock = new DispatcherMock();
+    EXPECT_CALL(service, QueryInterfaceByCallsign(::testing::_, ::testing::_))
+        .Times(::testing::AnyNumber())
+        .WillRepeatedly(::testing::Invoke(
+            [&](const uint32_t, const string& name) -> void* {
+                return (reinterpret_cast<void*>(dispatcherImplMock));
+            }));
+#ifdef USE_THUNDER_R4
+    EXPECT_CALL(*dispatcherImplMock, Local())
+        .Times(::testing::AnyNumber())
+        .WillRepeatedly(::testing::Invoke(
+            [&]() -> WPEFramework::PluginHost::ILocalDispatcher* {
+                return (reinterpret_cast<WPEFramework::PluginHost::ILocalDispatcher*>(dispatcherImplMock));
+            }));
+
+    EXPECT_CALL(*dispatcherImplMock, Invoke(::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_))
+        .Times(::testing::AnyNumber())
+        .WillRepeatedly(::testing::Invoke(
+            [&](const uint32_t, const uint32_t, const string&, const string& method, const string&, string& response) -> uint32_t 
+            {
+                std::string methodName = message.Designator.Value();
+                TEST_LOG("message.Designator is [%s]", methodName.c_str());
+                return Core::ERROR_NONE;
+            }));
+#else
+    Core::ProxyType<Core::JSONRPC::Message> mockResponse = Core::ProxyType<Core::JSONRPC::Message>::Create();
+    Core::JSONRPC::Message resp;
+
+    EXPECT_CALL(*dispatcherImplMock, Invoke(::testing::_, ::testing::_, ::testing::_))
+        .Times(::testing::AnyNumber())
+        .WillRepeatedly(::testing::Invoke(
+            [&](const std::string&,
+                uint32_t,
+                const Core::JSONRPC::Message& message) -> Core::ProxyType<Core::JSONRPC::Message> {
+                std::string methodName = message.Designator.Value();
+                TEST_LOG("message.Designator is [%s]", methodName.c_str());
+                return mockResponse;
+            }));
+#endif /*USE_THUNDER_R4 */
+    EXPECT_CALL(*dispatcherImplMock, Release())
+    .Times(::testing::AnyNumber());
+
     EXPECT_CALL(*p_gdialserviceImplMock, RegisterApplications(::testing::_))
             .WillOnce(::testing::Invoke([](RegisterAppEntryList* appConfigList) {
                     int i = 0;
@@ -415,6 +690,8 @@ TEST_F(XCastTest, unRegisterAllApplications)
 
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("unregisterApplications"), _T("{\"applications\": [\"Youtube\"]}"), response));
     EXPECT_EQ(response, string("{\"success\":true}"));
+
+    delete dispatcherImplMock;
 }
 
 #if 0
