@@ -99,7 +99,7 @@ namespace WPEFramework
                             Exchange::JMiracastService::Register(*this, mMiracastServiceImpl);
                             mRegisterEvents = true;
                         }
-                        mConfigure->Release();
+                        //mConfigure->Release();
                     }
                     else
                     {
@@ -173,20 +173,13 @@ namespace WPEFramework
             {
                 /* Make sure the Activated and Deactivated are no longer called before we start cleaning up.. */
                    mCurrentService->Unregister(&mMiracastServiceNotification);
-                   Exchange::IConfiguration* mConfigure1 = mMiracastServiceImpl->QueryInterface<Exchange::IConfiguration>();
-                    if (mConfigure1)
+                 
+                    if (mConfigure)
                     {    LOGINFO("MiracastService::configure with nullptr");
-                        uint32_t result = mConfigure1->Configure(NULL);
-                        if(result != Core::ERROR_NONE)
-                        {
-                            SYSLOG(Logging::Startup, (_T("MiracastService::DeInitialize: Failed to Configure %s"), PLUGIN_MIRACAST_SERVICE_IMPLEMENTATION_NAME));
-                           // retStatus = _T("MiracastService plugin could not be deinitialised");
-                        }
-                        else
-                        {
-                           LOGINFO("Successfully deinitialized");
-                        }
-                        mConfigure1->Release();
+                        uint32_t result = mConfigure->Configure(NULL);
+                        
+                        mConfigure->Release();
+                        mConfigure = NULL;
                     } 
                }
             mConnectionId = 0;
