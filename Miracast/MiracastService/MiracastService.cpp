@@ -130,7 +130,7 @@ namespace WPEFramework
         void MiracastService::Deinitialize(PluginHost::IShell* service)
         {
             SYSLOG(Logging::Startup, (_T("MiracastService::Deinitialize: PID=%u"), getpid()));
-LOGINFO("MiracastService::Deinitialize in");
+            LOGINFO("MiracastService::Deinitialize in");
             ASSERT(mCurrentService == service);
             ASSERT(0 == mConnectionId);
 
@@ -173,10 +173,10 @@ LOGINFO("MiracastService::Deinitialize in");
             {
                 /* Make sure the Activated and Deactivated are no longer called before we start cleaning up.. */
                    mCurrentService->Unregister(&mMiracastServiceNotification);
-                   mConfigure = mMiracastServiceImpl->QueryInterface<Exchange::IConfiguration>();
-                    if (mConfigure)
-                    {
-                        uint32_t result = mConfigure->Configure(NULL);
+                   Exchange::IConfiguration* mConfigure1 = mMiracastServiceImpl->QueryInterface<Exchange::IConfiguration>();
+                    if (mConfigure1)
+                    {    LOGINFO("MiracastService::configure with nullptr");
+                        uint32_t result = mConfigure1->Configure(NULL);
                         if(result != Core::ERROR_NONE)
                         {
                             SYSLOG(Logging::Startup, (_T("MiracastService::DeInitialize: Failed to Configure %s"), PLUGIN_MIRACAST_SERVICE_IMPLEMENTATION_NAME));
@@ -186,7 +186,7 @@ LOGINFO("MiracastService::Deinitialize in");
                         {
                            LOGINFO("Successfully deinitialized");
                         }
-                        mConfigure->Release();
+                        mConfigure1->Release();
                     } 
                 mCurrentService->Release();
                 mCurrentService = nullptr;
