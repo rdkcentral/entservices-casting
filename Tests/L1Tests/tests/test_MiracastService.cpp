@@ -250,7 +250,6 @@ protected:
         dispatcher->Release();
 
         PluginHost::IFactories::Assign(nullptr);
-		sleep(3);
     }
 };
 
