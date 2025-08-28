@@ -188,9 +188,7 @@ namespace WPEFramework
                         }
                         mConfigure1->Release();
                     } 
-                mCurrentService->Release();
-                mCurrentService = nullptr;
-            }
+               }
             mConnectionId = 0;
             LOGINFO("MiracastService::Deinitialize out");
             SYSLOG(Logging::Shutdown, (string(_T("MiracastService de-initialised"))));
