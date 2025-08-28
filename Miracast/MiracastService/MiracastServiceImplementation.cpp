@@ -438,11 +438,79 @@ namespace WPEFramework
         {
             MIRACASTLOG_TRACE("Entering ...");
             uint32_t result = Core::ERROR_GENERAL;
+                           
+            if ((m_CurrentService) && (nullptr == service))
+            {
+                
+            ASSERT(0 == mConnectionId);
 
-            ASSERT(nullptr != service);
+            if (nullptr != mMiracastServiceImpl)
+            {
+                if (mRegisterEvents)
+                {
+                    mMiracastServiceImpl->Unregister(&mMiracastServiceNotification);
+                    Exchange::JMiracastService::Unregister(*this);
+                    mRegisterEvents = false;
+                }
 
+                mConfigure = mMiracastServiceImpl->QueryInterface<Exchange::IConfiguration>();
+                if (mConfigure)
+                {
+                    uint32_t result = mConfigure->Configure(nullptr); // nullptr this deinitializing
+                    if(result != Core::ERROR_NONE)
+                    {
+                        SYSLOG(Logging::Startup, (_T("MiracastService::Initialize: Failed to Configure %s"), PLUGIN_MIRACAST_SERVICE_IMPLEMENTATION_NAME));
+                        retStatus = _T("MiracastService plugin could not be initialised");
+                    }
+                    else
+                    {
+                        /* Register for notifications */
+                        mMiracastServiceImpl->Register(&mMiracastServiceNotification);
+                        /* Invoking Plugin API register to wpeframework */
+                        Exchange::JMiracastService::Register(*this, mMiracastServiceImpl);
+                        mRegisterEvents = true;
+                    }
+                    mConfigure->Release();
+                }
+
+                /* Stop processing: */
+                RPC::IRemoteConnection* connection = nullptr;
+                if (service)
+                {
+                    connection = service->RemoteConnection(mConnectionId);
+                }
+                VARIABLE_IS_NOT_USED uint32_t result = mMiracastServiceImpl->Release();
+                mMiracastServiceImpl = nullptr;
+    
+                /* It should have been the last reference we are releasing,
+                * so it should endup in a DESTRUCTION_SUCCEEDED, if not we
+                * are leaking... */
+                ASSERT(result == Core::ERROR_DESTRUCTION_SUCCEEDED);
+    
+                /* If this was running in a (container) process... */
+                if (nullptr != connection)
+                {
+                   /* Lets trigger the cleanup sequence for
+                    * out-of-process code. Which will guard
+                    * that unwilling processes, get shot if
+                    * not stopped friendly :-)
+                    */
+                    connection->Terminate();
+                    connection->Release();
+                }
+            }
+            if (nullptr != mCurrentService)
+            {
+                /* Make sure the Activated and Deactivated are no longer called before we start cleaning up.. */
+                mCurrentService->Unregister(&mMiracastServiceNotification);
+                mCurrentService->Release();
+                mCurrentService = nullptr;
+            }
+            mConnectionId = 0;
+            }
+            else if ((service) && ( nullptr == m_CurrentService ))
+            {
             m_CurrentService = service;
-
             if (nullptr != m_CurrentService)
             {
                 m_CurrentService->AddRef();
@@ -515,6 +583,10 @@ namespace WPEFramework
                         }
                     }
                 }
+            }
+            }else
+            {
+                ASSERT(nullptr != service);
             }
             MIRACASTLOG_TRACE("Exiting ...");
             return result;
