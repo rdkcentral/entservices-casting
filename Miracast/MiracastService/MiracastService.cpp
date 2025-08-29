@@ -175,15 +175,17 @@ namespace WPEFramework
                    mCurrentService->Unregister(&mMiracastServiceNotification);
                  
                     if (mConfigure)
-                    {    LOGINFO("MiracastService::configure with nullptr");
-                        //uint32_t result = mConfigure->Configure(NULL);
-                        
+                    {    
+                         uint32_t result = mConfigure->Configure(NULL);
+                         if (result == Core::ERROR_NONE) {
+                              SYSLOG(Logging::Shutdown, (string(_T("MiracastService successfully destructed"))));
+                         }
                         mConfigure->Release();
                         mConfigure = NULL;
                     } 
                }
             mConnectionId = 0;
-            LOGINFO("MiracastService::Deinitialize out");
+            
             SYSLOG(Logging::Shutdown, (string(_T("MiracastService de-initialised"))));
         }
 
