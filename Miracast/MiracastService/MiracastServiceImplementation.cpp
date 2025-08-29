@@ -441,6 +441,7 @@ namespace WPEFramework
             }
             MIRACAST::logger_deinit();
             MiracastServiceImplementation::_instance = nullptr;
+            result = Core::ERROR_NONE;
             }
             else if ((service) && ( nullptr == m_CurrentService ))
             {
