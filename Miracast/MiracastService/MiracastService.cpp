@@ -176,7 +176,7 @@ namespace WPEFramework
                  
                     if (mConfigure)
                     {    LOGINFO("MiracastService::configure with nullptr");
-                        uint32_t result = mConfigure->Configure(NULL);
+                        //uint32_t result = mConfigure->Configure(NULL);
                         
                         mConfigure->Release();
                         mConfigure = NULL;
