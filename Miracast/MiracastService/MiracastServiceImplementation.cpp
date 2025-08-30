@@ -518,9 +518,11 @@ namespace WPEFramework
                     }
                 }
             }
-	        } else  {
-                        ASSERT(nullptr != service);
-                    }   
+	        }
+			else
+			{
+                ASSERT(nullptr != service);
+            }   
             MIRACASTLOG_TRACE("Exiting ...");
             return result;
         }
