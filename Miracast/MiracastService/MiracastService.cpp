@@ -137,7 +137,6 @@ namespace WPEFramework
             {
                 /* Make sure the Activated and Deactivated are no longer called before we start cleaning up.. */
 				mCurrentService->Unregister(&mMiracastServiceNotification);
-				mCurrentService->Release();
 
                     if (mConfigure)
                     {    
