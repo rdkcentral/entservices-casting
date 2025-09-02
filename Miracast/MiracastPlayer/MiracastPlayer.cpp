@@ -155,9 +155,11 @@ namespace WPEFramework
             }
             if (nullptr != mMiracastPlayerImpl)
             {
+				LOGINFO("Entering mMiracastPlayerImpl .!!!");
                 mMiracastPlayerImpl->Unregister(&mMiracastPlayerNotification);
                 Exchange::JMiracastPlayer::Unregister(*this);
 
+				LOGINFO("Entering mMiracastPlayerImpl after unregister .!!!");
                 /* Stop processing: */
                 RPC::IRemoteConnection* connection = nullptr;
                 if (nullptr != service)
@@ -172,6 +174,7 @@ namespace WPEFramework
                 * so it should endup in a DESTRUCTION_SUCCEEDED, if not we
                 * are leaking... */
                 ASSERT(result == Core::ERROR_DESTRUCTION_SUCCEEDED);
+				LOGINFO("Entering mMiracastPlayerImpl after Assert .!!!");
 
                 /* If this was running in a (container) process... */
                 if (nullptr != connection)
@@ -181,10 +184,12 @@ namespace WPEFramework
                     * that unwilling processes, get shot if
                     * not stopped friendly :-)
                     */
+					LOGINFO("Entering mMiracastPlayerImpl inside connection.!!!");
                     connection->Terminate();
                     connection->Release();
                 }
             }
+			LOGINFO("Exiting mMiracastPlayerImpl .!!!");
 
             mConnectionId = 0;
             SYSLOG(Logging::Shutdown, (string(_T("MiracastPlayer de-initialised"))));
