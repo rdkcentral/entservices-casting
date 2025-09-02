@@ -218,17 +218,23 @@ namespace WPEFramework
                     m_isPluginInitialized = false;
                     MIRACASTLOG_INFO("Done..!!!");
                 }
+				MIRACASTLOG_INFO("outside != mService..!!!");
                 if (nullptr != mService)
-                {
+                {	
+					MIRACASTLOG_INFO("entering != mService..!!!");
                     mService->Release();
                     mService = nullptr;
+					MIRACASTLOG_INFO("exiting != mService..!!!");
                 }
+				MIRACASTLOG_INFO("After != mService..!!!");
                 MIRACAST::logger_deinit();
+				MIRACASTLOG_INFO("after logger_deinit..!!!");
                 MiracastPlayerImplementation::_instance = nullptr;
+				MIRACASTLOG_INFO("after instance=nullptr..!!!");
             }
             else if ((service) && ( nullptr == mService ))
             {
-                LOGINFO("Call MiracastPlayerImplementation deinitialize");
+                LOGINFO("Call MiracastPlayerImplementation initialize");
                 mService = service;
                 
                 if (nullptr != mService)
