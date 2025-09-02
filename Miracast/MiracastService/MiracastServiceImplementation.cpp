@@ -385,9 +385,11 @@ namespace WPEFramework
         {
             MIRACASTLOG_TRACE("Entering ...");
             uint32_t result = Core::ERROR_GENERAL;
+			
 
 	    	if ((m_CurrentService) && (nullptr == service))
             {
+				MIRACASTLOG_INFO("MiracastServiceImplementation::Configure deinitialize");
                 MIRACASTLOG_TRACE("Call MiracastServiceImplementation deinitialize");
             	if (m_FriendlyNameMonitorTimerID)
             	{
@@ -443,12 +445,13 @@ namespace WPEFramework
             else if ((service) && ( nullptr == m_CurrentService ))
             {
                 m_CurrentService = service;
-				MIRACASTLOG_TRACE("Entering MiracastServiceImplementation initialize...");
+				MIRACASTLOG_TRACE(" MiracastServiceImplementation initialize...");
+				MIRACASTLOG_INFO("MiracastServiceImplementation::Configure initialize");
 
-            if (nullptr != m_CurrentService)
-            {
-                m_CurrentService->AddRef();
-                string	p2p_ctrl_iface = "";
+            	if (nullptr != m_CurrentService)
+            	{
+                	m_CurrentService->AddRef();
+                	string	p2p_ctrl_iface = "";
 
                 if (!(envGetValue("WIFI_P2P_CTRL_INTERFACE", p2p_ctrl_iface)))
                 {
