@@ -102,11 +102,6 @@ namespace WPEFramework
         XCastImplementation::~XCastImplementation()
         {
             LOGINFO("Call XCastImplementation destructor\n");
-            Deinitialize();
-            if(_service != nullptr)
-            {
-                _service->Release();
-            }
             XCastImplementation::_instance = nullptr;
             _service = nullptr;
         }
@@ -344,17 +339,33 @@ namespace WPEFramework
  
          uint32_t XCastImplementation::Configure(PluginHost::IShell* service)
          {
-            uint32_t result = Core::ERROR_NONE;
-            _service = service;
-            _service->AddRef();
-            ASSERT(service != nullptr);
-            InitializePowerManager(service);
-            Initialize(m_networkStandbyMode);
-            getSystemPlugin();
-            m_SystemPluginObj->Subscribe<JsonObject>(1000, "onFriendlyNameChanged", &XCastImplementation::onFriendlyNameUpdateHandler, this);
-            if (Core::ERROR_NONE == updateSystemFriendlyName())
+            uint32_t result = Core::ERROR_GENERAL;
+            if (( nullptr == _service ) && (service))
             {
-                LOGINFO("XCast::Initialize m_friendlyName:  %s\n ",m_friendlyName.c_str());
+                LOGINFO("Call initialise()\n");
+                _service = service;
+                _service->AddRef();
+                ASSERT(service != nullptr);
+                InitializePowerManager(service);
+                Initialize(m_networkStandbyMode);
+                getSystemPlugin();
+                m_SystemPluginObj->Subscribe<JsonObject>(1000, "onFriendlyNameChanged", &XCastImplementation::onFriendlyNameUpdateHandler, this);
+                if (Core::ERROR_NONE == updateSystemFriendlyName())
+                {
+                    LOGINFO("XCast::Initialize m_friendlyName:  %s\n ",m_friendlyName.c_str());
+                }
+                result = Core::ERROR_NONE;
+            }
+            else if ((_service) && ( nullptr == service ))
+            {
+                LOGINFO("Call deinitialise()\n");
+                Deinitialize();
+                _service->Release();
+                result = Core::ERROR_NONE;
+            }
+            else
+            {
+                LOGERR("Invalid call");
             }
             return result;
          }

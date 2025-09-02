@@ -25,7 +25,6 @@
 
 namespace WPEFramework
 {
-
     namespace {
 
         static Plugin::Metadata<Plugin::XCast> metadata(
@@ -85,7 +84,7 @@ namespace WPEFramework
                     {
                         message = _T("XCast could not be configured");
                     }
-			        configure->Release();
+                    configure->Release();
                 }
                 else
                 {
@@ -125,9 +124,18 @@ namespace WPEFramework
             }
             if (nullptr != _xcast)
             {
-                
                 _xcast->Unregister(&_xcastNotification);
                 Exchange::JXCast::Unregister(*this);
+                auto configure = _xcast->QueryInterface<Exchange::IConfiguration>();
+                if (configure != nullptr)
+                {
+                    uint32_t result = configure->Configure(nullptr);
+                    if(result != Core::ERROR_NONE)
+                    {
+                        LOGERR("XCast deinitialisecould not be configured");
+                    }
+                    configure->Release();
+                }
                 // Stop processing:
                 RPC::IRemoteConnection *connection = service->RemoteConnection(_connectionId);
                 VARIABLE_IS_NOT_USED uint32_t result = _xcast->Release();
