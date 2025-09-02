@@ -233,7 +233,6 @@ namespace WPEFramework
 				result = Core::ERROR_NONE;
 				MIRACASTLOG_INFO("after instance=nullptr..!!!");
             }
-			MIRACASTLOG_INFO("before initialize..!!!");	
             else if ((service) && ( nullptr == mService ))
             {
                 LOGINFO("Call MiracastPlayerImplementation initialize");
@@ -271,9 +270,10 @@ namespace WPEFramework
                     }
                 }
             }
-			MIRACASTLOG_INFO("before Assert..!!!");
+			
             else
 			{
+				MIRACASTLOG_INFO("Entering mconfigure-else.!!!");
                 ASSERT(nullptr != service);
             }
 			MIRACASTLOG_INFO("exiting before result.!!!");
