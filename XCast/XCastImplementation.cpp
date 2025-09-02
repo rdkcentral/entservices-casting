@@ -790,7 +790,9 @@ namespace WPEFramework
             LOGINFO("ARGS = %s : %d", friendlyname.c_str(), enableService);
             if (nullptr != m_xcast_manager)
             {
+                LOGINFO("m_xcast_manager  :%s",friendlyname.c_str());
                 m_xcast_manager->enableCastService(friendlyname,enableService);
+                LOGINFO("m_xcast_manager  :%s",friendlyname.c_str());
             }
             xcastEnableCache = enableService;
             friendlyNameCache = std::move(friendlyname);
@@ -1240,10 +1242,13 @@ void XCastImplementation::dumpDynamicAppCacheList(string strListName, std::vecto
             success = true;
             return Core::ERROR_NONE;
         }
-	Core::hresult XCastImplementation::SetFriendlyName(const string& friendlyname, Exchange::IXCast::XCastSuccess &success) { 
+
+	    Core::hresult XCastImplementation::SetFriendlyName(const string& friendlyname, Exchange::IXCast::XCastSuccess &success)
+        { 
             LOGINFO("XCastImplementation::setFriendlyName - %s", friendlyname.c_str());
             uint32_t result = Core::ERROR_GENERAL;
-             success.success = false;
+            
+            success.success = false;
             bool enabledStatus = false;
             if (!friendlyname.empty())
             {
@@ -1257,13 +1262,17 @@ void XCastImplementation::dumpDynamicAppCacheList(string strListName, std::vecto
                     {
                         enabledStatus = false;
                     }
+                    LOGINFO("XCastImplementation::setFriendlyName  :%s",m_friendlyName.c_str());
                     enableCastService(m_friendlyName,enabledStatus);
+                    LOGINFO("XCastImplementation::setFriendlyName  :%s",m_friendlyName.c_str());
                      success.success = true;
                     result = Core::ERROR_NONE;
             }
             return result;
         }
-	Core::hresult XCastImplementation::GetFriendlyName(string &friendlyname , bool &success ) { 
+
+    	Core::hresult XCastImplementation::GetFriendlyName(string &friendlyname , bool &success )
+        { 
             LOGINFO("XCastImplementation::getFriendlyName :%s ",m_friendlyName.c_str());
             friendlyname = m_friendlyName;
             success = true;

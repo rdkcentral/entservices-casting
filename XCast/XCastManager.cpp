@@ -431,6 +431,7 @@ void XCastManager::enableCastService(string friendlyname,bool enableService)
     lock_guard<recursive_mutex> lock(m_mutexSync);
     if(gdialCastObj != NULL)
     {
+        LOGINFO("ARGS = %s : %d ", friendlyname.c_str(), enableService);
         std::string activation = enableService ? "true": "false";
         gdialCastObj->ActivationChanged( activation, friendlyname);
         LOGINFO("XcastService send onActivationChanged");
