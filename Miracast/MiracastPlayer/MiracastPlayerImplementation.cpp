@@ -230,8 +230,10 @@ namespace WPEFramework
                 MIRACAST::logger_deinit();
 				MIRACASTLOG_INFO("after logger_deinit..!!!");
                 MiracastPlayerImplementation::_instance = nullptr;
+				result = Core::ERROR_NONE;
 				MIRACASTLOG_INFO("after instance=nullptr..!!!");
             }
+			MIRACASTLOG_INFO("before initialize..!!!");	
             else if ((service) && ( nullptr == mService ))
             {
                 LOGINFO("Call MiracastPlayerImplementation initialize");
@@ -268,7 +270,8 @@ namespace WPEFramework
                         }
                     }
                 }
-            }        
+            }
+			MIRACASTLOG_INFO("before Assert..!!!");
             else
 			{
                 ASSERT(nullptr != service);
