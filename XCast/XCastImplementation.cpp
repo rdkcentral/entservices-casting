@@ -779,30 +779,41 @@ namespace WPEFramework
         }
         void XCastImplementation::onLocateCastTimer()
         {
+            LOGINFO("Timer Entrying ...");
             if( false == connectToGDialService())
             {
+                LOGINFO("TRACE");
                 LOGINFO("Retry after 10 sec...");
                 m_locateCastTimer.setInterval(LOCATE_CAST_SECOND_TIMEOUT_IN_MILLIS);
+                LOGINFO("Timer Exiting ...");
                 return ;
             }
+            LOGINFO("TRACE");
             stopTimer();
+            LOGINFO("TRACE");
 
             if ((NULL != m_xcast_manager) && m_isDynamicRegistrationsRequired )
             {
+                LOGINFO("TRACE");
                 std::vector<DynamicAppConfig*> appConfigList;
                 lock_guard<mutex> lck(m_appConfigMutex);
                 appConfigList = m_appConfigCache;
                 dumpDynamicAppCacheList(string("CachedAppsFromTimer"), appConfigList);
                 LOGINFO("> calling registerApplications");
+                LOGINFO("TRACE");
                 m_xcast_manager->registerApplications (appConfigList);
+                LOGINFO("TRACE");
             }
             else {
                 LOGINFO("m_xcast_manager: %p: m_isDynamicRegistrationsRequired[%u]",
                         m_xcast_manager,
                         m_isDynamicRegistrationsRequired);
             }
+            LOGINFO("TRACE");
             m_xcast_manager->enableCastService(friendlyNameCache,xcastEnableCache);
+            LOGINFO("TRACE");
             LOGINFO("XCastImplementation::onLocateCastTimer : Timer still active ? %d ",m_locateCastTimer.isActive());
+            LOGINFO("Timer Exiting ...");
         }
 
         uint32_t XCastImplementation::enableCastService(string friendlyname,bool enableService) 
@@ -820,16 +831,24 @@ namespace WPEFramework
         }
         void XCastImplementation::startTimer(int interval)
         {
+            LOGINFO("Entering ...");
             stopTimer();
+            LOGINFO("TRACE");
             m_locateCastTimer.start(interval);
+            LOGINFO("TRACE");
+            LOGINFO("Exiting ...");
         }
 
         void XCastImplementation::stopTimer()
         {
+            LOGINFO("Entering ...");
             if (m_locateCastTimer.isActive())
             {
+                LOGINFO("TRACE");
                 m_locateCastTimer.stop();
+                LOGINFO("TRACE");
             }
+            LOGINFO("Exiting ...");
         }
         bool XCastImplementation::isTimerActive()
         {
