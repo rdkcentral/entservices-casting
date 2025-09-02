@@ -135,18 +135,22 @@ namespace WPEFramework
 
             if (nullptr != mCurrentService)
             {
+				MIRACASTLOG_INFO("Entering Deintialize.!!!");
                 /* Make sure the Activated and Deactivated are no longer called before we start cleaning up.. */
                 mCurrentService->Unregister(&mMiracastPlayerNotification);
                 mCurrentService->Release();
 
                 if (mConfigure)
-                {    
+                {   
+					MIRACASTLOG_INFO("Entering mconfigure.!!!");
                     uint32_t result = mConfigure->Configure(NULL);
                     if (result == Core::ERROR_NONE) {
                         SYSLOG(Logging::Shutdown, (string(_T("MiracastPlayer successfully destructed"))));
                     }
+					MIRACASTLOG_INFO("Entering mconfigure-> release.!!!");
                     mConfigure->Release();
                     mConfigure = NULL;
+					MIRACASTLOG_INFO("After mconfigure-> release.!!!");
 		    	}
             }
             if (nullptr != mMiracastPlayerImpl)
