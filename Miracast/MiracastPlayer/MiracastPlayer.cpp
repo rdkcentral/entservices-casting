@@ -133,6 +133,22 @@ namespace WPEFramework
             ASSERT(mCurrentService == service);
             ASSERT(0 == mConnectionId);
 
+            if (nullptr != mCurrentService)
+            {
+                /* Make sure the Activated and Deactivated are no longer called before we start cleaning up.. */
+                mCurrentService->Unregister(&mMiracastPlayerNotification);
+                mCurrentService->Release();
+
+                if (mConfigure)
+                {    
+                    uint32_t result = mConfigure->Configure(NULL);
+                    if (result == Core::ERROR_NONE) {
+                        SYSLOG(Logging::Shutdown, (string(_T("MiracastPlayer successfully destructed"))));
+                    }
+                    mConfigure->Release();
+                    mConfigure = NULL;
+		    	}
+            }
             if (nullptr != mMiracastPlayerImpl)
             {
                 mMiracastPlayerImpl->Unregister(&mMiracastPlayerNotification);
@@ -164,14 +180,6 @@ namespace WPEFramework
                     connection->Terminate();
                     connection->Release();
                 }
-            }
-
-            if (nullptr != mCurrentService)
-            {
-                /* Make sure the Activated and Deactivated are no longer called before we start cleaning up.. */
-                mCurrentService->Unregister(&mMiracastPlayerNotification);
-                mCurrentService->Release();
-                mCurrentService = nullptr;
             }
 
             mConnectionId = 0;
