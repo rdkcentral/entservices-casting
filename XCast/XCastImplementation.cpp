@@ -63,6 +63,7 @@ namespace WPEFramework
         XCastManager* XCastImplementation::m_xcast_manager = nullptr;
         static std::vector <DynamicAppConfig*> m_appConfigCache;
         static std::mutex m_appConfigMutex;
+        static std::mutex m_TimerMutexSync;
         static bool xcastEnableCache = false;
 
         #ifdef XCAST_ENABLED_BY_DEFAULT
@@ -348,7 +349,7 @@ namespace WPEFramework
  
          uint32_t XCastImplementation::Configure(PluginHost::IShell* service)
          {
-            uint32_t result = Core::ERROR_GENERAL;
+            uint32_t result = Core::ERROR_NONE;
             if (( nullptr == _service ) && (service))
             {
                 LOGINFO("Call initialise()\n");
@@ -363,18 +364,18 @@ namespace WPEFramework
                 {
                     LOGINFO("XCast::Initialize m_friendlyName:  %s\n ",m_friendlyName.c_str());
                 }
-                result = Core::ERROR_NONE;
             }
             else if ((_service) && ( nullptr == service ))
             {
+                lock_guard<mutex> lck(m_TimerMutexSync);
                 LOGINFO("Call deinitialise()\n");
                 Deinitialize();
                 _service->Release();
-                result = Core::ERROR_NONE;
             }
             else
             {
                 LOGERR("Invalid call");
+                result = Core::ERROR_GENERAL;
             }
             return result;
          }
@@ -653,7 +654,6 @@ namespace WPEFramework
             return returnValue;
         }
 
-        
         void XCastImplementation::eventHandler_pluginState(const JsonObject& parameters)
         {
             LOGINFO("Plugin state changed");
@@ -808,16 +808,19 @@ namespace WPEFramework
         void XCastImplementation::onLocateCastTimer()
         {
             LOGINFO("Timer Entrying ...");
-            if( false == connectToGDialService())
             {
+                lock_guard<mutex> lck(m_TimerMutexSync);
+                if( false == connectToGDialService())
+                {
+                    LOGINFO("TRACE");
+                    LOGINFO("Retry after 10 sec...");
+                    m_locateCastTimer.setInterval(LOCATE_CAST_SECOND_TIMEOUT_IN_MILLIS);
+                    LOGINFO("Timer Exiting ...");
+                    return ;
+                }
                 LOGINFO("TRACE");
-                LOGINFO("Retry after 10 sec...");
-                m_locateCastTimer.setInterval(LOCATE_CAST_SECOND_TIMEOUT_IN_MILLIS);
-                LOGINFO("Timer Exiting ...");
-                return ;
+                stopTimer();
             }
-            LOGINFO("TRACE");
-            stopTimer();
             LOGINFO("TRACE");
 
             if ((NULL != m_xcast_manager) && m_isDynamicRegistrationsRequired )

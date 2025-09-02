@@ -258,7 +258,7 @@ namespace WPEFramework
             void eventHandler_ipAddressChanged(const JsonObject& parameters);
             void eventHandler_pluginState(const JsonObject& parameters);
             bool connectToGDialService(void);
-            bool getDefaultNameAndIPAddress(std::string& interface, std::string& ipaddress);
+            virtual bool getDefaultNameAndIPAddress(std::string& interface, std::string& ipaddress);
             void updateNWConnectivityStatus(std::string nwInterface, bool nwConnected, std::string ipaddress = "");
             uint32_t enableCastService(string friendlyname,bool enableService);
             uint32_t Configure(PluginHost::IShell* shell);
