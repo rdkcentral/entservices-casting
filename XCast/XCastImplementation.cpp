@@ -185,23 +185,32 @@ namespace WPEFramework
 
         void XCastImplementation::Deinitialize(void)
         {
+            LOGINFO("Entering..!!!");
             if (m_ControllerObj)
             {
                 m_ControllerObj->Unsubscribe(THUNDER_RPC_TIMEOUT, _T("statechange"));
                 delete m_ControllerObj;
                 m_ControllerObj = nullptr;
             }
+            LOGINFO("TRACE");
 
             if(nullptr != m_xcast_manager)
             {
+                LOGINFO("TRACE");
                 stopTimer();
+                LOGINFO("TRACE");
                 m_xcast_manager->shutdown();
+                LOGINFO("TRACE");
                 m_xcast_manager = nullptr;
+                LOGINFO("TRACE");
             }
+            LOGINFO("TRACE");
             unregisterEventHandlers();
+            LOGINFO("TRACE");
             if (_powerManagerPlugin) {
                 _powerManagerPlugin.Reset();
             }
+            LOGINFO("Exiting ...");
         }
 
         void XCastImplementation::getSystemPlugin()
