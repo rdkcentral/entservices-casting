@@ -275,9 +275,11 @@ namespace WPEFramework
             else
 			{
                 ASSERT(nullptr != service);
-            }  
+            }
+			MIRACASTLOG_INFO("exiting before result.!!!");
             MIRACASTLOG_TRACE("Exiting ...");
             return result;
+			MIRACASTLOG_INFO("exiting after result.!!!");
         }
 
         Core::hresult MiracastPlayerImplementation::PlayRequest(const DeviceParameters &deviceParam , const VideoRectangle videoRect , Result &result )
