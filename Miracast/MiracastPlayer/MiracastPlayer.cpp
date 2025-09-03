@@ -133,27 +133,7 @@ namespace WPEFramework
             ASSERT(mCurrentService == service);
             ASSERT(0 == mConnectionId);
 
-			if (nullptr != mCurrentService)
-            {
-				LOGINFO("Entering Deintialize.!!!");
-                mCurrentService->Unregister(&mMiracastPlayerNotification);
-				mCurrentService->Release();
-				
-                if (mConfigure)
-                {   
-					LOGINFO("Entering mconfigure.!!!");
-                    uint32_t result = mConfigure->Configure(NULL);
-                    if (result == Core::ERROR_NONE) {
-                        SYSLOG(Logging::Shutdown, (string(_T("MiracastPlayer successfully destructed"))));
-                    }
-					LOGINFO("Entering mconfigure-> release.!!!");
-                    mConfigure->Release();
-                    mConfigure = NULL;
-					LOGINFO("After mconfigure-> release.!!!");
-		    	}
-                    
-						
-            }
+			
             if (nullptr != mMiracastPlayerImpl)
             {
 				LOGINFO("Entering mMiracastPlayerImpl .!!!");
@@ -190,6 +170,27 @@ namespace WPEFramework
                     connection->Release();
 					LOGINFO("Exiting mMiracastPlayerImpl .!!!");
                 }
+            }
+			if (nullptr != mCurrentService)
+            {
+				LOGINFO("Entering Deintialize.!!!");
+                mCurrentService->Unregister(&mMiracastPlayerNotification);
+				mCurrentService->Release();
+				
+                if (mConfigure)
+                {   
+					LOGINFO("Entering mconfigure.!!!");
+                    uint32_t result = mConfigure->Configure(NULL);
+                    if (result == Core::ERROR_NONE) {
+                        SYSLOG(Logging::Shutdown, (string(_T("MiracastPlayer successfully destructed"))));
+                    }
+					LOGINFO("Entering mconfigure-> release.!!!");
+                    mConfigure->Release();
+                    mConfigure = NULL;
+					LOGINFO("After mconfigure-> release.!!!");
+		    	}
+                    
+						
             }
 
             mConnectionId = 0;
