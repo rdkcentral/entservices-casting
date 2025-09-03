@@ -136,9 +136,7 @@ namespace WPEFramework
 			if (nullptr != mCurrentService)
             {
 				LOGINFO("Entering Deintialize.!!!");
-                /* Make sure the Activated and Deactivated are no longer called before we start cleaning up.. */
-                mCurrentService->Unregister(&mMiracastPlayerNotification);
-                mCurrentService->Release();
+            
 
                 if (mConfigure)
                 {   
@@ -152,6 +150,13 @@ namespace WPEFramework
                     mConfigure = NULL;
 					LOGINFO("After mconfigure-> release.!!!");
 		    	}
+                if (mCurrentService != NULL) {
+				    /* Make sure the Activated and Deactivated are no longer called before we start cleaning up.. */
+                  mCurrentService->Unregister(&mMiracastPlayerNotification);
+				  LOGINFO("release service before");
+                  mCurrentService->Release();
+				  LOGINFO("After mCurrentService->Release.!!!");
+				}	
             }
             if (nullptr != mMiracastPlayerImpl)
             {
