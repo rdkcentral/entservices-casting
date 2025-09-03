@@ -143,9 +143,9 @@ namespace WPEFramework
 				LOGINFO("Entering mMiracastPlayerImpl after unregister .!!!");
                 /* Stop processing: */
                 RPC::IRemoteConnection* connection = nullptr;
-                if (nullptr != mCurrentService)
+                if (nullptr != service)
                 {
-                    connection = mCurrentService->RemoteConnection(mConnectionId);
+                    connection = service->RemoteConnection(mConnectionId);
                 }
                 VARIABLE_IS_NOT_USED uint32_t result = mMiracastPlayerImpl->Release();
 
