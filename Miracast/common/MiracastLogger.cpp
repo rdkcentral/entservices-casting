@@ -33,7 +33,7 @@ namespace MIRACAST
             setvbuf(stdout, NULL, _IOLBF, 0);
     }
 
-    static int gDefaultLogLevel = INFO_LEVEL;
+    static int gDefaultLogLevel = TRACE_LEVEL;
     static std::string service_name = "NOT-DEFINED";
 
     void logger_init(const char* module_name)

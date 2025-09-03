@@ -32,6 +32,8 @@ MiracastThread::MiracastThread(std::string thread_name, size_t stack_size, size_
 
     m_g_queue = nullptr;
     m_pthread_id = 0;
+	
+	sem_init(&m_thread_stop_sync, 0, 0);
 
     if ((0 != queue_depth) && (0 != msg_size)){
         // Create message queue
@@ -46,13 +48,39 @@ MiracastThread::MiracastThread(std::string thread_name, size_t stack_size, size_
     MIRACASTLOG_TRACE("Exiting...");
 }
 
+void* MiracastThread::commonThreadEntry(void* arg)
+{
+    MIRACASTLOG_TRACE("Entering...");
+    MiracastThread* instance = static_cast<MiracastThread*>(arg);
+    if (instance && instance->m_thread_callback)
+    {
+        MIRACASTLOG_INFO("Thread [%s] started", instance->m_thread_name.c_str());
+        sem_wait(&instance->m_thread_stop_sync);
+        instance->m_thread_callback(instance->m_thread_user_data);  // Call the user-defined function
+        sem_post(&instance->m_thread_stop_sync);
+    }
+    MIRACASTLOG_TRACE("Exiting...");
+    return nullptr;
+}
+
 MiracastThread::~MiracastThread()
 {
     MIRACASTLOG_TRACE("Entering...");
-
     if ( 0 != m_pthread_id ){
+		MIRACASTLOG_TRACE("Entering before sem_wait...");
+		sem_wait(&m_thread_stop_sync);	
         // Join thread
+		MIRACASTLOG_TRACE("Entering before pthread_join...");
         pthread_join(m_pthread_id, nullptr);
+		MIRACASTLOG_TRACE(" after pthread_join...");
+		int ret = pthread_join(m_pthread_id, nullptr);
+        if (0 != ret)
+        {	
+			MIRACASTLOG_TRACE(" after pthread_join.inside if..");
+            MIRACASTLOG_ERROR("pthread_join() failed with [%d]",ret);
+            perror("pthread_join() failed");
+        }
+		MIRACASTLOG_TRACE(" after pthread_join.outside if..");
         m_pthread_id = 0;
         pthread_attr_destroy(&m_pthread_attr);
     }
@@ -63,6 +91,7 @@ MiracastThread::~MiracastThread()
         sem_destroy(&m_empty_msgq_sem_obj);
         m_g_queue = nullptr;
     }
+	sem_destroy(&m_thread_stop_sync);
     MIRACASTLOG_TRACE("Exiting...");
 }
 
@@ -72,11 +101,19 @@ MiracastError MiracastThread::start(void)
     MIRACASTLOG_TRACE("Entering...");
     if ( 0 != pthread_create(   &m_pthread_id,
                                 &m_pthread_attr,
-                                reinterpret_cast<void *(*)(void *)>(m_thread_callback),
-                                m_thread_user_data))
+                                &MiracastThread::commonThreadEntry,
+                                this))
     {
         ret_code = MIRACAST_FAIL;
     }
+	else
+	{
+		MIRACASTLOG_TRACE("Entering else in start...");	
+		sem_post(&m_thread_stop_sync);
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		MIRACASTLOG_TRACE("Exiting.else in start..");
+	}
+	
     MIRACASTLOG_TRACE("Exiting...");
     return ret_code;
 }
