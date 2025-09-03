@@ -98,7 +98,7 @@ namespace WPEFramework
                             /* Invoking Plugin API register to wpeframework */
                             Exchange::JMiracastPlayer::Register(*this, mMiracastPlayerImpl);
                         }
-                        mConfigure->Release();
+                       
                     }
                     else
                     {
@@ -171,10 +171,20 @@ namespace WPEFramework
                 }
 				if (nullptr != mCurrentService)
                {
+				   
                 /* Make sure the Activated and Deactivated are no longer called before we start cleaning up.. */
                 mCurrentService->Unregister(&mMiracastPlayerNotification);
                 mCurrentService->Release();
                 mCurrentService = nullptr;
+				if (mConfigure)
+                {    
+                        uint32_t result = mConfigure->Configure(NULL);
+                        if (result == Core::ERROR_NONE) {
+                             SYSLOG(Logging::Shutdown, (string(_T("MiracastService successfully destructed"))));
+                        }
+                        mConfigure->Release();
+                        mConfigure = NULL;
+		    	}
               }
             }
             
