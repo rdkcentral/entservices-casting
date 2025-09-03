@@ -177,7 +177,7 @@ namespace WPEFramework
 				
                 if (mConfigure)
                 {   
-					LOGINFO("predebug Entering mconfigure.!!!");
+					LOGINFO("predebug1 Entering mconfigure.!!!");
                     uint32_t result = mConfigure->Configure(NULL);
                     if (result == Core::ERROR_NONE) {
                         SYSLOG(Logging::Shutdown, (string(_T("MiracastPlayer successfully destructed"))));
