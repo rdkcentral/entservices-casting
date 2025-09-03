@@ -169,6 +169,13 @@ namespace WPEFramework
                     connection->Release();
 					LOGINFO("Exiting mMiracastPlayerImpl .!!!");
                 }
+				if (nullptr != mCurrentService)
+               {
+                /* Make sure the Activated and Deactivated are no longer called before we start cleaning up.. */
+                mCurrentService->Unregister(&mMiracastPlayerNotification);
+                mCurrentService->Release();
+                mCurrentService = nullptr;
+              }
             }
             
             mConnectionId = 0;
