@@ -136,8 +136,9 @@ namespace WPEFramework
 			if (nullptr != mCurrentService)
             {
 				LOGINFO("Entering Deintialize.!!!");
-            
-
+                mCurrentService->Unregister(&mMiracastPlayerNotification);
+				mCurrentService->Release();
+				
                 if (mConfigure)
                 {   
 					LOGINFO("Entering mconfigure.!!!");
@@ -150,13 +151,8 @@ namespace WPEFramework
                     mConfigure = NULL;
 					LOGINFO("After mconfigure-> release.!!!");
 		    	}
-                if (mCurrentService != NULL) {
-				    /* Make sure the Activated and Deactivated are no longer called before we start cleaning up.. */
-                  mCurrentService->Unregister(&mMiracastPlayerNotification);
-				  LOGINFO("release service before");
-                  mCurrentService->Release();
-				  LOGINFO("After mCurrentService->Release.!!!");
-				}	
+                    
+						
             }
             if (nullptr != mMiracastPlayerImpl)
             {
@@ -167,9 +163,9 @@ namespace WPEFramework
 				LOGINFO("Entering mMiracastPlayerImpl after unregister .!!!");
                 /* Stop processing: */
                 RPC::IRemoteConnection* connection = nullptr;
-                if (nullptr != service)
+                if (nullptr != mCurrentService)
                 {
-                    connection = service->RemoteConnection(mConnectionId);
+                    connection = mCurrentService->RemoteConnection(mConnectionId);
                 }
                 VARIABLE_IS_NOT_USED uint32_t result = mMiracastPlayerImpl->Release();
 
