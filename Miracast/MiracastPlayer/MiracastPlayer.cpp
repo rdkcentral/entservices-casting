@@ -174,8 +174,7 @@ namespace WPEFramework
             {
 			  
 				mCurrentService->Unregister(&mMiracastPlayerNotification);
-				mCurrentService->Release();
-				mCurrentService = NULL;
+				
                 if (mConfigure)
                 {   
 					LOGINFO("predebug Entering mconfigure.!!!");
