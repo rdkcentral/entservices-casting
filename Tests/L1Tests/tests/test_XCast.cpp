@@ -651,6 +651,8 @@ TEST_F(XCastTest, unRegisterAllApplications)
                     int i = 0;
                     for (RegisterAppEntry* appEntry : appConfigList->getValues())
                     {
+                        TEST_LOG("Current Index: %d", i);
+                        TEST_LOG("Names[%s]Prefix[%s]Cors[%s]AllowStop[%d]",appEntry->Names.c_str(),appEntry->prefixes.c_str(),appEntry->cors.c_str(),appEntry->allowStop);
                         if (0 == i)
                         {
                             EXPECT_EQ(appEntry->Names, string("Netflix"));
@@ -674,6 +676,8 @@ TEST_F(XCastTest, unRegisterAllApplications)
                     int i = 0;
                     for (RegisterAppEntry* appEntry : appConfigList->getValues())
                     {
+                        TEST_LOG("Current Index: %d", i);
+                        TEST_LOG("Names[%s]Prefix[%s]Cors[%s]AllowStop[%d]",appEntry->Names.c_str(),appEntry->prefixes.c_str(),appEntry->cors.c_str(),appEntry->allowStop);
                         if (0 == i)
                         {
                             EXPECT_EQ(appEntry->Names, string("Netflix"));
@@ -773,5 +777,28 @@ TEST_F(XCastEventTest, onApplicationStopRequest)
     EVENT_SUBSCRIBE(0, _T("onApplicationStopRequest"), _T("client.events"), message);
     plugin->onApplicationStopRequest("Netflix", "1234");
     EVENT_UNSUBSCRIBE(0, _T("onApplicationStopRequest"), _T("client.events"), message);
+}
+#endif
+
+#if 0
+// Mock class for XCastImplementation
+class XCastImplementationMock : public Plugin::XCastImplementation {
+public:
+    MOCK_METHOD(bool, getDefaultNameAndIPAddressLatest, (std::string& interface, std::string& ipaddress), (override));
+};
+
+TEST_F(XCastTest, getDefaultNameAndIPAddressLatest_Mock)
+{
+    XCastImplementationMock mockImpl;
+    std::string iface, ip;
+    EXPECT_CALL(mockImpl, getDefaultNameAndIPAddressLatest(::testing::_, ::testing::_))
+        .WillOnce(::testing::DoAll(
+            ::testing::SetArgReferee<0>("eth0"),
+            ::testing::SetArgReferee<1>("192.168.1.2"),
+            ::testing::Return(true)));
+    bool result = mockImpl.getDefaultNameAndIPAddressLatest(iface, ip);
+    EXPECT_TRUE(result);
+    EXPECT_EQ(iface, "eth0");
+    EXPECT_EQ(ip, "192.168.1.2");
 }
 #endif
