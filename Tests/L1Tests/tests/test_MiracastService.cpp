@@ -245,10 +245,7 @@ protected:
 
     virtual ~MiracastServiceEventTest() override
     {
-		//Wait for all the previous destructor process to complete
-		//std::this_thread::sleep_for(std::chrono::milliseconds(3000));
-
-        dispatcher->Deactivate();
+		dispatcher->Deactivate();
         dispatcher->Release();
 
         PluginHost::IFactories::Assign(nullptr);
