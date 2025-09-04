@@ -134,8 +134,7 @@ namespace WPEFramework
 			ASSERT(0 == mConnectionId);		
             if (nullptr != mMiracastPlayerImpl)
             {
-				LOGINFO("Entering mMiracastPlayerImpl .!!!");
-                mMiracastPlayerImpl->Unregister(&mMiracastPlayerNotification);
+				mMiracastPlayerImpl->Unregister(&mMiracastPlayerNotification);
                 Exchange::JMiracastPlayer::Unregister(*this);
 
                 /* Stop processing: */
@@ -152,8 +151,7 @@ namespace WPEFramework
                 * so it should endup in a DESTRUCTION_SUCCEEDED, if not we
                 * are leaking... */
                 ASSERT(result == Core::ERROR_DESTRUCTION_SUCCEEDED);
-				LOGINFO("Entering mMiracastPlayerImpl after Assert .!!!");
-
+				
                 /* If this was running in a (container) process... */
                 if (nullptr != connection)
                 {
@@ -162,26 +160,23 @@ namespace WPEFramework
                     * that unwilling processes, get shot if
                     * not stopped friendly :-)
                     */
-					LOGINFO("Entering mMiracastPlayerImpl inside connection.!!!");
-                    connection->Terminate();
+					connection->Terminate();
                     connection->Release();
-					LOGINFO("Exiting mMiracastPlayerImpl .!!!");
-                }
-				if (nullptr != mCurrentService)
+			   }
+			   if (nullptr != mCurrentService)
                {
-				   
-                /* Make sure the Activated and Deactivated are no longer called before we start cleaning up.. */
-                mCurrentService->Unregister(&mMiracastPlayerNotification);
-                mCurrentService->Release();
-                mCurrentService = nullptr;
-				if (mConfigure)
-                {    
-                        uint32_t result = mConfigure->Configure(NULL);
-                        if (result == Core::ERROR_NONE) {
-                             SYSLOG(Logging::Shutdown, (string(_T("MiracastService successfully destructed"))));
-                        }
-                        mConfigure->Release();
-                        mConfigure = NULL;
+				   /* Make sure the Activated and Deactivated are no longer called before we start cleaning up.. */
+                  mCurrentService->Unregister(&mMiracastPlayerNotification);
+                  mCurrentService->Release();
+                  mCurrentService = nullptr;
+				  if (mConfigure)
+                  {    
+                      uint32_t result = mConfigure->Configure(NULL);
+                      if (result == Core::ERROR_NONE) {
+                         SYSLOG(Logging::Shutdown, (string(_T("MiracastService successfully destructed"))));
+                      }
+                      mConfigure->Release();
+                      mConfigure = NULL;
 		    	}
               }
             }
