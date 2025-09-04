@@ -131,8 +131,7 @@ namespace WPEFramework
             SYSLOG(Logging::Startup, (_T("MiracastPlayer::Deinitialize: PID=%u"), getpid()));
 
             ASSERT(mCurrentService == service);
-			
-            ASSERT(0 == mConnectionId);		
+			ASSERT(0 == mConnectionId);		
             if (nullptr != mMiracastPlayerImpl)
             {
 				LOGINFO("Entering mMiracastPlayerImpl .!!!");
