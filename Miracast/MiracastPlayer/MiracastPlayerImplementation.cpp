@@ -219,8 +219,7 @@ namespace WPEFramework
                     m_isPluginInitialized = false;
                     MIRACASTLOG_INFO("Done..!!!");
                 }
-				MIRACASTLOG_INFO("outside != mService..!!!");
-                if (nullptr != mService)
+				if (nullptr != mService)
                 {	
 					MIRACASTLOG_INFO("entering != mService..!!!");
                     mService->Release();
