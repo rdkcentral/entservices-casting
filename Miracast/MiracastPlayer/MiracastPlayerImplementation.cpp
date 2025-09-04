@@ -220,18 +220,13 @@ namespace WPEFramework
                 }
 				if (nullptr != mService)
                 {	
-					MIRACASTLOG_INFO("entering != mService..!!!");
-                    mService->Release();
+				    mService->Release();
                     mService = nullptr;
-					MIRACASTLOG_INFO("exiting != mService..!!!");
-                }
-				MIRACASTLOG_INFO("After != mService..!!!");
-                MIRACAST::logger_deinit();
-				MIRACASTLOG_INFO("after logger_deinit..!!!");
-                MiracastPlayerImplementation::_instance = nullptr;
+				 }
+				MIRACAST::logger_deinit();
+			    MiracastPlayerImplementation::_instance = nullptr;
 				result = Core::ERROR_NONE;
-				MIRACASTLOG_INFO("after instance=nullptr..!!!");
-            }
+			}
             else if ((service) && ( nullptr == mService ))
             {
                 LOGINFO("Call MiracastPlayerImplementation initialize");
