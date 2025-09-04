@@ -84,8 +84,7 @@ namespace WPEFramework
          */
         Core::hresult MiracastPlayerImplementation::Unregister(Exchange::IMiracastPlayer::INotification *notification)
         {
-			LOGINFO("Entering mMiracastPlayerImpl Unregister.!!!");
-            MIRACASTLOG_TRACE("Entering ...");
+			MIRACASTLOG_TRACE("Entering ...");
             Core::hresult status = Core::ERROR_GENERAL;
 
             ASSERT(nullptr != notification);
