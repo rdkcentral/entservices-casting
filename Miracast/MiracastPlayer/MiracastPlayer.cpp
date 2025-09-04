@@ -177,7 +177,7 @@ namespace WPEFramework
                       }
                       mConfigure->Release();
                       mConfigure = NULL;
-		    	}
+		    	  }
               }
             }
             
