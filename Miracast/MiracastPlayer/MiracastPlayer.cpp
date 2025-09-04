@@ -131,15 +131,13 @@ namespace WPEFramework
             SYSLOG(Logging::Startup, (_T("MiracastPlayer::Deinitialize: PID=%u"), getpid()));
 
             ASSERT(mCurrentService == service);
-            ASSERT(0 == mConnectionId);
-						
+            ASSERT(0 == mConnectionId);		
             if (nullptr != mMiracastPlayerImpl)
             {
 				LOGINFO("Entering mMiracastPlayerImpl .!!!");
                 mMiracastPlayerImpl->Unregister(&mMiracastPlayerNotification);
                 Exchange::JMiracastPlayer::Unregister(*this);
 
-				LOGINFO("Entering mMiracastPlayerImpl after unregister .!!!");
                 /* Stop processing: */
                 RPC::IRemoteConnection* connection = nullptr;
                 if (nullptr != service)
