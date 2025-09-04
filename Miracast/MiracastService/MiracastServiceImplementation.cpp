@@ -66,54 +66,7 @@ namespace WPEFramework
 
         MiracastServiceImplementation::~MiracastServiceImplementation()
         {
-            LOGINFO("Call MiracastServiceImplementation destructor");
-            if (m_FriendlyNameMonitorTimerID)
-            {
-                g_source_remove(m_FriendlyNameMonitorTimerID);
-                m_FriendlyNameMonitorTimerID = 0;
-            }
-            remove_wifi_connection_state_timer();
-            remove_miracast_connection_timer();
-
-            if (_powerManagerPlugin)
-            {
-                _powerManagerPlugin->Unregister(_pwrMgrNotification.baseInterface<Exchange::IPowerManager::IModeChangedNotification>());
-                _powerManagerPlugin.Reset();
-            }
-            _registeredEventHandlers = false;
-
-            if (m_WiFiPluginObj)
-            {
-                m_WiFiPluginObj->Unsubscribe(1000, _T("onWIFIStateChanged"));
-                delete m_WiFiPluginObj;
-                m_WiFiPluginObj = nullptr;
-            }
-
-            if (m_SystemPluginObj)
-            {
-                m_SystemPluginObj->Unsubscribe(1000, _T("onFriendlyNameChanged"));
-                delete m_SystemPluginObj;
-                m_SystemPluginObj = nullptr;
-            }
-
-            MIRACASTLOG_INFO("Disconnect from the COM-RPC socket");
-
-            if (m_isServiceInitialized)
-            {
-                MiracastController::destroyInstance();
-                m_CurrentService = nullptr;
-                m_miracast_ctrler_obj = nullptr;
-                m_isServiceInitialized = false;
-                m_isServiceEnabled = false;
-                MIRACASTLOG_INFO("Done..!!!");
-            }
-            if(m_CurrentService)
-            {
-                m_CurrentService->Release();
-                m_CurrentService = nullptr;
-            }
-            MIRACAST::logger_deinit();
-            MiracastServiceImplementation::_instance = nullptr;
+            
         }
 
         /**
@@ -319,13 +272,16 @@ namespace WPEFramework
 
         void MiracastServiceImplementation::dispatchEvent(Event event, const JsonObject &params)
         {
+            MIRACASTLOG_TRACE("Entering ...");
             Core::IWorkerPool::Instance().Submit(Job::Create(this, event, params));
+            MIRACASTLOG_TRACE("Exiting ...");
         }
 
         void MiracastServiceImplementation::Dispatch(Event event,const JsonObject& params)
         {
+            MIRACASTLOG_TRACE("Entering ...");
             _adminLock.Lock();
-
+            MIRACASTLOG_TRACE("get lock ...");
             std::list<Exchange::IMiracastService::INotification *>::const_iterator index(_miracastServiceNotification.begin());
 
             switch (event)
@@ -425,6 +381,7 @@ namespace WPEFramework
                 break;
             }
             _adminLock.Unlock();
+            MIRACASTLOG_TRACE("Exiting ...");
         }
 
         /*  COMRPC Methods Start */
@@ -433,10 +390,62 @@ namespace WPEFramework
         {
             MIRACASTLOG_TRACE("Entering ...");
             uint32_t result = Core::ERROR_GENERAL;
+            
+            if ((m_CurrentService) && (nullptr == service))
+            {
+                 LOGINFO("Call MiracastServiceImplementation destructor");
+            if (m_FriendlyNameMonitorTimerID)
+            {
+                g_source_remove(m_FriendlyNameMonitorTimerID);
+                m_FriendlyNameMonitorTimerID = 0;
+            }
+            remove_wifi_connection_state_timer();
+            remove_miracast_connection_timer();
 
-            ASSERT(nullptr != service);
+            if (_powerManagerPlugin)
+            {
+                _powerManagerPlugin->Unregister(_pwrMgrNotification.baseInterface<Exchange::IPowerManager::IModeChangedNotification>());
+                _powerManagerPlugin.Reset();
+            }
+            _registeredEventHandlers = false;
 
-            m_CurrentService = service;
+            if (m_WiFiPluginObj)
+            {
+                m_WiFiPluginObj->Unsubscribe(1000, _T("onWIFIStateChanged"));
+                delete m_WiFiPluginObj;
+                m_WiFiPluginObj = nullptr;
+            }
+
+            if (m_SystemPluginObj)
+            {
+                m_SystemPluginObj->Unsubscribe(1000, _T("onFriendlyNameChanged"));
+                delete m_SystemPluginObj;
+                m_SystemPluginObj = nullptr;
+            }
+
+            MIRACASTLOG_INFO("Disconnect from the COM-RPC socket");
+
+            if (m_isServiceInitialized)
+            {
+                MiracastController::destroyInstance();
+                m_CurrentService = nullptr;
+                m_miracast_ctrler_obj = nullptr;
+                m_isServiceInitialized = false;
+                m_isServiceEnabled = false;
+                MIRACASTLOG_INFO("Done..!!!");
+            }
+            if(m_CurrentService)
+            {
+                m_CurrentService->Release();
+                m_CurrentService = nullptr;
+            }
+            MIRACAST::logger_deinit();
+            MiracastServiceImplementation::_instance = nullptr;
+            result = Core::ERROR_NONE;
+            }
+            else if ((service) && ( nullptr == m_CurrentService ))
+            {
+                m_CurrentService = service;
 
             if (nullptr != m_CurrentService)
             {
@@ -511,6 +520,9 @@ namespace WPEFramework
                     }
                 }
             }
+            } else {
+                 ASSERT(nullptr != service);
+            }    
             MIRACASTLOG_TRACE("Exiting ...");
             return result;
         }
@@ -857,6 +869,7 @@ namespace WPEFramework
                 eventDetails["source_dev_name"] = client_name;
                 eventDetails["reason_code"] = static_cast<int>(reason_code);
                 dispatchEvent(MIRACASTSERVICE_EVENT_CLIENT_CONNECTION_ERROR, eventDetails);
+                MIRACASTLOG_TRACE("dispatched ...");
             }
             MIRACASTLOG_TRACE("Exiting ...");
         }
