@@ -151,6 +151,7 @@ namespace WPEFramework
                 * so it should endup in a DESTRUCTION_SUCCEEDED, if not we
                 * are leaking... */
                 ASSERT(result == Core::ERROR_DESTRUCTION_SUCCEEDED);
+				
                 /* If this was running in a (container) process... */
                 if (nullptr != connection)
                 {
