@@ -139,15 +139,15 @@ namespace WPEFramework
 				mCurrentService->Unregister(&mMiracastServiceNotification);
 				mCurrentService->Release();
 
-                    if (mConfigure)
-                    {    
-                        uint32_t result = mConfigure->Configure(NULL);
-                        if (result == Core::ERROR_NONE) {
-                             SYSLOG(Logging::Shutdown, (string(_T("MiracastService successfully destructed"))));
-                        }
-                        mConfigure->Release();
-                        mConfigure = NULL;
-		    		}
+                if (mConfigure)
+                {    
+                   uint32_t result = mConfigure->Configure(NULL);
+                   if (result == Core::ERROR_NONE) {
+                      SYSLOG(Logging::Shutdown, (string(_T("MiracastService successfully destructed"))));
+                   }
+                   mConfigure->Release();
+                   mConfigure = NULL;
+		    	}
             }
             if (nullptr != mMiracastServiceImpl)
             {
