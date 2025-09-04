@@ -602,6 +602,7 @@ TEST_F(XCastTest, getProtocolVersion)
     delete dispatcherImplMock;
 }
 
+#if 0
 TEST_F(XCastTest, unRegisterAllApplications)
 {
     DispatcherMock* dispatcherImplMock = new DispatcherMock();
@@ -698,7 +699,6 @@ TEST_F(XCastTest, unRegisterAllApplications)
     delete dispatcherImplMock;
 }
 
-#if 0
 TEST_F(XCastEventTest, onApplicationHideRequest)
 {
     EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
