@@ -110,7 +110,7 @@ namespace
     #endif
 }
 
-class XCastTest : public ::testing::Test {
+class XCastTest : public ::testing::Test, Plugin::XCastImplementation {
 protected:
     Core::ProxyType<Plugin::XCast> plugin;
     Core::JSONRPC::Handler& handler;
@@ -234,6 +234,16 @@ protected:
         }
         PluginHost::IFactories::Assign(nullptr);
         IarmBus::setImpl(nullptr);
+    }
+
+    // Override the method for unit testing
+    bool getDefaultNameAndIPAddress(std::string& interface, std::string& ipaddress) override
+    {
+        TEST_LOG("XCastTest getDefaultNameAndIPAddress called");
+        interface = "eth0";
+        ipaddress = "192.168.1.100";
+        TEST_LOG("XCastTest getDefaultNameAndIPAddress [%s] [%s]",interface.c_str(),ipaddress.c_str());
+        return true;
     }
 };
 
@@ -777,28 +787,5 @@ TEST_F(XCastEventTest, onApplicationStopRequest)
     EVENT_SUBSCRIBE(0, _T("onApplicationStopRequest"), _T("client.events"), message);
     plugin->onApplicationStopRequest("Netflix", "1234");
     EVENT_UNSUBSCRIBE(0, _T("onApplicationStopRequest"), _T("client.events"), message);
-}
-#endif
-
-#if 0
-// Mock class for XCastImplementation
-class XCastImplementationMock : public Plugin::XCastImplementation {
-public:
-    MOCK_METHOD(bool, getDefaultNameAndIPAddressLatest, (std::string& interface, std::string& ipaddress), (override));
-};
-
-TEST_F(XCastTest, getDefaultNameAndIPAddressLatest_Mock)
-{
-    XCastImplementationMock mockImpl;
-    std::string iface, ip;
-    EXPECT_CALL(mockImpl, getDefaultNameAndIPAddressLatest(::testing::_, ::testing::_))
-        .WillOnce(::testing::DoAll(
-            ::testing::SetArgReferee<0>("eth0"),
-            ::testing::SetArgReferee<1>("192.168.1.2"),
-            ::testing::Return(true)));
-    bool result = mockImpl.getDefaultNameAndIPAddressLatest(iface, ip);
-    EXPECT_TRUE(result);
-    EXPECT_EQ(iface, "eth0");
-    EXPECT_EQ(ip, "192.168.1.2");
 }
 #endif

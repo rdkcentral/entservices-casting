@@ -477,11 +477,11 @@ int XCastManager::setManufacturerName( string manufacturer)
     int status = 0;
     LOGINFO("Manufacturer[%s]", manufacturer.c_str());
     lock_guard<recursive_mutex> lock(m_mutexSync);
+    m_manufacturerName = manufacturer;
     if(gdialCastObj != NULL)
     {
         gdialCastObj->setManufacturerName( manufacturer );
         status = 1;
-        m_manufacturerName = manufacturer;
     }
     else
         LOGINFO(" gdialCastObj is NULL ");
@@ -500,11 +500,11 @@ int XCastManager::setModelName( string model)
     int status = 0;
     lock_guard<recursive_mutex> lock(m_mutexSync);
     LOGINFO("Model[%s]", model.c_str());
+    m_modelName = model;
     if(gdialCastObj != NULL)
     {
         gdialCastObj->setModelName(model);
         status = 1;
-        m_modelName = model;
     }
     else
         LOGINFO(" gdialCastObj is NULL ");
