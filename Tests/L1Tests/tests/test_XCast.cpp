@@ -719,10 +719,10 @@ TEST_F(XCastTest, setApplicationState)
                     EXPECT_EQ(applicationName, string("NetflixApp"));
                     EXPECT_EQ(appState, string("running"));
                     EXPECT_EQ(applicationId, string("1234"));
-                    EXPECT_EQ(error, string(""));
+                    EXPECT_EQ(error, string("none"));
                     return GDIAL_SERVICE_ERROR_NONE;
                 }));
-    EXPECT_EQ(Core::ERROR_NONE, mJsonRpcHandler.Invoke(connection, _T("setApplicationState"), _T("{\"applicationName\": \"NetflixApp\", \"state\":\"running\", \"applicationId\": \"1234\", \"error\": \"\"}"), response));
+    EXPECT_EQ(Core::ERROR_NONE, mJsonRpcHandler.Invoke(connection, _T("setApplicationState"), _T("{\"applicationName\": \"NetflixApp\", \"state\":\"running\", \"applicationId\": \"1234\", \"error\": \"none\"}"), response));
     EXPECT_EQ(response, string("{\"success\":true}"));
 
     if (Core::ERROR_NONE == status)
@@ -749,9 +749,10 @@ TEST_F(XCastTest, getProtocolVersion)
     }
 }
 
-#if 0
 TEST_F(XCastTest, unRegisterAllApplications)
 {
+    Core::hresult status = createResources();
+
     EXPECT_CALL(*p_gdialserviceImplMock, RegisterApplications(::testing::_))
             .WillOnce(::testing::Invoke([](RegisterAppEntryList* appConfigList) {
                     int i = 0;
@@ -761,17 +762,21 @@ TEST_F(XCastTest, unRegisterAllApplications)
                         TEST_LOG("Names[%s]Prefix[%s]Cors[%s]AllowStop[%d]",appEntry->Names.c_str(),appEntry->prefixes.c_str(),appEntry->cors.c_str(),appEntry->allowStop);
                         if (0 == i)
                         {
-                            EXPECT_EQ(appEntry->Names, string("Netflix"));
-                            EXPECT_EQ(appEntry->prefixes, string("myNetflix"));
-                            EXPECT_EQ(appEntry->cors, string("netflix.com"));
+                            EXPECT_EQ(appEntry->Names, string("Youtube"));
+                            EXPECT_EQ(appEntry->prefixes, string("myYouTube"));
+                            EXPECT_EQ(appEntry->cors, string(".youtube.com"));
+                            EXPECT_EQ(appEntry->query, string("source_type=12"));
+                            EXPECT_EQ(appEntry->payload, string("youtube_payload"));
                             EXPECT_EQ(appEntry->allowStop, true);
                         }
                         else if (1 == i)
                         {
-                            EXPECT_EQ(appEntry->Names, string("Youtube"));
-                            EXPECT_EQ(appEntry->prefixes, string("myYouTube"));
-                            EXPECT_EQ(appEntry->cors, string("youtube.com"));
-                            EXPECT_EQ(appEntry->allowStop, true);
+                            EXPECT_EQ(appEntry->Names, string("Netflix"));
+                            EXPECT_EQ(appEntry->prefixes, string("myNetflix"));
+                            EXPECT_EQ(appEntry->cors, string(".netflix.com"));
+                            EXPECT_EQ(appEntry->query, string("source_type=12"));
+                            EXPECT_EQ(appEntry->payload, string("netflix_payload"));
+                            EXPECT_EQ(appEntry->allowStop, false);
                         }
                         ++i;
                     }
@@ -795,15 +800,19 @@ TEST_F(XCastTest, unRegisterAllApplications)
                     }
                     return GDIAL_SERVICE_ERROR_NONE;
                 }));
-    EXPECT_EQ(Core::ERROR_NONE, mJsonRpcHandler.Invoke(connection, _T("registerApplications"), _T("{\"applications\": [{\"name\": \"Netflix\", \"prefix\": \"myNetflix\", \"cors\": \"netflix.com\", \"allowStop\": true, \"query\":\"netflix_query\", \"payload\":\"netflix_payload\"},{\"name\": \"Youtube\", \"prefix\": \"myYouTube\", \"cors\": \"youtube.com\", \"allowStop\": true, \"query\":\"youtube_query\", \"payload\":\"youtube_payload\"}]}"), response));
+    EXPECT_EQ(Core::ERROR_NONE, mJsonRpcHandler.Invoke(connection, _T("registerApplications"), _T("{\"applications\": [{\"name\": \"Youtube\",\"prefix\": \"myYouTube\",\"cors\": \".youtube.com\",\"query\": \"source_type=12\",\"payload\": \"youtube_payload\",\"allowStop\": true},{\"name\": \"Netflix\",\"prefix\": \"myNetflix\",\"cors\": \".netflix.com\",\"query\": \"source_type=12\",\"payload\": \"netflix_payload\",\"allowStop\": false}]}"), response));
     EXPECT_EQ(response, string("{\"success\":true}"));
 
     EXPECT_EQ(Core::ERROR_NONE, mJsonRpcHandler.Invoke(connection, _T("unregisterApplications"), _T("{\"applications\": [\"Youtube\"]}"), response));
     EXPECT_EQ(response, string("{\"success\":true}"));
 
-    delete dispatcherImplMock;
+    if (Core::ERROR_NONE == status)
+    {
+        releaseResources();
+    }
 }
 
+#if 0
 TEST_F(XCastEventTest, onApplicationHideRequest)
 {
     EXPECT_CALL(*m, Submit(::testing::_, ::testing::_))
