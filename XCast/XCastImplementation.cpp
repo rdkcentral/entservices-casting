@@ -386,22 +386,21 @@ namespace WPEFramework
 
         void XCastImplementation::InitializePowerManager(PluginHost::IShell* service)
         {
-            if (nullptr == _powerManagerPlugin)
-            {
-                _powerManagerPlugin = PowerManagerInterfaceBuilder(_T("org.rdk.PowerManager"))
-                    .withIShell(service)
-                    .withRetryIntervalMS(200)
-                    .withRetryCount(25)
-                    .createInterface();
+            LOGINFO("Entering ...");
+            _powerManagerPlugin = PowerManagerInterfaceBuilder(_T("org.rdk.PowerManager"))
+                .withIShell(service)
+                .withRetryIntervalMS(200)
+                .withRetryCount(25)
+                .createInterface();
 
-                if (_powerManagerPlugin) {
-                    LOGINFO("PowerManagerInterfaceBuilder created successfully");
-                    checkPowerAndNetworkStandbyStates();
-                }
-                else {
-                    LOGERR("Failed to get PowerManager instance");
-                }
+            if (_powerManagerPlugin) {
+                LOGINFO("PowerManagerInterfaceBuilder created successfully");
+                checkPowerAndNetworkStandbyStates();
             }
+            else {
+                LOGERR("Failed to get PowerManager instance");
+            }
+            LOGINFO("Exiting ...");
         }
 
         void XCastImplementation::InitializeNetworkManager(PluginHost::IShell* service)
@@ -1130,9 +1129,10 @@ namespace WPEFramework
             enabled = m_xcastEnable;
             success = true;
             return Core::ERROR_NONE;
-         }
+        }
        
-	Core::hresult XCastImplementation::SetStandbyBehavior(const Exchange::IXCast::StandbyBehavior &standbybehavior, Exchange::IXCast::XCastSuccess &success) { 
+	    Core::hresult XCastImplementation::SetStandbyBehavior(const Exchange::IXCast::StandbyBehavior &standbybehavior, Exchange::IXCast::XCastSuccess &success)
+        { 
             LOGINFO("XCastImplementation::setStandbyBehavior\n");
              success.success = false;
             bool enabled = false;
@@ -1154,7 +1154,9 @@ namespace WPEFramework
             LOGINFO("XCastImplementation::setStandbyBehavior m_standbyBehavior : %d", m_standbyBehavior);
             return Core::ERROR_NONE;
         }
-	Core::hresult XCastImplementation::GetStandbyBehavior(Exchange::IXCast::StandbyBehavior &standbybehavior, bool &success) { 
+
+	    Core::hresult XCastImplementation::GetStandbyBehavior(Exchange::IXCast::StandbyBehavior &standbybehavior, bool &success)
+        { 
             LOGINFO("XCastImplementation::getStandbyBehavior m_standbyBehavior :%d",m_standbyBehavior);
             if(m_standbyBehavior)
                 standbybehavior = Exchange::IXCast::StandbyBehavior::ACTIVE;
@@ -1200,7 +1202,8 @@ namespace WPEFramework
             return Core::ERROR_NONE;
         }
 
-        bool XCastImplementation::deleteFromDynamicAppCache(vector<string>& appsToDelete) {
+        bool XCastImplementation::deleteFromDynamicAppCache(vector<string>& appsToDelete)
+        {
             LOGINFO("XCastImplementation::deleteFromDynamicAppCache");
             bool ret = true;
             {lock_guard<mutex> lck(m_appConfigMutex);
@@ -1235,6 +1238,7 @@ namespace WPEFramework
             //Even if requested app names not there return true.
             return ret;
         }
+
         void XCastImplementation::updateDynamicAppCache(Exchange::IXCast::IApplicationInfoIterator* const appInfoList)
         {
             LOGINFO("XcastService::UpdateDynamicAppCache");
@@ -1315,7 +1319,8 @@ namespace WPEFramework
             return;
         }
 
-        Core::hresult XCastImplementation::RegisterApplications(Exchange::IXCast::IApplicationInfoIterator* const appInfoList, Exchange::IXCast::XCastSuccess &success) { 
+        Core::hresult XCastImplementation::RegisterApplications(Exchange::IXCast::IApplicationInfoIterator* const appInfoList, Exchange::IXCast::XCastSuccess &success)
+        {
             LOGINFO("XCastImplementation::registerApplications \n");
             enableCastService(m_friendlyName,false);
             m_isDynamicRegistrationsRequired = true;
@@ -1341,7 +1346,8 @@ namespace WPEFramework
             success.success = true;
             return Core::ERROR_NONE;
         }
-	Core::hresult XCastImplementation::UnregisterApplications(Exchange::IXCast::IStringIterator* const apps, Exchange::IXCast::XCastSuccess &success) 
+
+        Core::hresult XCastImplementation::UnregisterApplications(Exchange::IXCast::IStringIterator* const apps, Exchange::IXCast::XCastSuccess &success)
         {
             LOGINFO("XcastService::unregisterApplications \n ");
             auto returnStatus = false;

@@ -299,6 +299,9 @@ namespace WPEFramework
             uint32_t Initialize(bool networkStandbyMode);
             void Deinitialize(void);
 
+            void onActiveInterfaceChange(const string prevActiveInterface, const string currentActiveinterface);
+            void onIPAddressChange(const string interface, const string ipversion, const string ipaddress, const Exchange::INetworkManager::IPStatus status);
+
             void onLocateCastTimer();
             void startTimer(int interval);
             void stopTimer();
