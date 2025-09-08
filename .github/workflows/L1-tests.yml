@@ -207,6 +207,11 @@ jobs:
           #token : ${{ secrets.RDKCM_RDKE }}
           run: rm -rf $GITHUB_WORKSPACE/entservices-apis/jsonrpc/DTV.json
 
+       - name: Apply patches entservices-apis
+         run: |
+          cd $GITHUB_WORKSPACE/entservices-apis
+          patch -p1 < $GITHUB_WORKSPACE/entservices-testframework/patches/0001-RDKEMW-4621-Integrate-NetworkManager-interface-file.patch
+          cd -
 
       - name: Build entservices-apis
         run: >

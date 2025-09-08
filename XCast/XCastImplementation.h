@@ -24,6 +24,7 @@
 #include <interfaces/IXCast.h>
 #include <interfaces/IPowerManager.h>
 #include <interfaces/IConfiguration.h>
+#include <interfaces/INetworkManager.h>
  
 #include <com/com.h>
 #include <core/core.h>
@@ -42,9 +43,7 @@
 #define SYSTEM_CALLSIGN_VER SYSTEM_CALLSIGN".1"
 #define SECURITY_TOKEN_LEN_MAX 1024
 
-
 using PowerState = WPEFramework::Exchange::IPowerManager::PowerState;
-
 
 namespace WPEFramework
 {
@@ -79,8 +78,7 @@ namespace WPEFramework
              // We do not allow this plugin to be copied !!
              XCastImplementation(const XCastImplementation &) = delete;
              XCastImplementation &operator=(const XCastImplementation &) = delete;
-            
- 
+
         public:
              class EXTERNAL Job : public Core::IDispatch {
                 protected:
@@ -171,6 +169,65 @@ namespace WPEFramework
                 private:
                     XCastImplementation& _parent;
             };
+
+            class NetworkManagerNotification : public Exchange::INetworkManager::INotification
+            {
+                private:
+                    NetworkManagerNotification(const NetworkManagerNotification&) = delete;
+                    NetworkManagerNotification& operator=(const NetworkManagerNotification&) = delete;
+
+                public:
+                    explicit NetworkManagerNotification(XCastImplementation& parent)
+                        : _parent(parent)
+                    {
+                    }
+                    ~NetworkManagerNotification() override = default;
+
+                public:
+                    void onActiveInterfaceChange(const string prevActiveInterface, const string currentActiveinterface) override
+                    {
+                        LOGINFO("Active interface changed [%s] -- > [%s]",prevActiveInterface.c_str(), currentActiveinterface.c_str());
+                        _parent.onActiveInterfaceChange(prevActiveInterface, currentActiveinterface);
+                    }
+
+                    void onIPAddressChange(const string interface, const string ipversion, const string ipaddress, const Exchange::INetworkManager::IPStatus status) override
+                    {
+                        LOGINFO("IP Address changed: Interface [%s] IP Version [%s] Address [%s] Status [%d]", interface.c_str(), ipversion.c_str(), ipaddress.c_str(), status);
+                        _parent.onIPAddressChange(interface, ipversion, ipaddress, status);
+                    }
+
+                    void onInterfaceStateChange(const Exchange::INetworkManager::InterfaceState state, const string interface) override
+                    {
+                        LOGINFO("Interface State Changed: Interface [%s] State [%d]", interface.c_str(), state);
+                    }
+
+                    void onInternetStatusChange(const Exchange::INetworkManager::InternetStatus prevState, const Exchange::INetworkManager::InternetStatus currState) override
+                    {
+                        LOGINFO("Internet Status Changed: [%d] -- > [%d]",prevState, currState);
+                    }
+
+                    void onAvailableSSIDs(const string jsonOfScanResults) override
+                    {
+                        LOGINFO("SSIDs: [%s]", jsonOfScanResults.c_str());
+                    }
+
+                    void onWiFiStateChange(const Exchange::INetworkManager::WiFiState state) override
+                    {
+                        LOGINFO("WiFi State changed: [%d]", state);
+                    }
+
+                    void onWiFiSignalQualityChange(const string ssid, const string strength, const string noise, const string snr, const Exchange::INetworkManager::WiFiSignalQuality quality) override
+                    {
+                        LOGINFO("WiFi Signal Quality changed: SSID [%s] Strength [%s] Noise [%s] SNR [%s] Quality [%d]", ssid.c_str(), strength.c_str(), noise.c_str(), snr.c_str(), quality);
+                    }
+
+                    BEGIN_INTERFACE_MAP(NetworkManagerNotification)
+                    INTERFACE_ENTRY(Exchange::INetworkManager::INotification)
+                    END_INTERFACE_MAP
+
+                private:
+                    XCastImplementation& _parent;
+            };
  
         public:
             Core::hresult Register(Exchange::IXCast::INotification *notification) override;
@@ -215,7 +272,7 @@ namespace WPEFramework
             WPEFramework::JSONRPC::LinkType<WPEFramework::Core::JSON::IElement> *m_NetworkPluginObj = nullptr;
             WPEFramework::JSONRPC::LinkType<WPEFramework::Core::JSON::IElement> *m_SystemPluginObj = NULL;
             PluginHost::IShell* _service;
-            
+
             PowerManagerInterfaceRef _powerManagerPlugin;
             Core::Sink<PowerManagerNotification> _pwrMgrNotification;
             void threadPowerModeChangeEvent(void);
@@ -223,12 +280,15 @@ namespace WPEFramework
             static bool m_xcastEnable;
             static bool m_standbyBehavior;
             bool m_networkStandbyMode;
-            bool _registeredEventHandlers;
+            bool _registeredPowerEventHandlers;
+            bool _registeredNMEventHandlers;
 
         private:
+            Exchange::INetworkManager* _networkManagerPlugin;
             mutable Core::CriticalSection _adminLock;
              
             std::list<Exchange::IXCast::INotification *> _xcastNotification; // List of registered notifications
+            Core::Sink<NetworkManagerNotification> _networkManagerNotification;
 
             void dumpDynamicAppCacheList(string strListName, std::vector<DynamicAppConfig*>& appConfigList);
             bool deleteFromDynamicAppCache(vector<string>& appsToDelete);
@@ -243,22 +303,21 @@ namespace WPEFramework
             void startTimer(int interval);
             void stopTimer();
             bool isTimerActive();
-            
-            void registerEventHandlers();
-            void unregisterEventHandlers();
+
+            void registerPowerEventHandlers();
+            void unregisterPowerEventHandlers();
             void checkPowerAndNetworkStandbyStates();
             void InitializePowerManager(PluginHost::IShell *service);
 
             std::string getSecurityToken();
-            void getThunderPlugins();
-            int activatePlugin(string callsign);
-            int deactivatePlugin(string callsign);
-            bool isPluginActivated(string callsign);
-            void eventHandler_onDefaultInterfaceChanged(const JsonObject& parameters);
-            void eventHandler_ipAddressChanged(const JsonObject& parameters);
-            void eventHandler_pluginState(const JsonObject& parameters);
+
+            void registerNetworkEventHandlers();
+            void unregisterNetworkEventHandlers();
+            void InitializeNetworkManager(PluginHost::IShell *service);
+            string getInterfaceNameToType(const string & interface);
+
             bool connectToGDialService(void);
-            virtual bool getDefaultNameAndIPAddress(std::string& interface, std::string& ipaddress);
+            bool getDefaultNameAndIPAddress(std::string& interface, std::string& ipaddress);
             void updateNWConnectivityStatus(std::string nwInterface, bool nwConnected, std::string ipaddress = "");
             uint32_t enableCastService(string friendlyname,bool enableService);
             uint32_t Configure(PluginHost::IShell* shell);
