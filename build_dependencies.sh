@@ -83,6 +83,7 @@ cmake --build build/Thunder --target install
 echo "======================================================================================"
 echo "buliding entservices-apis"
 cd entservices-apis
+patch -p1 < $GITHUB_WORKSPACE/entservices-testframework/patches/0001-RDKEMW-4621-Integrate-NetworkManager-interface-file.patch
 rm -rf jsonrpc/DTV.json
 cd ..
 
