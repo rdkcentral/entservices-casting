@@ -832,18 +832,18 @@ TEST_F(XCastTest, onApplicationLaunchRequest)
             [&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
                 string text;
                 EXPECT_TRUE(json->ToString(text));
-                EXPECT_EQ(text, string(_T("{\"jsonrpc\":\"2.0\",\"method\":\"client.events.onApplicationLaunchRequest\",\"params\":{\"applicationName\":\"NetflixApp\",\"applicationId\":\"1234\"}}")));
+                EXPECT_EQ(text, string(_T("{\"jsonrpc\":\"2.0\",\"method\":\"org.rdk.Xcast.onApplicationLaunchRequest\",\"params\":{\"applicationName\":\"NetflixApp\",\"applicationId\":\"1234\"}}")));
                 return Core::ERROR_NONE;
             }))
         .WillOnce(::testing::Invoke(
             [&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
                 string text;
                 EXPECT_TRUE(json->ToString(text));
-                EXPECT_EQ(text, string(_T("{\"jsonrpc\":\"2.0\",\"method\":\"client.events.onApplicationLaunchRequest\",\"params\":{\"applicationName\":\"NetflixApp\",\"applicationId\":\"1234\"}}")));
+                EXPECT_EQ(text, string(_T("{\"jsonrpc\":\"2.0\",\"method\":\"org.rdk.Xcast.onApplicationLaunchRequest\",\"params\":{\"applicationName\":\"NetflixApp\",\"applicationId\":\"1234\"}}")));
                 return Core::ERROR_NONE;
             }));
 
-    EVENT_SUBSCRIBE(0, _T("onApplicationLaunchRequest"), _T("client.events"), message);
+    EVENT_SUBSCRIBE(0, _T("onApplicationLaunchRequest"), _T("org.rdk.Xcast"), message);
 
     GDialNotifier* gdialNotifier = gdialService::getObserverHandle();
     ASSERT_NE(gdialNotifier, nullptr);
@@ -851,7 +851,7 @@ TEST_F(XCastTest, onApplicationLaunchRequest)
     gdialNotifier->onApplicationLaunchRequest("Youtube", "http://youtube.com?myYouTube");
     gdialNotifier->onApplicationLaunchRequestWithLaunchParam("Youtube", "youtube_payload", "source_type=12", "http://youtube.com");
 
-    EVENT_UNSUBSCRIBE(0, _T("onApplicationLaunchRequest"), _T("client.events"), message);
+    EVENT_UNSUBSCRIBE(0, _T("onApplicationLaunchRequest"), _T("org.rdk.Xcast"), message);
 
     if (Core::ERROR_NONE == status)
     {
@@ -869,17 +869,17 @@ TEST_F(XCastTest, onApplicationStopRequest)
             [&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
                 string text;
                 EXPECT_TRUE(json->ToString(text));
-                EXPECT_EQ(text, string(_T("{\"jsonrpc\":\"2.0\",\"method\":\"client.events.onApplicationStopRequest\",\"params\":{\"applicationName\":\"Youtube\",\"applicationId\":\"1234\"}}")));
+                EXPECT_EQ(text, string(_T("{\"jsonrpc\":\"2.0\",\"method\":\"org.rdk.Xcast.onApplicationStopRequest\",\"params\":{\"applicationName\":\"Youtube\",\"applicationId\":\"1234\"}}")));
                 return Core::ERROR_NONE;
             }));
 
-    EVENT_SUBSCRIBE(0, _T("onApplicationStopRequest"), _T("client.events"), message);
+    EVENT_SUBSCRIBE(0, _T("onApplicationStopRequest"), _T("org.rdk.Xcast"), message);
 
     GDialNotifier* gdialNotifier = gdialService::getObserverHandle();
     ASSERT_NE(gdialNotifier, nullptr);
     gdialNotifier->onApplicationStopRequest("Youtube", "1234");
 
-    EVENT_UNSUBSCRIBE(0, _T("onApplicationStopRequest"), _T("client.events"), message);
+    EVENT_UNSUBSCRIBE(0, _T("onApplicationStopRequest"), _T("org.rdk.Xcast"), message);
 
     if (Core::ERROR_NONE == status)
     {
@@ -897,17 +897,17 @@ TEST_F(XCastTest, onApplicationHideRequest)
             [&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
                 string text;
                 EXPECT_TRUE(json->ToString(text));
-                EXPECT_EQ(text, string(_T("{\"jsonrpc\":\"2.0\",\"method\":\"client.events.onApplicationHideRequest\",\"params\":{\"applicationName\":\"Youtube\",\"applicationId\":\"1234\"}}")));
+                EXPECT_EQ(text, string(_T("{\"jsonrpc\":\"2.0\",\"method\":\"org.rdk.Xcast.onApplicationHideRequest\",\"params\":{\"applicationName\":\"Youtube\",\"applicationId\":\"1234\"}}")));
                 return Core::ERROR_NONE;
             }));
 
-    EVENT_SUBSCRIBE(0, _T("onApplicationHideRequest"), _T("client.events"), message);
+    EVENT_SUBSCRIBE(0, _T("onApplicationHideRequest"), _T("org.rdk.Xcast"), message);
 
     GDialNotifier* gdialNotifier = gdialService::getObserverHandle();
     ASSERT_NE(gdialNotifier, nullptr);
     gdialNotifier->onApplicationHideRequest("Youtube", "1234");
 
-    EVENT_UNSUBSCRIBE(0, _T("onApplicationHideRequest"), _T("client.events"), message);
+    EVENT_UNSUBSCRIBE(0, _T("onApplicationHideRequest"), _T("org.rdk.Xcast"), message);
 
     if (Core::ERROR_NONE == status)
     {
@@ -925,17 +925,17 @@ TEST_F(XCastTest, onApplicationResumeRequest)
             [&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
                 string text;
                 EXPECT_TRUE(json->ToString(text));
-                EXPECT_EQ(text, string(_T("{\"jsonrpc\":\"2.0\",\"method\":\"client.events.onApplicationResumeRequest\",\"params\":{\"applicationName\":\"Youtube\",\"applicationId\":\"1234\"}}")));
+                EXPECT_EQ(text, string(_T("{\"jsonrpc\":\"2.0\",\"method\":\"org.rdk.Xcast.onApplicationResumeRequest\",\"params\":{\"applicationName\":\"Youtube\",\"applicationId\":\"1234\"}}")));
                 return Core::ERROR_NONE;
             }));
 
-    EVENT_SUBSCRIBE(0, _T("onApplicationResumeRequest"), _T("client.events"), message);
+    EVENT_SUBSCRIBE(0, _T("onApplicationResumeRequest"), _T("org.rdk.Xcast"), message);
 
     GDialNotifier* gdialNotifier = gdialService::getObserverHandle();
     ASSERT_NE(gdialNotifier, nullptr);
     gdialNotifier->onApplicationResumeRequest("Youtube", "1234");
 
-    EVENT_UNSUBSCRIBE(0, _T("onApplicationResumeRequest"), _T("client.events"), message);
+    EVENT_UNSUBSCRIBE(0, _T("onApplicationResumeRequest"), _T("org.rdk.Xcast"), message);
 
     if (Core::ERROR_NONE == status)
     {
@@ -953,17 +953,17 @@ TEST_F(XCastTest, onApplicationStateRequest)
             [&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
                 string text;
                 EXPECT_TRUE(json->ToString(text));
-                EXPECT_EQ(text, string(_T("{\"jsonrpc\":\"2.0\",\"method\":\"client.events.onApplicationStateRequest\",\"params\":{\"applicationName\":\"Netflix\",\"applicationId\":\"1234\"}}")));
+                EXPECT_EQ(text, string(_T("{\"jsonrpc\":\"2.0\",\"method\":\"org.rdk.Xcast.onApplicationStateRequest\",\"params\":{\"applicationName\":\"Netflix\",\"applicationId\":\"1234\"}}")));
                 return Core::ERROR_NONE;
             }));
 
-    EVENT_SUBSCRIBE(0, _T("onApplicationStateRequest"), _T("client.events"), message);
+    EVENT_SUBSCRIBE(0, _T("onApplicationStateRequest"), _T("org.rdk.Xcast"), message);
 
     GDialNotifier* gdialNotifier = gdialService::getObserverHandle();
     ASSERT_NE(gdialNotifier, nullptr);
     gdialNotifier->onApplicationStateRequest("Netflix", "1234");
 
-    EVENT_UNSUBSCRIBE(0, _T("onApplicationStateRequest"), _T("client.events"), message);
+    EVENT_UNSUBSCRIBE(0, _T("onApplicationStateRequest"), _T("org.rdk.Xcast"), message);
 
     if (Core::ERROR_NONE == status)
     {
