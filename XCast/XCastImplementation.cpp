@@ -97,7 +97,8 @@ namespace WPEFramework
          _registeredPowerEventHandlers(false),
          _registeredNMEventHandlers(false),
          _networkManagerPlugin(nullptr),
-         _adminLock()
+         _adminLock(),
+         _networkManagerNotification(*this)
         {
             LOGINFO("Create XCastImplementation Instance");
             m_locateCastTimer.connect( bind( &XCastImplementation::onLocateCastTimer, this ));
