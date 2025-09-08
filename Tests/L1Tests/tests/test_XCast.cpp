@@ -812,84 +812,151 @@ TEST_F(XCastTest, unRegisterAllApplications)
     }
 }
 
-#if 0
-TEST_F(XCastEventTest, onApplicationHideRequest)
+TEST_F(XCastTest, onApplicationLaunchRequest)
 {
-    EXPECT_CALL(*m, Submit(::testing::_, ::testing::_))
-        .Times(1)
-        .WillOnce(::testing::Invoke(
-            [&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
-                string text;
-                EXPECT_TRUE(json->ToString(text));
-                EXPECT_EQ(text, string(_T("{\"jsonrpc\":\"2.0\",\"method\":\"client.events.onApplicationHideRequest\",\"params\":{\"applicationName\":\"NetflixApp\",\"applicationId\":\"1234\"}}")));
-                return Core::ERROR_NONE;
-            }));
+    Core::hresult status = createResources();
 
-    EVENT_SUBSCRIBE(0, _T("onApplicationHideRequest"), _T("client.events"), message);
-    plugin->onApplicationHideRequest("Netflix", "1234");
-    EVENT_UNSUBSCRIBE(0, _T("onApplicationHideRequest"), _T("client.events"), message);
-}
-TEST_F(XCastEventTest, onApplicationStateRequest)
-{
     EXPECT_CALL(*mServiceMock, Submit(::testing::_, ::testing::_))
-        .Times(1)
+        .Times(2)
         .WillOnce(::testing::Invoke(
             [&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
                 string text;
                 EXPECT_TRUE(json->ToString(text));
-                EXPECT_EQ(text, string(_T("{\"jsonrpc\":\"2.0\",\"method\":\"client.events.onApplicationStateRequest\",\"params\":{\"applicationName\":\"NetflixApp\",\"applicationId\":\"1234\"}}")));
+                EXPECT_EQ(text, string(_T("{\"jsonrpc\":\"2.0\",\"method\":\"client.events.onApplicationLaunchRequest\",\"params\":{\"applicationName\":\"NetflixApp\",\"applicationId\":\"1234\"}}")));
                 return Core::ERROR_NONE;
-            }));
-    EVENT_SUBSCRIBE(0, _T("onApplicationStateRequest"), _T("client.events"), message);
-    plugin->onApplicationStateRequest("Netflix", "1234");
-    EVENT_UNSUBSCRIBE(0, _T("onApplicationStateRequest"), _T("client.events"), message);
-}
-TEST_F(XCastEventTest, onApplicationLaunchRequest)
-{
-    EXPECT_CALL(*mServiceMock, Submit(::testing::_, ::testing::_))
-        .Times(1)
+            }))
         .WillOnce(::testing::Invoke(
             [&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
                 string text;
                 EXPECT_TRUE(json->ToString(text));
-                EXPECT_EQ(text, string(_T("{\"jsonrpc\":\"2.0\",\"method\":\"client.events.onApplicationLaunchRequest\",\"params\":{\"applicationName\":\"Netflix\",\"parameters\":{\"url\":\"1234\"}}}")));
+                EXPECT_EQ(text, string(_T("{\"jsonrpc\":\"2.0\",\"method\":\"client.events.onApplicationLaunchRequest\",\"params\":{\"applicationName\":\"NetflixApp\",\"applicationId\":\"1234\"}}")));
                 return Core::ERROR_NONE;
             }));
 
     EVENT_SUBSCRIBE(0, _T("onApplicationLaunchRequest"), _T("client.events"), message);
-    plugin->onApplicationLaunchRequest("Netflix", "1234");
-    EVENT_UNSUBSCRIBE(0, _T("onApplicationLaunchRequest"), _T("client.events"), message);
-}
-TEST_F(XCastEventTest, onApplicationResumeRequest)
-{
-    EXPECT_CALL(*mServiceMock, Submit(::testing::_, ::testing::_))
-        .Times(1)
-        .WillOnce(::testing::Invoke(
-            [&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
-                string text;
-                EXPECT_TRUE(json->ToString(text));
-                EXPECT_EQ(text, string(_T("{\"jsonrpc\":\"2.0\",\"method\":\"client.events.onApplicationResumeRequest\",\"params\":{\"applicationName\":\"NetflixApp\",\"applicationId\":\"1234\"}}")));
-                return Core::ERROR_NONE;
-            }));
 
-    EVENT_SUBSCRIBE(0, _T("onApplicationResumeRequest"), _T("client.events"), message);
-    plugin->onApplicationResumeRequest("Netflix", "1234");
-    EVENT_UNSUBSCRIBE(0, _T("onApplicationResumeRequest"), _T("client.events"), message);
+    GDialNotifier* gdialNotifier = gdialService::getObserverHandle();
+    ASSERT_NE(gdialNotifier, nullptr);
+
+    gdialNotifier->onApplicationLaunchRequest("Youtube", "http://youtube.com?myYouTube");
+    gdialNotifier->onApplicationLaunchRequestWithLaunchParam("Youtube", "youtube_payload", "source_type=12", "http://youtube.com");
+
+    EVENT_UNSUBSCRIBE(0, _T("onApplicationLaunchRequest"), _T("client.events"), message);
+
+    if (Core::ERROR_NONE == status)
+    {
+        releaseResources();
+    }
 }
-TEST_F(XCastEventTest, onApplicationStopRequest)
+
+TEST_F(XCastTest, onApplicationStopRequest)
 {
+    Core::hresult status = createResources();
+
     EXPECT_CALL(*mServiceMock, Submit(::testing::_, ::testing::_))
         .Times(1)
         .WillOnce(::testing::Invoke(
             [&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
                 string text;
                 EXPECT_TRUE(json->ToString(text));
-                EXPECT_EQ(text, string(_T("{\"jsonrpc\":\"2.0\",\"method\":\"client.events.onApplicationStopRequest\",\"params\":{\"applicationName\":\"Netflix\",\"applicationId\":\"1234\"}}")));
+                EXPECT_EQ(text, string(_T("{\"jsonrpc\":\"2.0\",\"method\":\"client.events.onApplicationStopRequest\",\"params\":{\"applicationName\":\"Youtube\",\"applicationId\":\"1234\"}}")));
                 return Core::ERROR_NONE;
             }));
 
     EVENT_SUBSCRIBE(0, _T("onApplicationStopRequest"), _T("client.events"), message);
-    plugin->onApplicationStopRequest("Netflix", "1234");
+
+    GDialNotifier* gdialNotifier = gdialService::getObserverHandle();
+    ASSERT_NE(gdialNotifier, nullptr);
+    gdialNotifier->onApplicationStopRequest("Youtube", "1234");
+
     EVENT_UNSUBSCRIBE(0, _T("onApplicationStopRequest"), _T("client.events"), message);
+
+    if (Core::ERROR_NONE == status)
+    {
+        releaseResources();
+    }
 }
-#endif
+
+TEST_F(XCastTest, onApplicationHideRequest)
+{
+    Core::hresult status = createResources();
+
+    EXPECT_CALL(*mServiceMock, Submit(::testing::_, ::testing::_))
+        .Times(1)
+        .WillOnce(::testing::Invoke(
+            [&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+                string text;
+                EXPECT_TRUE(json->ToString(text));
+                EXPECT_EQ(text, string(_T("{\"jsonrpc\":\"2.0\",\"method\":\"client.events.onApplicationHideRequest\",\"params\":{\"applicationName\":\"Youtube\",\"applicationId\":\"1234\"}}")));
+                return Core::ERROR_NONE;
+            }));
+
+    EVENT_SUBSCRIBE(0, _T("onApplicationHideRequest"), _T("client.events"), message);
+
+    GDialNotifier* gdialNotifier = gdialService::getObserverHandle();
+    ASSERT_NE(gdialNotifier, nullptr);
+    gdialNotifier->onApplicationHideRequest("Youtube", "1234");
+
+    EVENT_UNSUBSCRIBE(0, _T("onApplicationHideRequest"), _T("client.events"), message);
+
+    if (Core::ERROR_NONE == status)
+    {
+        releaseResources();
+    }
+}
+
+TEST_F(XCastTest, onApplicationResumeRequest)
+{
+    Core::hresult status = createResources();
+
+    EXPECT_CALL(*mServiceMock, Submit(::testing::_, ::testing::_))
+        .Times(1)
+        .WillOnce(::testing::Invoke(
+            [&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+                string text;
+                EXPECT_TRUE(json->ToString(text));
+                EXPECT_EQ(text, string(_T("{\"jsonrpc\":\"2.0\",\"method\":\"client.events.onApplicationResumeRequest\",\"params\":{\"applicationName\":\"Youtube\",\"applicationId\":\"1234\"}}")));
+                return Core::ERROR_NONE;
+            }));
+
+    EVENT_SUBSCRIBE(0, _T("onApplicationResumeRequest"), _T("client.events"), message);
+
+    GDialNotifier* gdialNotifier = gdialService::getObserverHandle();
+    ASSERT_NE(gdialNotifier, nullptr);
+    gdialNotifier->onApplicationResumeRequest("Youtube", "1234");
+
+    EVENT_UNSUBSCRIBE(0, _T("onApplicationResumeRequest"), _T("client.events"), message);
+
+    if (Core::ERROR_NONE == status)
+    {
+        releaseResources();
+    }
+}
+
+TEST_F(XCastTest, onApplicationStateRequest)
+{
+    Core::hresult status = createResources();
+
+    EXPECT_CALL(*mServiceMock, Submit(::testing::_, ::testing::_))
+        .Times(1)
+        .WillOnce(::testing::Invoke(
+            [&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+                string text;
+                EXPECT_TRUE(json->ToString(text));
+                EXPECT_EQ(text, string(_T("{\"jsonrpc\":\"2.0\",\"method\":\"client.events.onApplicationStateRequest\",\"params\":{\"applicationName\":\"Netflix\",\"applicationId\":\"1234\"}}")));
+                return Core::ERROR_NONE;
+            }));
+
+    EVENT_SUBSCRIBE(0, _T("onApplicationStateRequest"), _T("client.events"), message);
+
+    GDialNotifier* gdialNotifier = gdialService::getObserverHandle();
+    ASSERT_NE(gdialNotifier, nullptr);
+    gdialNotifier->onApplicationStateRequest("Netflix", "1234");
+
+    EVENT_UNSUBSCRIBE(0, _T("onApplicationStateRequest"), _T("client.events"), message);
+
+    if (Core::ERROR_NONE == status)
+    {
+        releaseResources();
+    }
+}
