@@ -173,19 +173,15 @@ namespace WPEFramework
             class NetworkManagerNotification : public Exchange::INetworkManager::INotification
             {
                 private:
-                    NetworkManagerNotification() = delete;
-                    NetworkManagerNotification(const NetworkManagerNotification &) = delete;
-                    NetworkManagerNotification &operator=(const NetworkManagerNotification &) = delete;
+                    NetworkManagerNotification(const NetworkManagerNotification&) = delete;
+                    NetworkManagerNotification& operator=(const NetworkManagerNotification&) = delete;
 
                 public:
-                    explicit NetworkManagerNotification(XCastImplementation *parent)
-                        : _parent(*parent)
-                    {
-                        ASSERT(parent != nullptr);
-                    }
-                    virtual ~NetworkManagerNotification() override
+                    explicit NetworkManagerNotification(XCastImplementation& parent)
+                    : _parent(parent)
                     {
                     }
+                    ~NetworkManagerNotification() override = default;
 
                 public:
                     void onActiveInterfaceChange(const string prevActiveInterface, const string currentActiveinterface) override
@@ -230,7 +226,7 @@ namespace WPEFramework
                     END_INTERFACE_MAP
 
                 private:
-                    XCastImplementation &_parent;
+                    XCastImplementation& _parent;
             };
  
         public:
