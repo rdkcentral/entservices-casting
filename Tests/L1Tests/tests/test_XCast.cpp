@@ -754,8 +754,10 @@ TEST_F(XCastTest, unRegisterAllApplications)
     Core::hresult status = createResources();
 
     EXPECT_CALL(*p_gdialserviceImplMock, RegisterApplications(::testing::_))
-            .WillOnce(::testing::Invoke([](RegisterAppEntryList* appConfigList) {
+            .WillOnce(::testing::Invoke([](RegisterAppEntryList* appConfigList)
+                {
                     int i = 0;
+                    ASSERT_NE(appConfigList, nullptr);
                     for (RegisterAppEntry* appEntry : appConfigList->getValues())
                     {
                         TEST_LOG("Current Index: %d", i);
@@ -785,6 +787,7 @@ TEST_F(XCastTest, unRegisterAllApplications)
             .WillOnce(::testing::Invoke([](RegisterAppEntryList* appConfigList)
                 {
                     int i = 0;
+                    ASSERT_NE(appConfigList, nullptr);
                     for (RegisterAppEntry* appEntry : appConfigList->getValues())
                     {
                         TEST_LOG("Current Index: %d", i);
