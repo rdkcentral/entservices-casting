@@ -708,10 +708,11 @@ namespace WPEFramework
 
         void XCastImplementation::updateNWConnectivityStatus(std::string nwInterface, bool nwConnected, std::string ipaddress)
         {
+            std::string mappedInterface = getInterfaceNameToType(nwInterface);
             bool status = false;
+
             if(nwConnected)
             {
-                std::string mappedInterface = getInterfaceNameToType(nwInterface);
                 if(mappedInterface.compare("ETHERNET")==0){
                     LOGINFO("Connectivity type Ethernet");
                     status = true;

@@ -341,6 +341,7 @@ TEST_F(XCastTest, getProtocolVersion)
 #include "WrapsMock.h"
 #include "RfcApiMock.h"
 #include "gdialserviceMock.h"
+#include "NetworkManagerMock.h"
 #include "WorkerPoolImplementation.h"
 #include "XCastImplementation.h"
 #include <sys/time.h>
@@ -425,9 +426,11 @@ protected:
     Core::JSONRPC::Message message;
     string response;
 
+    ServiceMock* mServiceMock = nullptr;
     WrapsImplMock   *p_wrapsImplMock = nullptr;
     RfcApiImplMock  *p_rfcApiImplMock = nullptr;
     gdialServiceImplMock *p_gdialserviceImplMock = nullptr;
+    MockINetworkManager* mockNetworkManager = nullptr;
 
     Core::ProxyType<Plugin::XCastImplementation> xcastImpl;
 
