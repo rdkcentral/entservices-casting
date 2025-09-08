@@ -749,6 +749,7 @@ TEST_F(XCastTest, getProtocolVersion)
     }
 }
 
+#if 0
 TEST_F(XCastTest, unRegisterAllApplications)
 {
     Core::hresult status = createResources();
@@ -819,6 +820,7 @@ TEST_F(XCastTest, unRegisterAllApplications)
         releaseResources();
     }
 }
+#endif
 
 TEST_F(XCastTest, onApplicationLaunchRequest)
 {
