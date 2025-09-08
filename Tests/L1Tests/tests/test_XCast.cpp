@@ -418,7 +418,7 @@ namespace
     #endif
 }
 
-class XCastTest : public ::testing::Test, Plugin::XCastImplementation {
+class XCastTest : public ::testing::Test {
 protected:
     Core::ProxyType<Plugin::XCast> plugin;
     Core::JSONRPC::Handler& mJsonRpcHandler;
