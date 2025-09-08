@@ -469,7 +469,7 @@ protected:
           .Times(::testing::AnyNumber())
           .WillRepeatedly(::testing::Invoke(
               [&](const uint32_t id, const std::string& name) -> void* {
-                if (name == "org.rdk.NetworkManager.1") {
+                if (name == "org.rdk.NetworkManager") {
                     return static_cast<void*>(mockNetworkManager);
                 }
             TEST_LOG("callsign[%s]",name.c_str());
@@ -579,6 +579,7 @@ protected:
         dispatcher->Release();
 
         plugin->Deinitialize(mServiceMock);
+        delete mockNetworkManager;
         delete mServiceMock;
     }
 
