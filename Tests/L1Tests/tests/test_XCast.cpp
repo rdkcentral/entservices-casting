@@ -638,36 +638,90 @@ TEST_F(XCastTest, onApplicationStateRequest)
 TEST_F(XCastTest, updatePowerState)
 {
     Core::hresult status = createResources();
+    WaitGroup wg;
+    wg.Add();
 
     EXPECT_CALL(PowerManagerMock::Mock(), SetPowerState(::testing::_, ::testing::_,::testing::_))
         .Times(4)
         .WillOnce(::testing::Invoke(
             [this](const int keyCode, const PowerState powerState, const string& reason) -> uint32_t {
-                EXPECT_EQ(powerState, Exchange::IPowerManager::PowerState::POWER_STATE_ON);
+                ASSERT_NE(_modeChangedNotification, nullptr);
+                EXPECT_EQ(powerState, Exchange::IPowerManager::PowerState::POWER_STATE_STANDBY);
+                _powerState = powerState;
+                _modeChangedNotification->OnPowerModeChanged(Exchange::IPowerManager::PowerState::POWER_STATE_ON, powerState);
                 return Core::ERROR_NONE;
             }))
         .WillOnce(::testing::Invoke(
             [this](const int keyCode, const PowerState powerState, const string& reason) -> uint32_t {
-                EXPECT_EQ(powerState, WPEFramework::Exchange::IPowerManager::POWER_STATE_STANDBY);
-                return Core::ERROR_NONE;
-            }))
-        .WillOnce(::testing::Invoke(
-            [this](const int keyCode, const PowerState powerState, const string& reason) -> uint32_t {
+                ASSERT_NE(_modeChangedNotification, nullptr);
                 EXPECT_EQ(powerState, WPEFramework::Exchange::IPowerManager::POWER_STATE_ON);
+                _powerState = powerState;
+                _modeChangedNotification->OnPowerModeChanged(Exchange::IPowerManager::PowerState::POWER_STATE_STANDBY, powerState);
                 return Core::ERROR_NONE;
             }))
         .WillOnce(::testing::Invoke(
             [this](const int keyCode, const PowerState powerState, const string& reason) -> uint32_t {
+                ASSERT_NE(_modeChangedNotification, nullptr);
                 EXPECT_EQ(powerState, WPEFramework::Exchange::IPowerManager::POWER_STATE_STANDBY);
+                _powerState = powerState;
+                _modeChangedNotification->OnPowerModeChanged(Exchange::IPowerManager::PowerState::POWER_STATE_ON, powerState);
+                return Core::ERROR_NONE;
+            }))
+        .WillOnce(::testing::Invoke(
+            [this](const int keyCode, const PowerState powerState, const string& reason) -> uint32_t {
+                ASSERT_NE(_modeChangedNotification, nullptr);
+                EXPECT_EQ(powerState, WPEFramework::Exchange::IPowerManager::POWER_STATE_ON);
+                _powerState = powerState;
+                _modeChangedNotification->OnPowerModeChanged(Exchange::IPowerManager::PowerState::POWER_STATE_STANDBY, powerState);
+                wg.Done();
+                return Core::ERROR_NONE;
+            }));
+
+    EXPECT_CALL(PowerManagerMock::Mock(), GetPowerState(::testing::_, ::testing::_))
+        .Times(::testing::AnyNumber())
+        .WillRepeatedly(::testing::Invoke(
+            [&](PowerState& currentState, PowerState& previousState) -> uint32_t {
+                currentState = _powerState;
+                return Core::ERROR_NONE;
+            }));
+
+    EXPECT_CALL(PowerManagerMock::Mock(), GetNetworkStandbyMode(::testing::_))
+        .Times(::testing::AnyNumber())
+        .WillRepeatedly(::testing::Invoke(
+            [&](bool& mode) -> uint32_t {
+                mode = _networkStandbyMode;
+                return Core::ERROR_NONE;
+            }));
+
+    EXPECT_CALL(PowerManagerMock::Mock(), Register(::testing::Matcher<Exchange::IPowerManager::INetworkStandbyModeChangedNotification*>(::testing::_)))
+        .Times(::testing::AnyNumber())
+        .WillRepeatedly(::testing::Invoke(
+            [&](Exchange::IPowerManager::INetworkStandbyModeChangedNotification* notification) -> uint32_t {
+                _networkStandbyModeChangedNotification = notification;
+                return Core::ERROR_NONE;
+            }));
+
+    EXPECT_CALL(PowerManagerMock::Mock(), Register(::testing::Matcher<Exchange::IPowerManager::IModeChangedNotification*>(::testing::_)))
+        .Times(::testing::AnyNumber())
+        .WillRepeatedly(::testing::Invoke(
+            [&](Exchange::IPowerManager::IModeChangedNotification* notification) -> uint32_t {
+                _modeChangedNotification = notification;
                 return Core::ERROR_NONE;
             }));
 
     GDialNotifier* gdialNotifier = gdialService::getObserverHandle();
     ASSERT_NE(gdialNotifier, nullptr);
-    gdialNotifier->updatePowerState("ON");
+
+    _powerState = Exchange::IPowerManager::PowerState::POWER_STATE_ON;
+    EXPECT_EQ(Core::ERROR_NONE, mJsonRpcHandler.Invoke(connection, _T("setEnabled"), _T("{\"enabled\": true }"), response));
+    EXPECT_EQ(response, string("{\"success\":true}"));
+
     gdialNotifier->updatePowerState("STANDBY");
+    gdialNotifier->updatePowerState("ON");
     gdialNotifier->updatePowerState("TOGGLE");
     gdialNotifier->updatePowerState("TOGGLE");
+
+    wg.Wait();
 
     if (Core::ERROR_NONE == status)
     {
