@@ -684,7 +684,7 @@ TEST_F(XCastTest, onPowerManagerEvents)
     EXPECT_CALL(PowerManagerMock::Mock(), GetPowerState(::testing::_, ::testing::_))
         .Times(::testing::AnyNumber())
         .WillRepeatedly(::testing::Invoke(
-            [this](PowerState& currentState, PowerState& previousState) -> uint32_t {
+            [&](PowerState& currentState, PowerState& previousState) -> uint32_t {
                 currentState = _powerState;
                 return Core::ERROR_NONE;
             }));
@@ -692,7 +692,7 @@ TEST_F(XCastTest, onPowerManagerEvents)
     EXPECT_CALL(PowerManagerMock::Mock(), GetNetworkStandbyMode(::testing::_))
         .Times(::testing::AnyNumber())
         .WillRepeatedly(::testing::Invoke(
-            [this](bool& mode) -> uint32_t {
+            [&](bool& mode) -> uint32_t {
                 mode = _networkStandbyMode;
                 return Core::ERROR_NONE;
             }));
@@ -700,7 +700,7 @@ TEST_F(XCastTest, onPowerManagerEvents)
     EXPECT_CALL(PowerManagerMock::Mock(), Register(::testing::Matcher<Exchange::IPowerManager::INetworkStandbyModeChangedNotification*>(::testing::_)))
         .Times(::testing::AnyNumber())
         .WillRepeatedly(::testing::Invoke(
-            [this](Exchange::IPowerManager::INetworkStandbyModeChangedNotification* notification) -> uint32_t {
+            [&](Exchange::IPowerManager::INetworkStandbyModeChangedNotification* notification) -> uint32_t {
                 _networkStandbyModeChangedNotification = notification;
                 return Core::ERROR_NONE;
             }));
@@ -708,7 +708,7 @@ TEST_F(XCastTest, onPowerManagerEvents)
     EXPECT_CALL(PowerManagerMock::Mock(), Register(::testing::Matcher<Exchange::IPowerManager::IModeChangedNotification*>(::testing::_)))
         .Times(::testing::AnyNumber())
         .WillRepeatedly(::testing::Invoke(
-            [this](Exchange::IPowerManager::IModeChangedNotification* notification) -> uint32_t {
+            [&](Exchange::IPowerManager::IModeChangedNotification* notification) -> uint32_t {
                 _modeChangedNotification = notification;
                 return Core::ERROR_NONE;
             }));
@@ -716,12 +716,12 @@ TEST_F(XCastTest, onPowerManagerEvents)
     EXPECT_CALL(*p_gdialserviceImplMock, setNetworkStandbyMode(::testing::_))
         .Times(2)
         .WillOnce(::testing::Invoke(
-            [this](bool nwStandbyMode) {
+            [&](bool nwStandbyMode) {
                 EXPECT_EQ(nwStandbyMode, true);
                 _networkStandbyMode = nwStandbyMode;
             }))
         .WillOnce(::testing::Invoke(
-            [this, &](bool nwStandbyMode) {
+            [&](bool nwStandbyMode) {
                 EXPECT_EQ(nwStandbyMode, false);
                 _networkStandbyMode = nwStandbyMode;
                 wg.Done();
