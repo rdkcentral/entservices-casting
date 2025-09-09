@@ -1429,6 +1429,7 @@ namespace WPEFramework
             return ret;
         }
 
+#if 0
         void XCastImplementation::getUrlFromAppLaunchParams (const char *app_name, const char *payload, const char *query_string, const char *additional_data_url, char *url)
         {
             LOGINFO("getUrlFromAppLaunchParams : Application launch request: appName: %s  query: [%s], payload: [%s], additionalDataUrl [%s]\n",
@@ -1523,6 +1524,6 @@ namespace WPEFramework
                 LOGINFO(" url is [%s]\r\n", url);
             }
         }
-        
+#endif
     } // namespace Plugin
 } // namespace WPEFramework

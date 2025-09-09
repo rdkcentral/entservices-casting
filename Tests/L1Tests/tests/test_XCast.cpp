@@ -67,6 +67,7 @@ protected:
     Exchange::IPowerManager::INetworkStandbyModeChangedNotification* _networkStandbyModeChangedNotification = nullptr;
     Exchange::IPowerManager::IModeChangedNotification* _modeChangedNotification = nullptr;
     Exchange::IPowerManager::PowerState _powerState = Exchange::IPowerManager::POWER_STATE_OFF;
+    Exchange::INetworkManager::INotification* _networkManagerNotification = nullptr;
     bool _networkStandbyMode = false;
 
     Core::ProxyType<Plugin::XCastImplementation> xcastImpl;
@@ -179,6 +180,14 @@ protected:
                     address.prefix = 24;
                     return Core::ERROR_NONE;
             }));
+
+        EXPECT_CALL(*mockNetworkManager, Register(::testing::_))
+            .Times(::testing::AnyNumber())
+            .WillRepeatedly(::testing::Invoke(
+                [&](WPEFramework::Exchange::INetworkManager::INotification* notification) -> uint32_t {
+                    _networkManagerNotification = notification;
+                    return Core::ERROR_NONE;
+                }));
 
         EXPECT_EQ(string(""), plugin->Initialize(mServiceMock));
         TEST_LOG("createResources - All done!");
@@ -302,6 +311,9 @@ TEST_F(XCastTest, getsetStandbyBehavoir)
 {
     Core::hresult status = createResources();
 
+    EXPECT_EQ(Core::ERROR_NONE, mJsonRpcHandler.Invoke(connection, _T("getStandbyBehavior"), _T("{}"), response));
+    EXPECT_EQ(response, string("{\"standbybehavior\":\"inactive\",\"success\":true}"));
+
     EXPECT_EQ(Core::ERROR_NONE, mJsonRpcHandler.Invoke(connection, _T("setStandbyBehavior"), _T("{\"standbybehavior\": \"active\"}"), response));
     EXPECT_EQ(response, string("{\"success\":true}"));
 
@@ -351,15 +363,60 @@ TEST_F(XCastTest, setApplicationState)
     Core::hresult status = createResources();
 
     EXPECT_CALL(*p_gdialserviceImplMock, ApplicationStateChanged(::testing::_, ::testing::_, ::testing::_, ::testing::_))
-            .WillOnce(::testing::Invoke(
-                [](string applicationName, string appState, string applicationId, string error) {
-                    EXPECT_EQ(applicationName, string("NetflixApp"));
-                    EXPECT_EQ(appState, string("running"));
-                    EXPECT_EQ(applicationId, string("1234"));
-                    EXPECT_EQ(error, string("none"));
-                    return GDIAL_SERVICE_ERROR_NONE;
-                }));
+        .Times(5)
+        .WillOnce(::testing::Invoke(
+            [](string applicationName, string appState, string applicationId, string error) {
+                EXPECT_EQ(applicationName, string("NetflixApp"));
+                EXPECT_EQ(appState, string("running"));
+                EXPECT_EQ(applicationId, string("1234"));
+                EXPECT_EQ(error, string("none"));
+                return GDIAL_SERVICE_ERROR_NONE;
+            }))
+        .WillOnce(::testing::Invoke(
+            [](string applicationName, string appState, string applicationId, string error) {
+                EXPECT_EQ(applicationName, string("NetflixApp"));
+                EXPECT_EQ(appState, string("stopped"));
+                EXPECT_EQ(applicationId, string("1234"));
+                EXPECT_EQ(error, string("forbidden"));
+                return GDIAL_SERVICE_ERROR_NONE;
+            }))
+        .WillOnce(::testing::Invoke(
+            [](string applicationName, string appState, string applicationId, string error) {
+                EXPECT_EQ(applicationName, string("NetflixApp"));
+                EXPECT_EQ(appState, string("suspended"));
+                EXPECT_EQ(applicationId, string("1234"));
+                EXPECT_EQ(error, string("unavailable"));
+                return GDIAL_SERVICE_ERROR_NONE;
+            }))
+        .WillOnce(::testing::Invoke(
+            [](string applicationName, string appState, string applicationId, string error) {
+                EXPECT_EQ(applicationName, string("NetflixApp"));
+                EXPECT_EQ(appState, string("stopped"));
+                EXPECT_EQ(applicationId, string("1234"));
+                EXPECT_EQ(error, string("invalid"));
+                return GDIAL_SERVICE_ERROR_NONE;
+            }))
+        .WillOnce(::testing::Invoke(
+            [](string applicationName, string appState, string applicationId, string error) {
+                EXPECT_EQ(applicationName, string("NetflixApp"));
+                EXPECT_EQ(appState, string("stopped"));
+                EXPECT_EQ(applicationId, string("1234"));
+                EXPECT_EQ(error, string("internal"));
+                return GDIAL_SERVICE_ERROR_NONE;
+            }));
     EXPECT_EQ(Core::ERROR_NONE, mJsonRpcHandler.Invoke(connection, _T("setApplicationState"), _T("{\"applicationName\": \"NetflixApp\", \"state\":\"running\", \"applicationId\": \"1234\", \"error\": \"none\"}"), response));
+    EXPECT_EQ(response, string("{\"success\":true}"));
+
+    EXPECT_EQ(Core::ERROR_NONE, mJsonRpcHandler.Invoke(connection, _T("setApplicationState"), _T("{\"applicationName\": \"NetflixApp\", \"state\":\"stopped\", \"applicationId\": \"1234\", \"error\": \"forbidden\"}"), response));
+    EXPECT_EQ(response, string("{\"success\":true}"));
+
+    EXPECT_EQ(Core::ERROR_NONE, mJsonRpcHandler.Invoke(connection, _T("setApplicationState"), _T("{\"applicationName\": \"NetflixApp\", \"state\":\"suspended\", \"applicationId\": \"1234\", \"error\": \"unavailable\"}"), response));
+    EXPECT_EQ(response, string("{\"success\":true}"));
+
+    EXPECT_EQ(Core::ERROR_NONE, mJsonRpcHandler.Invoke(connection, _T("setApplicationState"), _T("{\"applicationName\": \"NetflixApp\", \"state\":\"stopped\", \"applicationId\": \"1234\", \"error\": \"invalid\"}"), response));
+    EXPECT_EQ(response, string("{\"success\":true}"));
+
+    EXPECT_EQ(Core::ERROR_NONE, mJsonRpcHandler.Invoke(connection, _T("setApplicationState"), _T("{\"applicationName\": \"NetflixApp\", \"state\":\"stopped\", \"applicationId\": \"1234\", \"error\": \"internal\"}"), response));
     EXPECT_EQ(response, string("{\"success\":true}"));
 
     if (Core::ERROR_NONE == status)
@@ -809,6 +866,52 @@ TEST_F(XCastTest, onPowerManagerEvents)
 
     EXPECT_EQ(Core::ERROR_NONE, mJsonRpcHandler.Invoke(connection, _T("getEnabled"), _T("{}"), response));
     EXPECT_EQ(response, string("{\"enabled\":false,\"success\":true}"));
+
+    if (Core::ERROR_NONE == status)
+    {
+        releaseResources();
+    }
+}
+
+TEST_F(XCastTest, onNetworkManagerEvents)
+{
+    Core::hresult status = createResources();
+    WaitGroup wg;
+    wg.Add();
+
+    EXPECT_CALL(*p_gdialserviceImplMock, ActivationChanged(::testing::_,::testing::_))
+        .Times(2)
+        .WillOnce(::testing::Invoke(
+            [&](std::string activation, std::string friendlyname) {
+                EXPECT_EQ(activation, "false");
+                EXPECT_EQ(friendlyname, "friendlyTest");
+            }))
+        .WillOnce(::testing::Invoke(
+            [&](std::string activation, std::string friendlyname) {
+                EXPECT_EQ(activation, "false");
+                EXPECT_EQ(friendlyname, "friendlyTest");
+                wg.Done();
+            }));
+
+    EXPECT_EQ(Core::ERROR_NONE, mJsonRpcHandler.Invoke(connection, _T("setStandbyBehavior"), _T("{\"standbybehavior\": \"active\"}"), response));
+    EXPECT_EQ(response, string("{\"success\":true}"));
+    EXPECT_EQ(Core::ERROR_NONE, mJsonRpcHandler.Invoke(connection, _T("getStandbyBehavior"), _T("{}"), response));
+    EXPECT_EQ(response, string("{\"standbybehavior\":\"active\",\"success\":true}"));
+
+    EXPECT_EQ(Core::ERROR_NONE, mJsonRpcHandler.Invoke(connection, _T("setFriendlyName"), _T("{\"friendlyname\": \"friendlyTest\"}"), response));
+    EXPECT_EQ(response, string("{\"success\":true}"));
+
+    ASSERT_NE(_networkManagerNotification, nullptr);
+    _networkManagerNotification->onWiFiSignalQualityChange("myHomeSSID", "-32", "-106", "74", Exchange::INetworkManager::WiFiSignalQuality::EXCELLENT);
+    _networkManagerNotification->onWiFiStateChange(Exchange::INetworkManager::WiFiState::CONNECTED);
+    _networkManagerNotification->onAvailableSSIDs("{\"AvailableSSIDs\":[{\"SSID\":\"myHomeSSID\",\"BSSID\":\"00:11:22:33:44:55\",\"SignalStrength\":\"-32\",\"Frequency\":\"2412\",\"Security\":\"WPA2-Personal\"},{\"SSID\":\"myOfficeSSID\",\"BSSID\":\"66:77:88:99:AA:BB\",\"SignalStrength\":\"-45\",\"Frequency\":\"2412\",\"Security\":\"WPA2-Enterprise\"}]}");
+    _networkManagerNotification->onInternetStatusChange(Exchange::INetworkManager::InternetStatus::DISCONNECTED, Exchange::INetworkManager::InternetStatus::CONNECTED);
+    _networkManagerNotification->onInterfaceStateChange(Exchange::INetworkManager::InterfaceState::INTERFACE_UP, "eth0");
+    _networkManagerNotification->onIPAddressChange("eth0", "IPv4", "192.168.5.100", Exchange::INetworkManager::IP_ACQUIRED);
+    sleep(1);
+    _networkManagerNotification->onActiveInterfaceChange("eth0", "wlan0");
+
+    wg.Wait();
 
     if (Core::ERROR_NONE == status)
     {

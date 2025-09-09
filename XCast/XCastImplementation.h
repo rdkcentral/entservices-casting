@@ -333,14 +333,12 @@ namespace WPEFramework
             void onXcastUpdatePowerStateRequest(string powerState);
             uint32_t SetNetworkStandbyMode(bool networkStandbyMode);
             bool setPowerState(const std::string& powerState);
-            void getUrlFromAppLaunchParams (const char *app_name, const char *payload, const char *query_string, const char *additional_data_url, char *url);
             void updateDynamicAppCache(Exchange::IXCast::IApplicationInfoIterator* const appInfoList);
+            //void getUrlFromAppLaunchParams (const char *app_name, const char *payload, const char *query_string, const char *additional_data_url, char *url);
             
         public:
             static XCastImplementation* _instance;
-
             friend class Job;
         };
- 
     } // namespace Plugin
 } // namespace WPEFramework
