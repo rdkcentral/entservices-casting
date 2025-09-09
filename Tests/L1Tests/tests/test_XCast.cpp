@@ -885,12 +885,14 @@ TEST_F(XCastTest, onNetworkManagerEvents)
             [&](std::string activation, std::string friendlyname) {
                 EXPECT_EQ(activation, "false");
                 EXPECT_EQ(friendlyname, "friendlyTest");
+                return GDIAL_SERVICE_ERROR_NONE;
             }))
         .WillOnce(::testing::Invoke(
             [&](std::string activation, std::string friendlyname) {
                 EXPECT_EQ(activation, "false");
                 EXPECT_EQ(friendlyname, "friendlyTest");
                 wg.Done();
+                return GDIAL_SERVICE_ERROR_NONE;
             }));
 
     EXPECT_EQ(Core::ERROR_NONE, mJsonRpcHandler.Invoke(connection, _T("setStandbyBehavior"), _T("{\"standbybehavior\": \"active\"}"), response));
@@ -902,11 +904,11 @@ TEST_F(XCastTest, onNetworkManagerEvents)
     EXPECT_EQ(response, string("{\"success\":true}"));
 
     ASSERT_NE(_networkManagerNotification, nullptr);
-    _networkManagerNotification->onWiFiSignalQualityChange("myHomeSSID", "-32", "-106", "74", Exchange::INetworkManager::WiFiSignalQuality::EXCELLENT);
-    _networkManagerNotification->onWiFiStateChange(Exchange::INetworkManager::WiFiState::CONNECTED);
+    _networkManagerNotification->onWiFiSignalQualityChange("myHomeSSID", "-32", "-106", "74", Exchange::INetworkManager::WIFI_SIGNAL_EXCELLENT);
+    _networkManagerNotification->onWiFiStateChange(Exchange::INetworkManager::WIFI_STATE_DISCONNECTED);
     _networkManagerNotification->onAvailableSSIDs("{\"AvailableSSIDs\":[{\"SSID\":\"myHomeSSID\",\"BSSID\":\"00:11:22:33:44:55\",\"SignalStrength\":\"-32\",\"Frequency\":\"2412\",\"Security\":\"WPA2-Personal\"},{\"SSID\":\"myOfficeSSID\",\"BSSID\":\"66:77:88:99:AA:BB\",\"SignalStrength\":\"-45\",\"Frequency\":\"2412\",\"Security\":\"WPA2-Enterprise\"}]}");
-    _networkManagerNotification->onInternetStatusChange(Exchange::INetworkManager::InternetStatus::DISCONNECTED, Exchange::INetworkManager::InternetStatus::CONNECTED);
-    _networkManagerNotification->onInterfaceStateChange(Exchange::INetworkManager::InterfaceState::INTERFACE_UP, "eth0");
+    _networkManagerNotification->onInternetStatusChange(Exchange::INetworkManager::INTERNET_NOT_AVAILABLE, Exchange::INetworkManager::INTERNET_FULLY_CONNECTED);
+    _networkManagerNotification->onInterfaceStateChange(Exchange::INetworkManager::INTERFACE_LINK_UP, "eth0");
     _networkManagerNotification->onIPAddressChange("eth0", "IPv4", "192.168.5.100", Exchange::INetworkManager::IP_ACQUIRED);
     sleep(1);
     _networkManagerNotification->onActiveInterfaceChange("eth0", "wlan0");
