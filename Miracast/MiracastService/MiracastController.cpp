@@ -46,14 +46,15 @@ MiracastController *MiracastController::getInstance(MiracastError &error_code, M
 
 void MiracastController::destroyInstance()
 {
-    MIRACASTLOG_TRACE("Entering...");
+    MIRACASTLOG_INFO("Entering...");
     if (nullptr != m_miracast_ctrl_obj)
     {
         m_miracast_ctrl_obj->destroy_ControllerFramework();
         delete m_miracast_ctrl_obj;
         m_miracast_ctrl_obj = nullptr;
     }
-    MIRACASTLOG_TRACE("Exiting...");
+    
+    MIRACASTLOG_INFO("Exiting...");
 }
 
 MiracastController::MiracastController(void)
@@ -71,7 +72,7 @@ MiracastController::MiracastController(void)
 
 MiracastController::~MiracastController()
 {
-    MIRACASTLOG_TRACE("Entering...");
+    MIRACASTLOG_INFO("Entering...");
 
     while (!m_deviceInfoList.empty())
     {
@@ -85,13 +86,17 @@ MiracastController::~MiracastController()
         m_groupInfo = nullptr;
     }
 
-    MIRACASTLOG_TRACE("Exiting...");
+
+    
+  //  ControllerThreadCallback(this);
+     //destroy_ControllerFramework();
+    MIRACASTLOG_INFO("Exiting...");
 }
 
 MiracastError MiracastController::create_ControllerFramework(std::string p2p_ctrl_iface)
 {
     MiracastError ret_code = MIRACAST_OK;
-    MIRACASTLOG_TRACE("Entering...");
+    MIRACASTLOG_INFO("Entering...start controller thread");
 
     m_controller_thread = new MiracastThread(CONTROLLER_THREAD_NAME,
                                              CONTROLLER_THREAD_STACK,
@@ -503,7 +508,7 @@ void MiracastController::event_handler(P2P_EVENTS eventId, void *data, size_t le
     std::string event_buffer;
     MIRACASTLOG_TRACE("Entering...");
 
-    event_buffer = (char *)data;
+    event_buffer = static_cast<char*>(data);
     free(data);
 
     if ( false == m_start_discovering_enabled )
@@ -518,8 +523,8 @@ void MiracastController::event_handler(P2P_EVENTS eventId, void *data, size_t le
         controller_msgq_data.state = convertP2PtoSessionActions(eventId);
         strncpy(controller_msgq_data.msg_buffer, event_buffer.c_str(), sizeof(controller_msgq_data.msg_buffer));
         controller_msgq_data.msg_buffer[sizeof(controller_msgq_data.msg_buffer) - 1] = '\0';
-
-        MIRACASTLOG_INFO("event_handler to Controller Action[%#08X] buffer:%s  ", controller_msgq_data.state, event_buffer.c_str());
+        
+        MIRACASTLOG_INFO("event_handler to Controller Action[%#08X] buffer:%s len %d", controller_msgq_data.state, event_buffer.c_str(),len);
         m_controller_thread->send_message(&controller_msgq_data, sizeof(controller_msgq_data));
         MIRACASTLOG_VERBOSE("event received : %d buffer:%s  ", eventId, event_buffer.c_str());
     }
@@ -642,7 +647,7 @@ bool MiracastController::get_connection_status()
 void MiracastController::create_DeviceCacheData(std::string deviceMAC,std::string authType,std::string modelName,std::string deviceType, bool force_overwrite)
 {
     bool new_device_entry = false;
-    MIRACASTLOG_TRACE("Entering...");
+    MIRACASTLOG_INFO("Entering...");
     DeviceInfo *cur_device_info_ptr = MiracastController::get_device_details(deviceMAC);
 
     // Allocate memory and update the device cache info
@@ -651,7 +656,7 @@ void MiracastController::create_DeviceCacheData(std::string deviceMAC,std::strin
         cur_device_info_ptr = new DeviceInfo;
         new_device_entry = true;
         force_overwrite = true;
-        MIRACASTLOG_VERBOSE("#### Creating Device Cache ####");
+        MIRACASTLOG_INFO("#### Creating Device Cache ####");
     }
 
     if (( nullptr != cur_device_info_ptr ) && (force_overwrite))
@@ -673,16 +678,17 @@ void MiracastController::create_DeviceCacheData(std::string deviceMAC,std::strin
     {
         m_deviceInfoList.push_back(cur_device_info_ptr);
     }
-    MIRACASTLOG_TRACE("Exiting...");
+    MIRACASTLOG_INFO("Exiting...");
 }
 
 DeviceInfo *MiracastController::get_device_details(std::string MAC)
 {
     DeviceInfo *deviceInfo = nullptr;
     std::size_t found;
-    MIRACASTLOG_TRACE("Entering...");
+    MIRACASTLOG_INFO("Entering...");
     for (auto device : m_deviceInfoList)
     {
+         MIRACASTLOG_INFO("Entering device info list");
         found = device->deviceMAC.find(MAC);
         if (found != std::string::npos)
         {
@@ -690,7 +696,7 @@ DeviceInfo *MiracastController::get_device_details(std::string MAC)
             break;
         }
     }
-    MIRACASTLOG_TRACE("Exiting...");
+    MIRACASTLOG_INFO("Exiting...");
     return deviceInfo;
 }
 
@@ -784,19 +790,19 @@ void MiracastController::Controller_Thread(void *args)
             session_restart_required = false,
             p2p_group_instance_alive = false;
 
-    MIRACASTLOG_TRACE("Entering...");
+    MIRACASTLOG_INFO("Entering...");
 
     while (nullptr != m_controller_thread)
     {
         std::string event_buffer;
         event_buffer.clear();
 
-        MIRACASTLOG_TRACE("!!! Waiting for Event !!!\n");
+        MIRACASTLOG_INFO("!!! Waiting for Event !!!\n");
         m_controller_thread->receive_message(&controller_msgq_data, CONTROLLER_MSGQ_SIZE, THREAD_RECV_MSG_INDEFINITE_WAIT);
 
         event_buffer = controller_msgq_data.msg_buffer;
 
-        MIRACASTLOG_TRACE("!!! Received Action[%#08X]Data[%s] !!!\n", controller_msgq_data.state, event_buffer.c_str());
+        MIRACASTLOG_INFO("!!! Received Action[%#08X]Data[%s] !!!\n", controller_msgq_data.state, event_buffer.c_str());
 
         if (CONTROLLER_SELF_ABORT == controller_msgq_data.state)
         {
@@ -1099,6 +1105,7 @@ void MiracastController::Controller_Thread(void *args)
                             else
                             {
                                 error_code = WPEFramework::Exchange::IMiracastService::REASON_CODE_GENERIC_FAILURE;
+                                MIRACASTLOG_INFO("predebug session restart");
                                 session_restart_required = true;
                                 MIRACASTLOG_ERROR("!!!! Unable to get the Source Device IP and Terminating Group Here !!!!");
                                 remove_P2PGroupInstance();
@@ -1124,6 +1131,7 @@ void MiracastController::Controller_Thread(void *args)
                                 p2p_group_instance_alive = false;
                             }
                             m_connect_req_notified = false;
+                            MIRACASTLOG_ERROR("####exit from failure condition");
                         }
 
                         if ( true == session_restart_required )
@@ -1142,6 +1150,7 @@ void MiracastController::Controller_Thread(void *args)
                             session_restart_required = false;
                         }
                     }
+                     MIRACASTLOG_ERROR("####exit from CONTROLLER_GO_GROUP_FORMATION_FAILURE");   
                     break;
                     case CONTROLLER_GO_GROUP_REMOVED:
                     {
@@ -1247,6 +1256,7 @@ void MiracastController::Controller_Thread(void *args)
                         }
                         new_thunder_req_client_connection_sent = false;
                         another_thunder_req_client_connection_sent = false;
+                        MIRACASTLOG_INFO("predebug session_restart_required\n");
                         session_restart_required = true;
                         p2p_group_instance_alive = false;
                         m_connect_req_notified = false;
@@ -1336,7 +1346,8 @@ void MiracastController::Controller_Thread(void *args)
                 MIRACASTLOG_ERROR("!!! Invalid MsgType Received[%#08X]Data[%s]  !!!", controller_msgq_data.msg_type, event_buffer.c_str());
             }
             break;
-        }        
+        }  
+         MIRACASTLOG_ERROR("!!! exit from outer switch");
     }
     MIRACASTLOG_TRACE("Exiting...");
 }
@@ -1605,7 +1616,7 @@ void ControllerThreadCallback(void *args)
 {
     MiracastController *miracast_ctrler_obj = (MiracastController *)args;
     MIRACASTLOG_TRACE("Entering...");
-    sleep(1);
+     sleep(1);
     if ( nullptr != miracast_ctrler_obj )
     {
         miracast_ctrler_obj->Controller_Thread(nullptr);

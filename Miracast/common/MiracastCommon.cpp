@@ -48,11 +48,15 @@ MiracastThread::MiracastThread(std::string thread_name, size_t stack_size, size_
 
 MiracastThread::~MiracastThread()
 {
-    MIRACASTLOG_TRACE("Entering...");
+    MIRACASTLOG_INFO("Entering...");
 
     if ( 0 != m_pthread_id ){
         // Join thread
-        pthread_join(m_pthread_id, nullptr);
+       int ret =  pthread_join(m_pthread_id, nullptr);
+		if (ret !=0) {
+			MIRACASTLOG_INFO("pthread join failed");
+		}
+		MIRACASTLOG_INFO("Exit from joining...");
         m_pthread_id = 0;
         pthread_attr_destroy(&m_pthread_attr);
     }
@@ -63,7 +67,7 @@ MiracastThread::~MiracastThread()
         sem_destroy(&m_empty_msgq_sem_obj);
         m_g_queue = nullptr;
     }
-    MIRACASTLOG_TRACE("Exiting...");
+    MIRACASTLOG_INFO("Exiting...");
 }
 
 MiracastError MiracastThread::start(void)
@@ -84,9 +88,14 @@ MiracastError MiracastThread::start(void)
 void MiracastThread::send_message(void *message, size_t msg_size)
 {
     MIRACASTLOG_TRACE("Entering...");
+
     if (nullptr != m_g_queue){
-        void *buffer = malloc(msg_size);
-        if (nullptr == buffer)
+
+	
+        MIRACASTLOG_TRACE("msg size %d", msg_size);
+			
+       void *buffer = malloc(msg_size);
+	   if (nullptr == buffer)
         {
             MIRACASTLOG_ERROR("Memory Allocation Failed for %u\n", msg_size);
             MIRACASTLOG_TRACE("Exiting...");
@@ -94,10 +103,14 @@ void MiracastThread::send_message(void *message, size_t msg_size)
         }
         memset(buffer, 0x00, msg_size);
         // Send message to queue
-
+        MIRACASTLOG_TRACE("");
         memcpy(buffer, message, msg_size);
+		MIRACASTLOG_TRACE("copied");
         g_async_queue_push(m_g_queue, buffer);
+		MIRACASTLOG_TRACE("pushed");
         sem_post(&m_empty_msgq_sem_obj);
+		MIRACASTLOG_TRACE("sempost");
+		
     }
     MIRACASTLOG_TRACE("Exiting...");
 }
@@ -113,7 +126,9 @@ int8_t MiracastThread::receive_message(void *message, size_t msg_size, int sem_w
             int count = 0;
 	        sem_getvalue(&m_empty_msgq_sem_obj,&count);
             if ((0 < count ) || (THREAD_RECV_MSG_INDEFINITE_WAIT == sem_wait_timedout)){
+				MIRACASTLOG_TRACE("Waiting for sem_wait to finish...");
                 sem_wait(&m_empty_msgq_sem_obj);
+				MIRACASTLOG_TRACE("Exit from sem_wait...");
                 status = true;
             }
         }
@@ -122,27 +137,33 @@ int8_t MiracastThread::receive_message(void *message, size_t msg_size, int sem_w
             struct timespec ts;
             clock_gettime(CLOCK_REALTIME, &ts);
             ts.tv_sec += sem_wait_timedout;
-
+            MIRACASTLOG_TRACE("sem_wait timed...");
             if (-1 != sem_timedwait(&m_empty_msgq_sem_obj, &ts))
             {
                 status = true;
             }
+			MIRACASTLOG_TRACE("Exit from sem_timedwait...");
         }
         else
         {
             status = -1;
         }
-
+        MIRACASTLOG_TRACE("check if status is true...");
         if (true == status)
         {
+			MIRACASTLOG_TRACE("status true...");
+			#if 1
             void *data_ptr = static_cast<void *>(g_async_queue_pop(m_g_queue));
             if ((nullptr != message) && (nullptr != data_ptr))
             {
+				 MIRACASTLOG_TRACE("dequeue...");
                 memcpy(message, data_ptr, msg_size);
                 free(data_ptr);
             }
+			#endif
         }
-    }
+	}
+   
     MIRACASTLOG_TRACE("Exiting...");
     return status;
 }

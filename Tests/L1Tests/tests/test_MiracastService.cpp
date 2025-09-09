@@ -44,7 +44,7 @@ namespace
     #define TEST_LOG(FMT, ...) log(__func__, __FILE__, __LINE__, syscall(__NR_gettid),FMT,##__VA_ARGS__)
 
     //Commented out the functions below because some test cases that use them have also been commented out. Since those test cases are disabled, these functions are now unused.
-	#if 0 
+	#if 1 
 	static void removeFile(const char* fileName)
 	{
 		if (std::remove(fileName) != 0)
@@ -248,10 +248,16 @@ protected:
 
     virtual ~MiracastServiceEventTest() override
     {
-        dispatcher->Deactivate();
+		dispatcher->Deactivate();
         dispatcher->Release();
 
         PluginHost::IFactories::Assign(nullptr);
+		
+		TEST_LOG("predebug1 Before destructor sleep ");
+		//Wait for all the previous destructor process to complete
+		std::this_thread::sleep_for(std::chrono::milliseconds(3000));
+		TEST_LOG("predebug1 After destructor sleep ");
+		
     }
 };
 
@@ -259,13 +265,14 @@ TEST_F(MiracastServiceTest, GetInformation)
 {
     EXPECT_EQ("This MiracastService Plugin Facilitates Peer-to-Peer Control and WFD Source Device Discovery", plugin->Information());
 }
-#if 0
+#if 1
 TEST_F(MiracastServiceTest, P2PCtrlInterfaceNameNotFound)
 {
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 
 	// WIFI_P2P_CTRL_INTERFACE not configured in device properties file
 	EXPECT_NE(string(""), plugin->Initialize(&service));
+	
 	plugin->Deinitialize(nullptr);
 }
 
@@ -701,7 +708,7 @@ TEST_F(MiracastServiceEventTest, onClientConnectionRequestRejected)
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("acceptClientConnection"), _T("{\"requestStatus\": Reject}"), response));
 
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
-
+   
 	plugin->Deinitialize(nullptr);
 
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
@@ -798,7 +805,7 @@ TEST_F(MiracastServiceEventTest, P2P_CONNECT_FAIL_onClientConnectionError)
 
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
-
+    
 	plugin->Deinitialize(nullptr);
 
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
@@ -912,7 +919,7 @@ TEST_F(MiracastServiceEventTest, P2P_GO_NEGOTIATION_FAIL_onClientConnectionError
 
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
-
+   
 	plugin->Deinitialize(nullptr);
 
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
@@ -1033,7 +1040,7 @@ TEST_F(MiracastServiceEventTest, P2P_GO_FORMATION_FAIL_onClientConnectionError)
 
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionRequest"), _T("client.events"), message);
 	EVENT_UNSUBSCRIBE(0, _T("onClientConnectionError"), _T("client.events"), message);
-
+    
 	plugin->Deinitialize(nullptr);
 
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
@@ -2035,6 +2042,7 @@ TEST_F(MiracastServiceEventTest, powerStateChange)
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": false}"), response));
     Plugin::MiracastServiceImplementation::_instance->onPowerModeChanged(WPEFramework::Exchange::IPowerManager::POWER_STATE_STANDBY_DEEP_SLEEP, WPEFramework::Exchange::IPowerManager::POWER_STATE_ON);
 	EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnable"), _T("{\"enabled\": true}"), response));
+
 	plugin->Deinitialize(nullptr);
 
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");

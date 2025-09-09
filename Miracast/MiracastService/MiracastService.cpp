@@ -99,7 +99,7 @@ namespace WPEFramework
                             Exchange::JMiracastService::Register(*this, mMiracastServiceImpl);
                             mRegisterEvents = true;
                         }
-                        mConfigure->Release();
+                        //mConfigure->Release();
                     }
                     else
                     {
@@ -130,7 +130,7 @@ namespace WPEFramework
         void MiracastService::Deinitialize(PluginHost::IShell* service)
         {
             SYSLOG(Logging::Startup, (_T("MiracastService::Deinitialize: PID=%u"), getpid()));
-
+            LOGINFO("MiracastService::Deinitialize in");
             ASSERT(mCurrentService == service);
             ASSERT(0 == mConnectionId);
 
@@ -172,11 +172,20 @@ namespace WPEFramework
             if (nullptr != mCurrentService)
             {
                 /* Make sure the Activated and Deactivated are no longer called before we start cleaning up.. */
-                mCurrentService->Unregister(&mMiracastServiceNotification);
-                mCurrentService->Release();
-                mCurrentService = nullptr;
-            }
+                   mCurrentService->Unregister(&mMiracastServiceNotification);
+                 
+                    if (mConfigure)
+                    {    
+                         uint32_t result = mConfigure->Configure(NULL);
+                         if (result == Core::ERROR_NONE) {
+                              SYSLOG(Logging::Shutdown, (string(_T("MiracastService successfully destructed"))));
+                         }
+                        mConfigure->Release();
+                        mConfigure = NULL;
+                    } 
+               }
             mConnectionId = 0;
+            
             SYSLOG(Logging::Shutdown, (string(_T("MiracastService de-initialised"))));
         }
 
