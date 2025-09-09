@@ -826,6 +826,7 @@ TEST_F(XCastTest, onApplicationLaunchRequest)
 {
     Core::hresult status = createResources();
     Core::Event onLaunchRequest(false, true);
+    Core::Event onLaunchRequestParam(false, true);
 
     EXPECT_CALL(*mServiceMock, Submit(::testing::_, ::testing::_))
         .Times(2)
@@ -834,6 +835,7 @@ TEST_F(XCastTest, onApplicationLaunchRequest)
                 string text;
                 EXPECT_TRUE(json->ToString(text));
                 EXPECT_EQ(text, string(_T("{\"jsonrpc\":\"2.0\",\"method\":\"client.events.onApplicationLaunchRequest\",\"params\":{\"applicationName\":\"Youtube\",\"parameter\":\"http:\\/\\/youtube.com?myYouTube\"}}")));
+                TEST_LOG("LaunchRequest event received");
                 onLaunchRequest.SetEvent();
                 return Core::ERROR_NONE;
             }))
@@ -842,7 +844,8 @@ TEST_F(XCastTest, onApplicationLaunchRequest)
                 string text;
                 EXPECT_TRUE(json->ToString(text));
                 EXPECT_EQ(text, string(_T("{\"jsonrpc\":\"2.0\",\"method\":\"client.events.onApplicationLaunchRequest\",\"params\":{\"applicationName\":\"Youtube\",\"strPayLoad\":\"youtube_payload\",\"strQuery\":\"source_type=12\",\"strAddDataUrl\":\"http:\\/\\/youtube.com\"}}")));
-                onLaunchRequest.SetEvent();
+                TEST_LOG("LaunchRequest with param event received");
+                onLaunchRequestParam.SetEvent();
                 return Core::ERROR_NONE;
             }));
 
@@ -854,7 +857,7 @@ TEST_F(XCastTest, onApplicationLaunchRequest)
     gdialNotifier->onApplicationLaunchRequest("Youtube", "http://youtube.com?myYouTube");
     EXPECT_EQ(Core::ERROR_NONE, onLaunchRequest.Lock(5000));
     gdialNotifier->onApplicationLaunchRequestWithLaunchParam("Youtube", "youtube_payload", "source_type=12", "http://youtube.com");
-    EXPECT_EQ(Core::ERROR_NONE, onLaunchRequest.Lock(5000));
+    EXPECT_EQ(Core::ERROR_NONE, onLaunchRequestParam.Lock(5000));
 
     EVENT_UNSUBSCRIBE(0, _T("onApplicationLaunchRequest"), _T("client.events"), message);
 
@@ -876,6 +879,7 @@ TEST_F(XCastTest, onApplicationStopRequest)
                 string text;
                 EXPECT_TRUE(json->ToString(text));
                 EXPECT_EQ(text, string(_T("{\"jsonrpc\":\"2.0\",\"method\":\"client.events.onApplicationStopRequest\",\"params\":{\"applicationName\":\"Youtube\",\"applicationId\":\"1234\"}}")));
+                TEST_LOG("StopRequest event received");
                 onStopRequest.SetEvent();
                 return Core::ERROR_NONE;
             }));
@@ -907,6 +911,7 @@ TEST_F(XCastTest, onApplicationHideRequest)
                 string text;
                 EXPECT_TRUE(json->ToString(text));
                 EXPECT_EQ(text, string(_T("{\"jsonrpc\":\"2.0\",\"method\":\"client.events.onApplicationHideRequest\",\"params\":{\"applicationName\":\"Youtube\",\"applicationId\":\"1234\"}}")));
+                TEST_LOG("HideRequest event received");
                 onHideRequest.SetEvent();
                 return Core::ERROR_NONE;
             }));
@@ -939,6 +944,7 @@ TEST_F(XCastTest, onApplicationResumeRequest)
                 string text;
                 EXPECT_TRUE(json->ToString(text));
                 EXPECT_EQ(text, string(_T("{\"jsonrpc\":\"2.0\",\"method\":\"client.events.onApplicationResumeRequest\",\"params\":{\"applicationName\":\"Youtube\",\"applicationId\":\"1234\"}}")));
+                TEST_LOG("ResumeRequest event received");
                 onResumeRequest.SetEvent();
                 return Core::ERROR_NONE;
             }));
@@ -971,6 +977,7 @@ TEST_F(XCastTest, onApplicationStateRequest)
                 string text;
                 EXPECT_TRUE(json->ToString(text));
                 EXPECT_EQ(text, string(_T("{\"jsonrpc\":\"2.0\",\"method\":\"client.events.onApplicationStateRequest\",\"params\":{\"applicationName\":\"Netflix\",\"applicationId\":\"1234\"}}")));
+                TEST_LOG("StateRequest event received");
                 onStateRequest.SetEvent();
                 return Core::ERROR_NONE;
             }));
