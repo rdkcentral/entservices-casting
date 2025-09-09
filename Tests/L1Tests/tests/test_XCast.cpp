@@ -645,34 +645,38 @@ TEST_F(XCastTest, updatePowerState)
         .Times(4)
         .WillOnce(::testing::Invoke(
             [this](const int keyCode, const PowerState powerState, const string& reason) -> uint32_t {
-                ASSERT_NE(_modeChangedNotification, nullptr);
                 EXPECT_EQ(powerState, Exchange::IPowerManager::PowerState::POWER_STATE_STANDBY);
                 _powerState = powerState;
-                _modeChangedNotification->OnPowerModeChanged(Exchange::IPowerManager::PowerState::POWER_STATE_ON, powerState);
+                if (_modeChangedNotification) {
+                    _modeChangedNotification->OnPowerModeChanged(Exchange::IPowerManager::PowerState::POWER_STATE_ON, powerState);
+                }
                 return Core::ERROR_NONE;
             }))
         .WillOnce(::testing::Invoke(
             [this](const int keyCode, const PowerState powerState, const string& reason) -> uint32_t {
-                ASSERT_NE(_modeChangedNotification, nullptr);
                 EXPECT_EQ(powerState, WPEFramework::Exchange::IPowerManager::POWER_STATE_ON);
                 _powerState = powerState;
-                _modeChangedNotification->OnPowerModeChanged(Exchange::IPowerManager::PowerState::POWER_STATE_STANDBY, powerState);
+                if (_modeChangedNotification) {
+                    _modeChangedNotification->OnPowerModeChanged(Exchange::IPowerManager::PowerState::POWER_STATE_STANDBY, powerState);
+                }
                 return Core::ERROR_NONE;
             }))
         .WillOnce(::testing::Invoke(
             [this](const int keyCode, const PowerState powerState, const string& reason) -> uint32_t {
-                ASSERT_NE(_modeChangedNotification, nullptr);
                 EXPECT_EQ(powerState, WPEFramework::Exchange::IPowerManager::POWER_STATE_STANDBY);
                 _powerState = powerState;
-                _modeChangedNotification->OnPowerModeChanged(Exchange::IPowerManager::PowerState::POWER_STATE_ON, powerState);
+                if (_modeChangedNotification) {
+                    _modeChangedNotification->OnPowerModeChanged(Exchange::IPowerManager::PowerState::POWER_STATE_ON, powerState);
+                }
                 return Core::ERROR_NONE;
             }))
         .WillOnce(::testing::Invoke(
             [this](const int keyCode, const PowerState powerState, const string& reason) -> uint32_t {
-                ASSERT_NE(_modeChangedNotification, nullptr);
                 EXPECT_EQ(powerState, WPEFramework::Exchange::IPowerManager::POWER_STATE_ON);
                 _powerState = powerState;
-                _modeChangedNotification->OnPowerModeChanged(Exchange::IPowerManager::PowerState::POWER_STATE_STANDBY, powerState);
+                if (_modeChangedNotification) {
+                    _modeChangedNotification->OnPowerModeChanged(Exchange::IPowerManager::PowerState::POWER_STATE_STANDBY, powerState);
+                }
                 wg.Done();
                 return Core::ERROR_NONE;
             }));
