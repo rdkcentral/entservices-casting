@@ -644,7 +644,7 @@ TEST_F(XCastTest, updatePowerState)
     EXPECT_CALL(PowerManagerMock::Mock(), SetPowerState(::testing::_, ::testing::_,::testing::_))
         .Times(4)
         .WillOnce(::testing::Invoke(
-            [this](const int keyCode, const PowerState powerState, const string& reason) -> uint32_t {
+            [&](const int keyCode, const PowerState powerState, const string& reason) -> uint32_t {
                 EXPECT_EQ(powerState, Exchange::IPowerManager::PowerState::POWER_STATE_STANDBY);
                 _powerState = powerState;
                 if (_modeChangedNotification) {
@@ -653,7 +653,7 @@ TEST_F(XCastTest, updatePowerState)
                 return Core::ERROR_NONE;
             }))
         .WillOnce(::testing::Invoke(
-            [this](const int keyCode, const PowerState powerState, const string& reason) -> uint32_t {
+            [&](const int keyCode, const PowerState powerState, const string& reason) -> uint32_t {
                 EXPECT_EQ(powerState, WPEFramework::Exchange::IPowerManager::POWER_STATE_ON);
                 _powerState = powerState;
                 if (_modeChangedNotification) {
@@ -662,7 +662,7 @@ TEST_F(XCastTest, updatePowerState)
                 return Core::ERROR_NONE;
             }))
         .WillOnce(::testing::Invoke(
-            [this](const int keyCode, const PowerState powerState, const string& reason) -> uint32_t {
+            [&](const int keyCode, const PowerState powerState, const string& reason) -> uint32_t {
                 EXPECT_EQ(powerState, WPEFramework::Exchange::IPowerManager::POWER_STATE_STANDBY);
                 _powerState = powerState;
                 if (_modeChangedNotification) {
@@ -671,7 +671,7 @@ TEST_F(XCastTest, updatePowerState)
                 return Core::ERROR_NONE;
             }))
         .WillOnce(::testing::Invoke(
-            [this](const int keyCode, const PowerState powerState, const string& reason) -> uint32_t {
+            [&](const int keyCode, const PowerState powerState, const string& reason) -> uint32_t {
                 EXPECT_EQ(powerState, WPEFramework::Exchange::IPowerManager::POWER_STATE_ON);
                 _powerState = powerState;
                 if (_modeChangedNotification) {
