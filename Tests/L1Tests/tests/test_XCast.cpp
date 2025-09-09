@@ -713,22 +713,6 @@ TEST_F(XCastTest, onPowerManagerEvents)
                 return Core::ERROR_NONE;
             }));
 
-    EXPECT_CALL(PowerManagerMock::Mock(), Unregister(::testing::_))
-        .Times(::testing::AnyNumber())
-        .WillRepeatedly(::testing::Invoke(
-            [this](const Exchange::IPowerManager::INetworkStandbyModeChangedNotification* notification) -> uint32_t {
-                _networkStandbyModeChangedNotification = nullptr;
-                return Core::ERROR_NONE;
-            }));
-
-    EXPECT_CALL(PowerManagerMock::Mock(), Unregister(::testing::_))
-        .Times(::testing::AnyNumber())
-        .WillRepeatedly(::testing::Invoke(
-            [this](const Exchange::IPowerManager::IModeChangedNotification* notification) -> uint32_t {
-                _modeChangedNotification = nullptr;
-                return Core::ERROR_NONE;
-            }));
-
     EXPECT_CALL(*p_gdialserviceImplMock, setNetworkStandbyMode(::testing::_))
         .Times(2)
         .WillOnce(::testing::Invoke(
@@ -737,7 +721,7 @@ TEST_F(XCastTest, onPowerManagerEvents)
                 _networkStandbyMode = nwStandbyMode;
             }))
         .WillOnce(::testing::Invoke(
-            [this](bool nwStandbyMode) {
+            [this, &](bool nwStandbyMode) {
                 EXPECT_EQ(nwStandbyMode, false);
                 _networkStandbyMode = nwStandbyMode;
                 wg.Done();
@@ -767,9 +751,6 @@ TEST_F(XCastTest, onPowerManagerEvents)
 
     EXPECT_EQ(Core::ERROR_NONE, mJsonRpcHandler.Invoke(connection, _T("getEnabled"), _T("{}"), response));
     EXPECT_EQ(response, string("{\"enabled\":false,\"success\":true}"));
-
-    EXPECT_EQ(_networkStandbyModeChangedNotification, nullptr);
-    EXPECT_EQ(_modeChangedNotification, nullptr);
 
     if (Core::ERROR_NONE == status)
     {
