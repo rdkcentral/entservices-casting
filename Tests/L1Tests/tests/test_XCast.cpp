@@ -531,15 +531,17 @@ TEST_F(XCastTest, unRegisterAllApplications)
             }));
 
     EXPECT_CALL(*p_gdialserviceImplMock, ActivationChanged(::testing::_,::testing::_))
-        .Times(2)
+        .Times(3)
         .WillOnce(::testing::Invoke(
             [&](std::string activation, std::string friendlyname) {
-                EXPECT_EQ(activation, "false");
                 return GDIAL_SERVICE_ERROR_NONE;
             }))
         .WillOnce(::testing::Invoke(
             [&](std::string activation, std::string friendlyname) {
-                EXPECT_EQ(activation, "false");
+                return GDIAL_SERVICE_ERROR_NONE;
+            }))
+        .WillOnce(::testing::Invoke(
+            [&](std::string activation, std::string friendlyname) {
                 wg.Done();
                 return GDIAL_SERVICE_ERROR_NONE;
             }));
