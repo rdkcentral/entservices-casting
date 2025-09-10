@@ -281,7 +281,7 @@ TEST_F(XCastTest, unRegisterAllApplications)
                 int i = 0;
                 if (nullptr == appConfigList ) {
                     TEST_LOG("appConfigList is NULL");
-                    return GDIAL_SERVICE_ERROR_INVALID_PARAM;
+                    return GDIAL_SERVICE_INVALID_PARAM_ERROR;
                 }
                 for (RegisterAppEntry* appEntry : appConfigList->getValues())
                 {
@@ -314,7 +314,7 @@ TEST_F(XCastTest, unRegisterAllApplications)
                 int i = 0;
                 if (nullptr == appConfigList ) {
                     TEST_LOG("appConfigList is NULL");
-                    return GDIAL_SERVICE_ERROR_INVALID_PARAM;
+                    return GDIAL_SERVICE_INVALID_PARAM_ERROR;
                 }
                 for (RegisterAppEntry* appEntry : appConfigList->getValues())
                 {
