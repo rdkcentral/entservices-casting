@@ -218,11 +218,10 @@ namespace WPEFramework
                     m_isPluginInitialized = false;
                     MIRACASTLOG_INFO("Done..!!!");
                 }
-				if (nullptr != mService)
-                {	
-				    mService->Release();
-                    mService = nullptr;
-				 }
+				
+				mService->Release();
+                mService = nullptr;
+				
 				MIRACAST::logger_deinit();
 			    MiracastPlayerImplementation::_instance = nullptr;
 				result = Core::ERROR_NONE;
@@ -231,49 +230,43 @@ namespace WPEFramework
             {
                 LOGINFO("Call MiracastPlayerImplementation initialize");
                 mService = service;
-                
-                if (nullptr != mService)
+                mService->AddRef();
+				
+                if (!m_isPluginInitialized)
                 {
-                    mService->AddRef();
-                    if (!m_isPluginInitialized)
+                    MiracastError ret_code = MIRACAST_OK;
+                    m_miracast_rtsp_obj = MiracastRTSPMsg::getInstance(ret_code, this);
+                    if (nullptr != m_miracast_rtsp_obj)
                     {
-                        MiracastError ret_code = MIRACAST_OK;
-                        m_miracast_rtsp_obj = MiracastRTSPMsg::getInstance(ret_code, this);
-                        if (nullptr != m_miracast_rtsp_obj)
+                        m_GstPlayer = MiracastGstPlayer::getInstance();
+                        m_isPluginInitialized = true;
+                        result = Core::ERROR_NONE;
+                    }
+                    else
+                    {
+                        switch (ret_code)
                         {
-                            m_GstPlayer = MiracastGstPlayer::getInstance();
-                            m_isPluginInitialized = true;
-                            result = Core::ERROR_NONE;
-                        }
-                        else
-                        {
-                            switch (ret_code)
+                            case MIRACAST_RTSP_INIT_FAILED:
                             {
-                                case MIRACAST_RTSP_INIT_FAILED:
-                                {
-                                    MIRACASTLOG_ERROR("RTSP handler Init Failed");
-                                }
-                                break;
-                                default:
-                                {
-                                    MIRACASTLOG_ERROR("Unknown Error:Failed to obtain MiracastRTSPMsg Object");
-                                }
-                                break;
+                                MIRACASTLOG_ERROR("RTSP handler Init Failed");
                             }
+                            break;
+                            default:
+                            {
+                                MIRACASTLOG_ERROR("Unknown Error:Failed to obtain MiracastRTSPMsg Object");
+                            }
+                            break;
                         }
                     }
                 }
-            }
-			
+            }	
+				
             else
 			{
-				MIRACASTLOG_INFO("Entering mconfigure-else.!!!");
                 ASSERT(nullptr != service);
             }
-			MIRACASTLOG_INFO("exiting before result.!!!");
             MIRACASTLOG_TRACE("Exiting ...");
             return result;
-			MIRACASTLOG_INFO("exiting after result.!!!");
         }
 
         Core::hresult MiracastPlayerImplementation::PlayRequest(const DeviceParameters &deviceParam , const VideoRectangle videoRect , Result &result )
