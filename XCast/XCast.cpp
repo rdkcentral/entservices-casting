@@ -19,14 +19,13 @@
 
 #include "XCast.h"
 
-#define API_VERSION_NUMBER_MAJOR 2
+#define API_VERSION_NUMBER_MAJOR 3
 #define API_VERSION_NUMBER_MINOR 0
-#define API_VERSION_NUMBER_PATCH 9
+#define API_VERSION_NUMBER_PATCH 0
 
 namespace WPEFramework
 {
     namespace {
-
         static Plugin::Metadata<Plugin::XCast> metadata(
             // Version (Major, Minor, Patch)
             API_VERSION_NUMBER_MAJOR, API_VERSION_NUMBER_MINOR, API_VERSION_NUMBER_PATCH,
@@ -43,7 +42,7 @@ namespace WPEFramework
     {
         SERVICE_REGISTRATION(XCast, API_VERSION_NUMBER_MAJOR, API_VERSION_NUMBER_MINOR, API_VERSION_NUMBER_PATCH);
 
-		XCast::XCast()
+        XCast::XCast()
             : _service(nullptr)
             , _connectionId(0)
             , _xcast(nullptr)
@@ -56,8 +55,8 @@ namespace WPEFramework
         {
             SYSLOG(Logging::Shutdown, (string(_T("XCast Destructor"))));
         }
-    
-	const string XCast::Initialize(PluginHost::IShell *service)
+
+        const string XCast::Initialize(PluginHost::IShell *service)
         {
             string message = "";
 
@@ -76,15 +75,14 @@ namespace WPEFramework
             
             if (nullptr != _xcast)
             {
-                auto configure = _xcast->QueryInterface<Exchange::IConfiguration>();
-                if (configure != nullptr)
+                mConfigure = _xcast->QueryInterface<Exchange::IConfiguration>();
+                if (nullptr != mConfigure)
                 {
-                    uint32_t result = configure->Configure(_service);
+                    uint32_t result = mConfigure->Configure(_service);
                     if(result != Core::ERROR_NONE)
                     {
                         message = _T("XCast could not be configured");
                     }
-                    configure->Release();
                 }
                 else
                 {
@@ -126,15 +124,15 @@ namespace WPEFramework
             {
                 _xcast->Unregister(&_xcastNotification);
                 Exchange::JXCast::Unregister(*this);
-                auto configure = _xcast->QueryInterface<Exchange::IConfiguration>();
-                if (configure != nullptr)
+                if (nullptr != mConfigure)
                 {
-                    uint32_t result = configure->Configure(nullptr);
+                    uint32_t result = mConfigure->Configure(nullptr);
                     if(result != Core::ERROR_NONE)
                     {
-                        LOGERR("XCast deinitialisecould not be configured");
+                        LOGERR("XCast deinitialised could not be configured");
                     }
-                    configure->Release();
+                    mConfigure->Release();
+                    mConfigure = nullptr;
                 }
                 // Stop processing:
                 RPC::IRemoteConnection *connection = service->RemoteConnection(_connectionId);
@@ -155,7 +153,7 @@ namespace WPEFramework
                     connection->Release();
                 }
             }
-	     _connectionId = 0;
+            _connectionId = 0;
 
             if (_service != nullptr)
             {
@@ -164,7 +162,8 @@ namespace WPEFramework
             }
             SYSLOG(Logging::Shutdown, (string(_T("XCast de-initialised"))));
         }
-	string XCast::Information() const
+
+        string XCast::Information() const
         {
             return ("This XCast Plugin facilitates to persist event data for monitoring applications");
         }
