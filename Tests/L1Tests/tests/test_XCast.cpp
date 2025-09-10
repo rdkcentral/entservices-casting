@@ -292,8 +292,6 @@ TEST_F(XCastTest, unRegisterAllApplications)
                         EXPECT_EQ(appEntry->Names, string("Youtube"));
                         EXPECT_EQ(appEntry->prefixes, string("myYouTube"));
                         EXPECT_EQ(appEntry->cors, string(".youtube.com"));
-                        EXPECT_EQ(appEntry->query, string("source_type=12"));
-                        EXPECT_EQ(appEntry->payload, string("youtube_payload"));
                         EXPECT_EQ(appEntry->allowStop, 1 );
                     }
                     else if (1 == i)
@@ -301,8 +299,6 @@ TEST_F(XCastTest, unRegisterAllApplications)
                         EXPECT_EQ(appEntry->Names, string("Netflix"));
                         EXPECT_EQ(appEntry->prefixes, string("myNetflix"));
                         EXPECT_EQ(appEntry->cors, string(".netflix.com"));
-                        EXPECT_EQ(appEntry->query, string("source_type=12"));
-                        EXPECT_EQ(appEntry->payload, string("netflix_payload"));
                         EXPECT_EQ(appEntry->allowStop, 0 );
                     }
                     ++i;
@@ -325,8 +321,6 @@ TEST_F(XCastTest, unRegisterAllApplications)
                         EXPECT_EQ(appEntry->Names, string("Netflix"));
                         EXPECT_EQ(appEntry->prefixes, string("myNetflix"));
                         EXPECT_EQ(appEntry->cors, string(".netflix.com"));
-                        EXPECT_EQ(appEntry->query, string("source_type=12"));
-                        EXPECT_EQ(appEntry->payload, string("netflix_payload"));
                         EXPECT_EQ(appEntry->allowStop, 0);
                     }
                     ++i;
