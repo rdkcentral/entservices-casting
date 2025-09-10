@@ -30,30 +30,17 @@
 
 #define LOG_INPARAM() { string json; parameters.ToString(json); NMLOG_INFO("params=%s", json.c_str() ); }
 
-#if defined(SECURITY_TOKEN_ENABLED) && ((SECURITY_TOKEN_ENABLED == 0) || (SECURITY_TOKEN_ENABLED == false))
-#define GetSecurityToken(a, b) 0
-#define GetToken(a, b, c) 0
-#else
-#include <securityagent/securityagent.h>
-#include <securityagent/SecurityTokenUtil.h>
-#endif
- 
 #define SERVER_DETAILS "127.0.0.1:9998"
-#define NETWORK_CALLSIGN_VER "org.rdk.Network.1"
 #define THUNDER_RPC_TIMEOUT 5000
-#define MAX_SECURITY_TOKEN_SIZE 1024
 
 #define API_VERSION_NUMBER_MAJOR 2
 #define API_VERSION_NUMBER_MINOR 0
 #define API_VERSION_NUMBER_PATCH 9
-
  
 #define LOCATE_CAST_FIRST_TIMEOUT_IN_MILLIS  5000  //5 seconds
 #define LOCATE_CAST_SECOND_TIMEOUT_IN_MILLIS 10000  //10 seconds
 
-
 #define DIAL_MAX_ADDITIONALURL (1024)
- 
  
 namespace WPEFramework
 {
@@ -193,30 +180,20 @@ namespace WPEFramework
         void XCastImplementation::Deinitialize(void)
         {
             LOGINFO("Entering..!!!");
-
             if(nullptr != m_xcast_manager)
             {
-                LOGINFO("TRACE");
                 stopTimer();
-                LOGINFO("TRACE");
                 m_xcast_manager->shutdown();
-                LOGINFO("TRACE");
                 m_xcast_manager = nullptr;
-                LOGINFO("TRACE");
             }
-            LOGINFO("TRACE");
             unregisterPowerEventHandlers();
-            LOGINFO("TRACE");
             unregisterNetworkEventHandlers();
-            LOGINFO("TRACE");
             if (_powerManagerPlugin) {
                 _powerManagerPlugin.Reset();
             }
-            LOGINFO("TRACE");
             if (_networkManagerPlugin) {
                 _networkManagerPlugin->Release();
             }
-            LOGINFO("TRACE");
             LOGINFO("Exiting ...");
         }
 
@@ -244,10 +221,8 @@ namespace WPEFramework
             LOGINFO("Entering..!!!");
             if(nullptr == m_SystemPluginObj)
             {
-                string token = getSecurityToken();
-                string query = "token=" + token;
                 Core::SystemInfo::SetEnvironment(_T("THUNDER_ACCESS"), (_T(SERVER_DETAILS)));
-                m_SystemPluginObj = new WPEFramework::JSONRPC::LinkType<Core::JSON::IElement>(_T(SYSTEM_CALLSIGN_VER), (_T(SYSTEM_CALLSIGN_VER)), false, query);
+                m_SystemPluginObj = new WPEFramework::JSONRPC::LinkType<Core::JSON::IElement>(_T(SYSTEM_CALLSIGN_VER), (_T(SYSTEM_CALLSIGN_VER)), false);
                 if (nullptr == m_SystemPluginObj)
                 {
                     LOGERR("JSONRPC: %s: initialization failed", SYSTEM_CALLSIGN_VER);
@@ -610,19 +585,14 @@ namespace WPEFramework
             std::string interface,ipaddress;
             bool status = false;
 
-            LOGINFO("TRACE");
             getDefaultNameAndIPAddress(interface,ipaddress);
-            LOGINFO("TRACE");
             if (!interface.empty())
             {
-                LOGINFO("TRACE");
                 status = m_xcast_manager->initialize(interface,m_networkStandbyMode);
-                LOGINFO("TRACE");
                 if( true == status)
                 {
                     m_activeInterfaceName = getInterfaceNameToType(interface);
                 }
-                LOGINFO("TRACE");
             }
             LOGINFO("GDialService[%u]IF[%s]IP[%s]",status,interface.c_str(),ipaddress.c_str());
             LOGINFO("Exiting ...");
@@ -643,17 +613,13 @@ namespace WPEFramework
             LOGINFO("Entering ...");
             bool returnValue = false;
 
-            LOGINFO("TRACE");
             InitializeNetworkManager(_service);
-            LOGINFO("TRACE");
 
             if (nullptr == _networkManagerPlugin)
             {
-                LOGINFO("TRACE");
                 LOGINFO("WARN::Unable to get Network plugin handle not yet");
                 return false;
             }
-            LOGINFO("TRACE");
 
             uint32_t rc = Core::ERROR_GENERAL;
             rc = _networkManagerPlugin->GetPrimaryInterface(interface);
@@ -756,35 +722,28 @@ namespace WPEFramework
                 lock_guard<mutex> lck(m_TimerMutexSync);
                 if( false == connectToGDialService())
                 {
-                    LOGINFO("TRACE");
                     LOGINFO("Retry after 10 sec...");
                     m_locateCastTimer.setInterval(LOCATE_CAST_SECOND_TIMEOUT_IN_MILLIS);
                     LOGINFO("Timer Exiting ...");
                     return ;
                 }
-                LOGINFO("TRACE");
                 stopTimer();
             }
-            LOGINFO("TRACE");
 
             if ((NULL != m_xcast_manager) && m_isDynamicRegistrationsRequired )
             {
-                LOGINFO("TRACE");
                 std::vector<DynamicAppConfig*> appConfigList;
                 lock_guard<mutex> lck(m_appConfigMutex);
                 appConfigList = m_appConfigCache;
                 dumpDynamicAppCacheList(string("CachedAppsFromTimer"), appConfigList);
                 LOGINFO("> calling registerApplications");
-                LOGINFO("TRACE");
                 m_xcast_manager->registerApplications (appConfigList);
-                LOGINFO("TRACE");
             }
             else {
                 LOGINFO("m_xcast_manager: %p: m_isDynamicRegistrationsRequired[%u]",m_xcast_manager,m_isDynamicRegistrationsRequired);
             }
-            LOGINFO("TRACE");
+
             m_xcast_manager->enableCastService(friendlyNameCache,xcastEnableCache);
-            LOGINFO("TRACE");
             LOGINFO("XCastImplementation::onLocateCastTimer : Timer still active ? %d ",m_locateCastTimer.isActive());
             LOGINFO("Timer Exiting ...");
         }
@@ -794,9 +753,7 @@ namespace WPEFramework
             LOGINFO("ARGS = %s : %d", friendlyname.c_str(), enableService);
             if (nullptr != m_xcast_manager)
             {
-                LOGINFO("m_xcast_manager  :%s",friendlyname.c_str());
                 m_xcast_manager->enableCastService(friendlyname,enableService);
-                LOGINFO("m_xcast_manager  :%s",friendlyname.c_str());
             }
             xcastEnableCache = enableService;
             friendlyNameCache = std::move(friendlyname);
@@ -807,9 +764,7 @@ namespace WPEFramework
         {
             LOGINFO("Entering ...");
             stopTimer();
-            LOGINFO("TRACE");
             m_locateCastTimer.start(interval);
-            LOGINFO("TRACE");
             LOGINFO("Exiting ...");
         }
 
@@ -818,9 +773,7 @@ namespace WPEFramework
             LOGINFO("Entering ...");
             if (m_locateCastTimer.isActive())
             {
-                LOGINFO("TRACE");
                 m_locateCastTimer.stop();
-                LOGINFO("TRACE");
             }
             LOGINFO("Exiting ...");
         }
@@ -894,40 +847,6 @@ namespace WPEFramework
             }
 
             _adminLock.Unlock();
-        }
-
-        std::string XCastImplementation::getSecurityToken()
-        {
-            if (nullptr == _service)
-            {
-                return (std::string(""));
-            }
-
-            std::string token;
-            auto security = _service->QueryInterfaceByCallsign<PluginHost::IAuthenticate>("SecurityAgent");
-            if (nullptr != security)
-            {
-                std::string payload = "http://localhost";
-                if (security->CreateToken(static_cast<uint16_t>(payload.length()),
-                                            reinterpret_cast<const uint8_t *>(payload.c_str()),
-                                            token) == Core::ERROR_NONE)
-                {
-                    LOGINFO("got security token - %s", token.empty() ? "" : token.c_str());
-                }
-                else
-                {
-                    LOGERR("failed to get security token");
-                }
-                security->Release();
-            }
-            else
-            {
-                LOGERR("No security agent\n");
-            }
-
-            std::string query = "token=" + token;
-            Core::SystemInfo::SetEnvironment(_T("THUNDER_ACCESS"), (_T(SERVER_DETAILS)));
-            return query;
         }
 
         void XCastImplementation::dumpDynamicAppCacheList(string strListName, std::vector<DynamicAppConfig*>& appConfigList)

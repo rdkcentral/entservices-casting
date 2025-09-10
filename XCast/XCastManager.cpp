@@ -440,20 +440,6 @@ void XCastManager::enableCastService(string friendlyname,bool enableService)
         LOGINFO(" gdialCastObj is NULL ");    
 }
 
-void XCastManager::updateFriendlyName(string friendlyname)
-{
-    LOGINFO("ARGS = %s ", friendlyname.c_str());
-    lock_guard<recursive_mutex> lock(m_mutexSync);
-    if(gdialCastObj != NULL)
-    {
-        gdialCastObj->FriendlyNameChanged( friendlyname);
-        m_defaultfriendlyName = friendlyname;
-        LOGINFO("XcastService send FriendlyNameChanged");
-    }
-    else
-        LOGINFO(" gdialCastObj is NULL ");
-}
-
 string XCastManager::getProtocolVersion(void)
 {
     LOGINFO("XcastService::getProtocolVersion ");
@@ -578,6 +564,21 @@ XCastManager * XCastManager::getInstance()
     return XCastManager::_instance;
 }
 
+#if 0
+void XCastManager::updateFriendlyName(string friendlyname)
+{
+    LOGINFO("ARGS = %s ", friendlyname.c_str());
+    lock_guard<recursive_mutex> lock(m_mutexSync);
+    if(gdialCastObj != NULL)
+    {
+        gdialCastObj->FriendlyNameChanged( friendlyname);
+        m_defaultfriendlyName = friendlyname;
+        LOGINFO("XcastService send FriendlyNameChanged");
+    }
+    else
+        LOGINFO(" gdialCastObj is NULL ");
+}
+
 bool XCastManager::IsAppEnabled(char* strAppName)
 {
     bool ret = false;
@@ -601,3 +602,4 @@ bool XCastManager::IsAppEnabled(char* strAppName)
 
     return ret;
 }
+#endif /*NOT Used*/

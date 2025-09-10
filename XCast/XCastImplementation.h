@@ -265,11 +265,7 @@ namespace WPEFramework
             static XCastManager* m_xcast_manager;
             guint m_FriendlyNameUpdateTimerID{0};
             TpTimer m_locateCastTimer;
-            PluginState _networkPluginState;
             
-            
-            WPEFramework::JSONRPC::LinkType<WPEFramework::Core::JSON::IElement> *m_ControllerObj = nullptr;
-            WPEFramework::JSONRPC::LinkType<WPEFramework::Core::JSON::IElement> *m_NetworkPluginObj = nullptr;
             WPEFramework::JSONRPC::LinkType<WPEFramework::Core::JSON::IElement> *m_SystemPluginObj = NULL;
             PluginHost::IShell* _service;
 
@@ -311,8 +307,6 @@ namespace WPEFramework
             void unregisterPowerEventHandlers();
             void checkPowerAndNetworkStandbyStates();
             void InitializePowerManager(PluginHost::IShell *service);
-
-            std::string getSecurityToken();
 
             void registerNetworkEventHandlers();
             void unregisterNetworkEventHandlers();
