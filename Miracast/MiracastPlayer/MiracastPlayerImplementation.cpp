@@ -50,22 +50,6 @@ namespace WPEFramework
 
         MiracastPlayerImplementation::~MiracastPlayerImplementation()
         {
-            LOGINFO("Call MiracastPlayerImplementation destructor");
-            if (m_isPluginInitialized)
-            {
-                MiracastRTSPMsg::destroyInstance();
-                m_miracast_rtsp_obj = nullptr;
-                m_GstPlayer = nullptr;
-                m_isPluginInitialized = false;
-                MIRACASTLOG_INFO("Done..!!!");
-            }
-            if (nullptr != mService)
-            {
-                mService->Release();
-                mService = nullptr;
-            }
-            MIRACAST::logger_deinit();
-            MiracastPlayerImplementation::_instance = nullptr;
         }
 
         /**
@@ -100,7 +84,7 @@ namespace WPEFramework
          */
         Core::hresult MiracastPlayerImplementation::Unregister(Exchange::IMiracastPlayer::INotification *notification)
         {
-            MIRACASTLOG_TRACE("Entering ...");
+			MIRACASTLOG_TRACE("Entering ...");
             Core::hresult status = Core::ERROR_GENERAL;
 
             ASSERT(nullptr != notification);
@@ -222,14 +206,32 @@ namespace WPEFramework
         {
             MIRACASTLOG_TRACE("Entering ...");
             uint32_t result = Core::ERROR_GENERAL;
-
-            ASSERT(nullptr != service);
-
-            mService = service;
-
-            if (nullptr != mService)
+            
+            if ((mService) && (nullptr == service))
+            {    
+                LOGINFO("Call MiracastPlayerImplementation deinitialize");
+                if (m_isPluginInitialized)
+                {
+                    MiracastRTSPMsg::destroyInstance();
+                    m_miracast_rtsp_obj = nullptr;
+                    m_GstPlayer = nullptr;
+                    m_isPluginInitialized = false;
+                    MIRACASTLOG_INFO("Done..!!!");
+                }
+				
+				mService->Release();
+                mService = nullptr;
+				
+				MIRACAST::logger_deinit();
+			    MiracastPlayerImplementation::_instance = nullptr;
+				result = Core::ERROR_NONE;
+			}
+            else if ((service) && ( nullptr == mService ))
             {
+                LOGINFO("Call MiracastPlayerImplementation initialize");
+                mService = service;
                 mService->AddRef();
+				
                 if (!m_isPluginInitialized)
                 {
                     MiracastError ret_code = MIRACAST_OK;
@@ -257,6 +259,11 @@ namespace WPEFramework
                         }
                     }
                 }
+            }	
+				
+            else
+			{
+                ASSERT(nullptr != service);
             }
             MIRACASTLOG_TRACE("Exiting ...");
             return result;
