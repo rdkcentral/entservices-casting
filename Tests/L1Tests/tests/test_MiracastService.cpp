@@ -458,7 +458,8 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_onClientConnectionAndLaunchRequest)
 					char buffer[1024] = {0};
 					if ( 0 == strncmp(command,"awk '$4 == ",strlen("awk '$4 == ")))
 					{
-						strncpy(buffer, "192.168.59.165",sizeof(buffer));
+						strncpy(buffer, "192.168.59.165", sizeof(buffer) - 1);
+						buffer[sizeof(buffer) - 1] = '\0';
 					}
 					else if ( 0 == strncmp(command,"awk '$1 == ",strlen("awk '$1 == ")))
 					{
@@ -466,9 +467,12 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_onClientConnectionAndLaunchRequest)
 					}
 					else if ( 0 == strncmp(command,"arping",strlen("arping")))
 					{
-						strncpy(buffer, "Unicast reply from 192.168.59.165 [96:52:44:b6:7d:14]  2.189ms\nReceived 1 response",sizeof(buffer));
+						const char* response = "Unicast reply from 192.168.59.165 [96:52:44:b6:7d:14]  2.189ms\nReceived 1 response";
+						strncpy(buffer, response, sizeof(buffer) - 1);
+						buffer[sizeof(buffer) - 1] = '\0';
 					}
-					return (fmemopen(buffer, strlen(buffer), "r"));
+					size_t len = strnlen(buffer, sizeof(buffer));
+					return (fmemopen(buffer, len, "r"));
 					}));
 
 	EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_request(::testing::_, ::testing::_, ::testing::_,::testing::_, ::testing::_, ::testing::_))
@@ -1053,9 +1057,12 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_onClientConnectionAndLaunchReque
 					char buffer[1024] = {0};
 					if ( 0 == strncmp(command,"/sbin/udhcpc -v -i",strlen("/sbin/udhcpc -v -i")))
 					{
-						strncpy(buffer, "udhcpc: sending select for 192.168.49.165\tudhcpc: lease of 192.168.49.165 obtained, lease time 3599\tdeleting routers\troute add default gw 192.168.49.1 dev lo\tadding dns 192.168.49.1",sizeof(buffer));
+						const char* response = "udhcpc: sending select for 192.168.49.165\tudhcpc: lease of 192.168.49.165 obtained, lease time 3599\tdeleting routers\troute add default gw 192.168.49.1 dev lo\tadding dns 192.168.49.1";
+						strncpy(buffer, response, sizeof(buffer) - 1);
+						buffer[sizeof(buffer) - 1] = '\0';
 					}
-					return (fmemopen(buffer, strlen(buffer), "r"));
+					size_t len = strnlen(buffer, sizeof(buffer));
+					return (fmemopen(buffer, len, "r"));
 					}));
 
 	EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_request(::testing::_, ::testing::_, ::testing::_,::testing::_, ::testing::_, ::testing::_))
@@ -1207,9 +1214,12 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectonClientConnectionAndLaunc
 					char buffer[1024] = {0};
 					if ( 0 == strncmp(command,"/sbin/udhcpc -v -i",strlen("/sbin/udhcpc -v -i")))
 					{
-						strncpy(buffer, "udhcpc: sending select for 192.168.49.165\tudhcpc: lease of 192.168.49.165 obtained, lease time 3599\tdeleting routers\troute add default gw 192.168.49.1 dev lo\tadding dns 192.168.49.1",sizeof(buffer));
+						const char* response = "udhcpc: sending select for 192.168.49.165\tudhcpc: lease of 192.168.49.165 obtained, lease time 3599\tdeleting routers\troute add default gw 192.168.49.1 dev lo\tadding dns 192.168.49.1";
+						strncpy(buffer, response, sizeof(buffer) - 1);
+						buffer[sizeof(buffer) - 1] = '\0';
 					}
-					return (fmemopen(buffer, strlen(buffer), "r"));
+					size_t len = strnlen(buffer, sizeof(buffer));
+					return (fmemopen(buffer, len, "r"));
 					}));
 
 	EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_request(::testing::_, ::testing::_, ::testing::_,::testing::_, ::testing::_, ::testing::_))
@@ -1313,9 +1323,12 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithName)
 					char buffer[1024] = {0};
 					if ( 0 == strncmp(command,"/sbin/udhcpc -v -i",strlen("/sbin/udhcpc -v -i")))
 					{
-						strncpy(buffer, "udhcpc: sending select for 192.168.49.165\tudhcpc: lease of 192.168.49.165 obtained, lease time 3599\tdeleting routers\troute add default gw 192.168.49.1 dev lo\tadding dns 192.168.49.1",sizeof(buffer));
+						const char* response = "udhcpc: sending select for 192.168.49.165\tudhcpc: lease of 192.168.49.165 obtained, lease time 3599\tdeleting routers\troute add default gw 192.168.49.1 dev lo\tadding dns 192.168.49.1";
+						strncpy(buffer, response, sizeof(buffer) - 1);
+						buffer[sizeof(buffer) - 1] = '\0';
 					}
-					return (fmemopen(buffer, strlen(buffer), "r"));
+					size_t len = strnlen(buffer, sizeof(buffer));
+					return (fmemopen(buffer, len, "r"));
 					}));
 
 	EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_request(::testing::_, ::testing::_, ::testing::_,::testing::_, ::testing::_, ::testing::_))
@@ -1413,9 +1426,12 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectGroupStartWithoutName)
 					char buffer[1024] = {0};
 					if ( 0 == strncmp(command,"/sbin/udhcpc -v -i",strlen("/sbin/udhcpc -v -i")))
 					{
-						strncpy(buffer, "udhcpc: sending select for 192.168.49.165\tudhcpc: lease of 192.168.49.165 obtained, lease time 3599\tdeleting routers\troute add default gw 192.168.49.1 dev lo\tadding dns 192.168.49.1",sizeof(buffer));
+						const char* response = "udhcpc: sending select for 192.168.49.165\tudhcpc: lease of 192.168.49.165 obtained, lease time 3599\tdeleting routers\troute add default gw 192.168.49.1 dev lo\tadding dns 192.168.49.1";
+						strncpy(buffer, response, sizeof(buffer) - 1);
+						buffer[sizeof(buffer) - 1] = '\0';
 					}
-					return (fmemopen(buffer, strlen(buffer), "r"));
+					size_t len = strnlen(buffer, sizeof(buffer));
+					return (fmemopen(buffer, len, "r"));
 					}));
 
 	EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_request(::testing::_, ::testing::_, ::testing::_,::testing::_, ::testing::_, ::testing::_))
@@ -1513,9 +1529,12 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_DirectP2PGoNegotiationGroupStart
 					char buffer[1024] = {0};
 					if ( 0 == strncmp(command,"/sbin/udhcpc -v -i",strlen("/sbin/udhcpc -v -i")))
 					{
-						strncpy(buffer, "udhcpc: sending select for 192.168.49.165\tudhcpc: lease of 192.168.49.165 obtained, lease time 3599\tdeleting routers\troute add default gw 192.168.49.1 dev lo\tadding dns 192.168.49.1",sizeof(buffer));
+						const char* response = "udhcpc: sending select for 192.168.49.165\tudhcpc: lease of 192.168.49.165 obtained, lease time 3599\tdeleting routers\troute add default gw 192.168.49.1 dev lo\tadding dns 192.168.49.1";
+						strncpy(buffer, response, sizeof(buffer) - 1);
+						buffer[sizeof(buffer) - 1] = '\0';
 					}
-					return (fmemopen(buffer, strlen(buffer), "r"));
+					size_t len = strnlen(buffer, sizeof(buffer));
+					return (fmemopen(buffer, len, "r"));
 					}));
 
 	EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_request(::testing::_, ::testing::_, ::testing::_,::testing::_, ::testing::_, ::testing::_))
@@ -1637,9 +1656,12 @@ TEST_F(MiracastServiceEventTest, P2P_ClientMode_GENERIC_FAILURE)
 					char buffer[1024] = {0};
 					if ( 0 == strncmp(command,"/sbin/udhcpc -v -i",strlen("/sbin/udhcpc -v -i")))
 					{
-						strncpy(buffer, "P2P GENERIC FAILURE",sizeof(buffer));
+						const char* response = "P2P GENERIC FAILURE";
+						strncpy(buffer, response, sizeof(buffer) - 1);
+						buffer[sizeof(buffer) - 1] = '\0';
 					}
-					return (fmemopen(buffer, strlen(buffer), "r"));
+					size_t len = strnlen(buffer, sizeof(buffer));
+					return (fmemopen(buffer, len, "r"));
 					}));
 
 	EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_request(::testing::_, ::testing::_, ::testing::_,::testing::_, ::testing::_, ::testing::_))
@@ -1793,7 +1815,8 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_GENERIC_FAILURE)
 					char buffer[1024] = {0};
 					if ( 0 == strncmp(command,"awk '$4 == ",strlen("awk '$4 == ")))
 					{
-						strncpy(buffer, "192.168.59.165",sizeof(buffer));
+						strncpy(buffer, "192.168.59.165", sizeof(buffer) - 1);
+						buffer[sizeof(buffer) - 1] = '\0';
 					}
 					else if ( 0 == strncmp(command,"awk '$1 == ",strlen("awk '$1 == ")))
 					{
@@ -1801,9 +1824,12 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_GENERIC_FAILURE)
 					}
 					else if ( 0 == strncmp(command,"arping",strlen("arping")))
 					{
-						strncpy(buffer, "Received 0 response",sizeof(buffer));
+						const char* response = "Received 0 response";
+						strncpy(buffer, response, sizeof(buffer) - 1);
+						buffer[sizeof(buffer) - 1] = '\0';
 					}
-					return (fmemopen(buffer, strlen(buffer), "r"));
+					size_t len = strnlen(buffer, sizeof(buffer));
+					return (fmemopen(buffer, len, "r"));
 					}));
 
 	EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_request(::testing::_, ::testing::_, ::testing::_,::testing::_, ::testing::_, ::testing::_))
@@ -1933,7 +1959,8 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_AutoConnect)
 					char buffer[1024] = {0};
 					if ( 0 == strncmp(command,"awk '$4 == ",strlen("awk '$4 == ")))
 					{
-						strncpy(buffer, "192.168.59.165",sizeof(buffer));
+						strncpy(buffer, "192.168.59.165", sizeof(buffer) - 1);
+						buffer[sizeof(buffer) - 1] = '\0';
 					}
 					else if ( 0 == strncmp(command,"awk '$1 == ",strlen("awk '$1 == ")))
 					{
@@ -1941,9 +1968,12 @@ TEST_F(MiracastServiceEventTest, P2P_GOMode_AutoConnect)
 					}
 					else if ( 0 == strncmp(command,"arping",strlen("arping")))
 					{
-						strncpy(buffer, "Unicast reply from 192.168.59.165 [96:52:44:b6:7d:14]  2.189ms\nReceived 1 response",sizeof(buffer));
+						const char* response = "Unicast reply from 192.168.59.165 [96:52:44:b6:7d:14]  2.189ms\nReceived 1 response";
+						strncpy(buffer, response, sizeof(buffer) - 1);
+						buffer[sizeof(buffer) - 1] = '\0';
 					}
-					return (fmemopen(buffer, strlen(buffer), "r"));
+					size_t len = strnlen(buffer, sizeof(buffer));
+					return (fmemopen(buffer, len, "r"));
 					}));
 
 	EXPECT_CALL(*p_wrapsImplMock, wpa_ctrl_request(::testing::_, ::testing::_, ::testing::_,::testing::_, ::testing::_, ::testing::_))
