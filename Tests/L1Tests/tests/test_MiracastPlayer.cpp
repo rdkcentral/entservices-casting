@@ -289,12 +289,17 @@ namespace {
     bool initialize_ServerSocket(void)
     {
         // Create socket file descriptor
-        if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
+        if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
             perror("socket failed");
             return false;
         }
 
-        fcntl(server_fd, F_SETFL, O_NONBLOCK);
+        if (fcntl(server_fd, F_SETFL, O_NONBLOCK) < 0) {
+            perror("fcntl failed");
+            close(server_fd);
+            server_fd = -1;
+            return false;
+        }
         TEST_LOG("#### NON_BLOCKING Socket Enabled ####");
 
         // Forcefully attaching socket to the port 7236
@@ -380,7 +385,7 @@ namespace {
             std::string msg_buffer = "";
 
             memset( buffer , 0x00 , sizeof(buffer));
-            TEST_LOG("Index[%d] RTSP Msg[%x]",current_msg,rtsp_msg_type);
+            TEST_LOG("Index[%zu] RTSP Msg[%x]",current_msg,rtsp_msg_type);
 
             if ( RTSP_SEND == rtsp_sendorreceive )
             {
@@ -497,7 +502,7 @@ namespace {
                     case RTSP_RECV_M7_REQUEST:
                         {
                             TEST_LOG("RTSP_RECV REQUEST Messages");
-                            receivedCSeqNum = parse_received_parser_field_value( msg_buffer , "CSeq: " );
+                            receivedCSeqNum = std::move(parse_received_parser_field_value( msg_buffer , "CSeq: " ));
                         }
                         break;
                     default:
