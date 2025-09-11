@@ -502,7 +502,7 @@ namespace {
                     case RTSP_RECV_M7_REQUEST:
                         {
                             TEST_LOG("RTSP_RECV REQUEST Messages");
-                            receivedCSeqNum = std::move(parse_received_parser_field_value( msg_buffer , "CSeq: " ));
+                            receivedCSeqNum = parse_received_parser_field_value( std::move(msg_buffer) , "CSeq: " );
                         }
                         break;
                     default:
