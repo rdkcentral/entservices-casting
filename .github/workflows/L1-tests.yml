@@ -123,7 +123,7 @@ jobs:
         with:
           repository: rdkcentral/entservices-testframework
           path: entservices-testframework
-          ref: develop
+          ref: topic/RDKEMW-4621_Xcast_2
           token: ${{ secrets.RDKCM_RDKE }}
 
       - name: Checkout entservices-casting
@@ -207,6 +207,11 @@ jobs:
           #token : ${{ secrets.RDKCM_RDKE }}
           run: rm -rf $GITHUB_WORKSPACE/entservices-apis/jsonrpc/DTV.json
 
+      - name: Apply patches entservices-apis
+        run: |
+          cd $GITHUB_WORKSPACE/entservices-apis
+          cp -rvf $GITHUB_WORKSPACE/entservices-testframework/interfaceFiles/* $GITHUB_WORKSPACE/entservices-apis/apis/
+          cd -
 
       - name: Build entservices-apis
         run: >
@@ -450,6 +455,7 @@ jobs:
           -DUSE_THUNDER_R4=ON
           -DHIDE_NON_EXTERNAL_SYMBOLS=OFF
           -DPLUGIN_MIRACAST=ON
+          -DPLUGIN_XCAST=ON
           &&
           cmake --build build/entservices-casting -j8
           &&
@@ -521,6 +527,7 @@ jobs:
           -DCMAKE_BUILD_TYPE=Debug
           -DDS_FOUND=ON
           -DPLUGIN_MIRACAST=ON
+          -DPLUGIN_XCAST=ON
           -DRDK_SERVICES_L1_TEST=ON
           -DUSE_THUNDER_R4=ON
           -DHIDE_NON_EXTERNAL_SYMBOLS=OFF
@@ -614,12 +621,12 @@ jobs:
           &&
           ls -l /dev/disk/by-id/usb-JetFlash_Transcend_16GB_UEUIRCXT-0
 
-      - name: Run unit tests without valgrind
+      - name: Run unit tests using gdb
         run: >
           PATH=$GITHUB_WORKSPACE/install/usr/bin:${PATH}
           LD_LIBRARY_PATH=$GITHUB_WORKSPACE/install/usr/lib:$GITHUB_WORKSPACE/install/usr/lib/wpeframework/plugins:${LD_LIBRARY_PATH}
           GTEST_OUTPUT="json:$(pwd)/rdkL1TestResults.json"
-          RdkServicesL1Test &&
+          gdb -ex "run" -ex "bt" --args RdkServicesL1Test &&
           cp -rf $(pwd)/rdkL1TestResults.json $GITHUB_WORKSPACE/rdkL1TestResultsWithoutValgrind.json &&
           rm -rf $(pwd)/rdkL1TestResults.json
 

@@ -1,25 +1,25 @@
 /*
- * If not stated otherwise in this file or this component's LICENSE file the
- * following copyright and licenses apply:
- *
- * Copyright 2024 RDK Management
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+* If not stated otherwise in this file or this component's LICENSE file the
+* following copyright and licenses apply:
+*
+* Copyright 2024 RDK Management
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+* http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
 
 #include "XCastImplementation.h"
 #include <sys/prctl.h>
- 
+
 #include "UtilsJsonRpc.h"
 #include "UtilsIarm.h"
 #include "UtilsSynchroIarm.hpp"
@@ -28,32 +28,20 @@
 #include <string> 
 #include <vector>
 
+#define LOG_INPARAM() { string json; parameters.ToString(json); NMLOG_INFO("params=%s", json.c_str() ); }
 
-#if defined(SECURITY_TOKEN_ENABLED) && ((SECURITY_TOKEN_ENABLED == 0) || (SECURITY_TOKEN_ENABLED == false))
-#define GetSecurityToken(a, b) 0
-#define GetToken(a, b, c) 0
-#else
-#include <securityagent/securityagent.h>
-#include <securityagent/SecurityTokenUtil.h>
-#endif
- 
 #define SERVER_DETAILS "127.0.0.1:9998"
-#define NETWORK_CALLSIGN_VER "org.rdk.Network.1"
 #define THUNDER_RPC_TIMEOUT 5000
-#define MAX_SECURITY_TOKEN_SIZE 1024
 
 #define API_VERSION_NUMBER_MAJOR 2
 #define API_VERSION_NUMBER_MINOR 0
 #define API_VERSION_NUMBER_PATCH 9
 
- 
 #define LOCATE_CAST_FIRST_TIMEOUT_IN_MILLIS  5000  //5 seconds
 #define LOCATE_CAST_SECOND_TIMEOUT_IN_MILLIS 10000  //10 seconds
 
-
 #define DIAL_MAX_ADDITIONALURL (1024)
- 
- 
+
 namespace WPEFramework
 {
     namespace Plugin
@@ -63,6 +51,7 @@ namespace WPEFramework
         XCastManager* XCastImplementation::m_xcast_manager = nullptr;
         static std::vector <DynamicAppConfig*> m_appConfigCache;
         static std::mutex m_appConfigMutex;
+        static std::mutex m_TimerMutexSync;
         static bool xcastEnableCache = false;
 
         #ifdef XCAST_ENABLED_BY_DEFAULT
@@ -92,36 +81,34 @@ namespace WPEFramework
         XCastImplementation::XCastImplementation()
         : _service(nullptr),
         _pwrMgrNotification(*this),
-         _registeredEventHandlers(false), _adminLock()
+        _registeredPowerEventHandlers(false),
+        _registeredNMEventHandlers(false),
+        _networkManagerPlugin(nullptr),
+        _adminLock(),
+        _networkManagerNotification(*this)
         {
-            LOGINFO("Create XCastImplementation Instance");
+            LOGINFO("Call constructor");
             m_locateCastTimer.connect( bind( &XCastImplementation::onLocateCastTimer, this ));
             XCastImplementation::_instance = this;
         }
- 
+
         XCastImplementation::~XCastImplementation()
         {
-            LOGINFO("Call XCastImplementation destructor\n");
-            Deinitialize();
-            if(_service != nullptr)
-            {
-                _service->Release();
-            }
+            LOGINFO("Call destructor");
             XCastImplementation::_instance = nullptr;
             _service = nullptr;
         }
-         
-         /**
-          * Register a notification callback
-          */
+
+        /**
+         * Register a notification callback
+         */
         Core::hresult XCastImplementation::Register(Exchange::IXCast::INotification *notification)
         {
             ASSERT(nullptr != notification);
- 
+
             _adminLock.Lock();
-            printf("XCastImplementation::Register: notification = %p", notification);
-            LOGINFO("Register notification");
- 
+            LOGINFO("Register notification %p", notification);
+
             // Make sure we can't register the same notification callback multiple times
             if (std::find(_xcastNotification.begin(), _xcastNotification.end(), notification) == _xcastNotification.end())
             {
@@ -132,25 +119,20 @@ namespace WPEFramework
             {
                 LOGERR("same notification is registered already");
             }
- 
             _adminLock.Unlock();
-
-            LOGINFO("Registered a notification on the xcast inprocess %p", notification);
- 
             return Core::ERROR_NONE;
-         }
- 
-         /**
-          * Unregister a notification callback
-          */
+        }
+
+        /**
+         * Unregister a notification callback
+         */
         Core::hresult XCastImplementation::Unregister(Exchange::IXCast::INotification *notification)
         {
             Core::hresult status = Core::ERROR_GENERAL;
- 
+
             ASSERT(nullptr != notification);
- 
+
             _adminLock.Lock();
- 
             // we just unregister one notification once
             auto itr = std::find(_xcastNotification.begin(), _xcastNotification.end(), notification);
             if (itr != _xcastNotification.end())
@@ -164,14 +146,13 @@ namespace WPEFramework
             {
                 LOGERR("notification not found");
             }
- 
             _adminLock.Unlock();
- 
             return status;
-         }
+        }
 
         uint32_t XCastImplementation::Initialize(bool networkStandbyMode)
         {
+            LOGINFO("Entering..!!!");
             if(nullptr == m_xcast_manager)
             {
                 m_networkStandbyMode = networkStandbyMode;
@@ -185,27 +166,46 @@ namespace WPEFramework
                     }
                 }
             }
+            LOGINFO("Exiting ..!!!");
             return Core::ERROR_NONE;
         }
 
         void XCastImplementation::Deinitialize(void)
         {
-            if (m_ControllerObj)
-            {
-                m_ControllerObj->Unsubscribe(THUNDER_RPC_TIMEOUT, _T("statechange"));
-                delete m_ControllerObj;
-                m_ControllerObj = nullptr;
-            }
-
+            LOGINFO("Entering..!!!");
             if(nullptr != m_xcast_manager)
             {
                 stopTimer();
                 m_xcast_manager->shutdown();
                 m_xcast_manager = nullptr;
             }
-            unregisterEventHandlers();
+            unregisterPowerEventHandlers();
+            unregisterNetworkEventHandlers();
             if (_powerManagerPlugin) {
                 _powerManagerPlugin.Reset();
+            }
+            if (_networkManagerPlugin) {
+                _networkManagerPlugin->Release();
+            }
+            LOGINFO("Exiting ...");
+        }
+
+        void XCastImplementation::onActiveInterfaceChange(const string prevActiveInterface, const string currentActiveinterface)
+        {
+            LOGINFO("Interface changed, old interface: %s, new interface: %s", prevActiveInterface.c_str(), currentActiveinterface.c_str());
+            updateNWConnectivityStatus(currentActiveinterface.c_str(), true);
+        }
+
+        void XCastImplementation::onIPAddressChange(const string interface, const string ipversion, const string ipaddress, const Exchange::INetworkManager::IPStatus status)
+        {
+            if (("IPv4" == ipversion) && (Exchange::INetworkManager::IP_ACQUIRED == status))
+            {
+                bool isAcquired = false;
+                if (!ipaddress.empty())
+                {
+                    isAcquired = true;
+                }
+                updateNWConnectivityStatus(interface.c_str(), isAcquired, ipaddress.c_str());
             }
         }
 
@@ -214,32 +214,8 @@ namespace WPEFramework
             LOGINFO("Entering..!!!");
             if(nullptr == m_SystemPluginObj)
             {
-                string token;
-                // TODO: use interfaces and remove token
-                auto security = _service->QueryInterfaceByCallsign<PluginHost::IAuthenticate>("SecurityAgent");
-                if (nullptr != security)
-                {
-                    string payload = "http://localhost";
-                    if (security->CreateToken( static_cast<uint16_t>(payload.length()),
-                                            reinterpret_cast<const uint8_t*>(payload.c_str()),
-                                            token) == Core::ERROR_NONE)
-                    {
-                        LOGINFO("got security token\n");
-                    }
-                    else
-                    {
-                        LOGERR("failed to get security token\n");
-                    }
-                    security->Release();
-                }
-                else
-                {
-                    LOGERR("No security agent\n");
-                }
-
-                string query = "token=" + token;
                 Core::SystemInfo::SetEnvironment(_T("THUNDER_ACCESS"), (_T(SERVER_DETAILS)));
-                m_SystemPluginObj = new WPEFramework::JSONRPC::LinkType<Core::JSON::IElement>(_T(SYSTEM_CALLSIGN_VER), (_T(SYSTEM_CALLSIGN_VER)), false, query);
+                m_SystemPluginObj = new WPEFramework::JSONRPC::LinkType<Core::JSON::IElement>(_T(SYSTEM_CALLSIGN_VER), (_T(SYSTEM_CALLSIGN_VER)), false);
                 if (nullptr == m_SystemPluginObj)
                 {
                     LOGERR("JSONRPC: %s: initialization failed", SYSTEM_CALLSIGN_VER);
@@ -251,10 +227,10 @@ namespace WPEFramework
             }
             LOGINFO("Exiting..!!!");
         }
+
         int XCastImplementation::updateSystemFriendlyName()
         {
             JsonObject params, Result;
-            LOGINFO("Entering..!!!");
 
             if (nullptr == m_SystemPluginObj)
             {
@@ -291,32 +267,33 @@ namespace WPEFramework
             parameters.ToString(message);
             LOGINFO("[Friendly Name Event], %s : %s", __FUNCTION__,message.c_str());
 
-            if (parameters.HasLabel("friendlyName")) {
+            if (parameters.HasLabel("friendlyName"))
+            {
                 value = parameters["friendlyName"].String();
 
-                    m_friendlyName = std::move(value);
-                    LOGINFO("onFriendlyNameUpdateHandler  :%s",m_friendlyName.c_str());
-                    if (m_FriendlyNameUpdateTimerID)
+                m_friendlyName = std::move(value);
+                LOGINFO("onFriendlyNameUpdateHandler  :%s",m_friendlyName.c_str());
+                if (m_FriendlyNameUpdateTimerID)
+                {
+                    g_source_remove(m_FriendlyNameUpdateTimerID);
+                    m_FriendlyNameUpdateTimerID = 0;
+                }
+                m_FriendlyNameUpdateTimerID = g_timeout_add(50, XCastImplementation::update_friendly_name_timercallback, this);
+                if (0 == m_FriendlyNameUpdateTimerID)
+                {
+                    bool enabledStatus = false;
+                    LOGWARN("Failed to create the timer. Setting friendlyName immediately");
+                    if (m_xcastEnable && ( (m_standbyBehavior == true) || ((m_standbyBehavior == false)&&(m_powerState == WPEFramework::Exchange::IPowerManager::POWER_STATE_ON))))
                     {
-                        g_source_remove(m_FriendlyNameUpdateTimerID);
-                        m_FriendlyNameUpdateTimerID = 0;
+                        enabledStatus = true;
                     }
-                    m_FriendlyNameUpdateTimerID = g_timeout_add(50, XCastImplementation::update_friendly_name_timercallback, this);
-                    if (0 == m_FriendlyNameUpdateTimerID)
-                    {
-                        bool enabledStatus = false;
-                        LOGWARN("Failed to create the timer. Setting friendlyName immediately");
-                        if (m_xcastEnable && ( (m_standbyBehavior == true) || ((m_standbyBehavior == false)&&(m_powerState == WPEFramework::Exchange::IPowerManager::POWER_STATE_ON))))
-                        {
-                            enabledStatus = true;
-                        }
-                        LOGINFO("Updating FriendlyName [%s] status[%x]",m_friendlyName.c_str(),enabledStatus);
-                        enableCastService(m_friendlyName,enabledStatus);
-                    }
-                    else
-                    {
-                        LOGINFO("Timer triggered to update friendlyName");
-                    }
+                    LOGINFO("Updating FriendlyName [%s] status[%x]",m_friendlyName.c_str(),enabledStatus);
+                    enableCastService(m_friendlyName,enabledStatus);
+                }
+                else
+                {
+                    LOGINFO("Timer triggered to update friendlyName");
+                }
             }
         }
 
@@ -337,33 +314,47 @@ namespace WPEFramework
             }
             else
             {
-                LOGERR("instance NULL [%p]",self);
+                LOGERR("instance NULL");
             }
             return G_SOURCE_REMOVE;
         }
- 
-         uint32_t XCastImplementation::Configure(PluginHost::IShell* service)
-         {
+
+        uint32_t XCastImplementation::Configure(PluginHost::IShell* service)
+        {
             uint32_t result = Core::ERROR_NONE;
-            _service = service;
-            _service->AddRef();
-            ASSERT(service != nullptr);
-            InitializePowerManager(service);
-            Initialize(m_networkStandbyMode);
-            getSystemPlugin();
-            m_SystemPluginObj->Subscribe<JsonObject>(1000, "onFriendlyNameChanged", &XCastImplementation::onFriendlyNameUpdateHandler, this);
-            if (Core::ERROR_NONE == updateSystemFriendlyName())
+            if (( nullptr == _service ) && (service))
             {
-                LOGINFO("XCast::Initialize m_friendlyName:  %s\n ",m_friendlyName.c_str());
+                LOGINFO("Call initialise()");
+                _service = service;
+                _service->AddRef();
+                InitializePowerManager(service);
+                InitializeNetworkManager(service);
+                Initialize(m_networkStandbyMode);
+                getSystemPlugin();
+                m_SystemPluginObj->Subscribe<JsonObject>(1000, "onFriendlyNameChanged", &XCastImplementation::onFriendlyNameUpdateHandler, this);
+                if (Core::ERROR_NONE == updateSystemFriendlyName())
+                {
+                    LOGINFO("XCast::Initialize m_friendlyName:  %s\n ",m_friendlyName.c_str());
+                }
+            }
+            else if ((_service) && ( nullptr == service ))
+            {
+                lock_guard<mutex> lck(m_TimerMutexSync);
+                LOGINFO("Call deinitialise()");
+                Deinitialize();
+                _service->Release();
+            }
+            else
+            {
+                LOGERR("Invalid call");
+                result = Core::ERROR_GENERAL;
             }
             return result;
-         }
+        }
 
         void XCastImplementation::InitializePowerManager(PluginHost::IShell* service)
         {
-
-            LOGINFO("Connect the COM-RPC socket\n");
-            
+            LOGINFO("Entering ...");
             _powerManagerPlugin = PowerManagerInterfaceBuilder(_T("org.rdk.PowerManager"))
                 .withIShell(service)
                 .withRetryIntervalMS(200)
@@ -377,29 +368,73 @@ namespace WPEFramework
             else {
                 LOGERR("Failed to get PowerManager instance");
             }
+            LOGINFO("Exiting ...");
         }
 
-        void XCastImplementation::registerEventHandlers()
+        void XCastImplementation::InitializeNetworkManager(PluginHost::IShell* service)
+        {
+            if (nullptr == _networkManagerPlugin)
+            {
+                _networkManagerPlugin = service->QueryInterfaceByCallsign<WPEFramework::Exchange::INetworkManager>("org.rdk.NetworkManager");
+                if (_networkManagerPlugin != nullptr)
+                {
+                    registerNetworkEventHandlers();
+                }
+                else
+                {
+                    LOGERR("Failed to get NetworkManager instance");
+                }
+            }
+        }
+
+        void XCastImplementation::registerPowerEventHandlers()
         {
             ASSERT (_powerManagerPlugin);
-            if(!_registeredEventHandlers && _powerManagerPlugin) {
+            if(!_registeredPowerEventHandlers && _powerManagerPlugin) {
                 _powerManagerPlugin->Register(_pwrMgrNotification.baseInterface<Exchange::IPowerManager::INetworkStandbyModeChangedNotification>());
                 LOGINFO("INetworkStandbyModeChangedNotification event registered");
                 _powerManagerPlugin->Register(_pwrMgrNotification.baseInterface<Exchange::IPowerManager::IModeChangedNotification>());
                 LOGINFO("IModeChangedNotification event registered");
-                _registeredEventHandlers = true;
+                _registeredPowerEventHandlers = true;
             }
         }
 
-        void XCastImplementation::unregisterEventHandlers()
+        void XCastImplementation::unregisterPowerEventHandlers()
         {
             ASSERT (_powerManagerPlugin);
-            if (_registeredEventHandlers && _powerManagerPlugin) {
+            if (_registeredPowerEventHandlers && _powerManagerPlugin) {
                 _powerManagerPlugin->Unregister(_pwrMgrNotification.baseInterface<Exchange::IPowerManager::INetworkStandbyModeChangedNotification>());
                 LOGINFO("INetworkStandbyModeChangedNotification event unregistered");
                 _powerManagerPlugin->Unregister(_pwrMgrNotification.baseInterface<Exchange::IPowerManager::IModeChangedNotification>());
                 LOGINFO("IModeChangedNotification event unregistered");
-                _registeredEventHandlers = false;
+                _registeredPowerEventHandlers = false;
+            }
+        }
+
+        void XCastImplementation::registerNetworkEventHandlers()
+        {
+            if (_networkManagerPlugin)
+            {
+                if (Core::ERROR_NONE == _networkManagerPlugin->Register(&_networkManagerNotification))
+                {
+                    LOGINFO("INetworkManager::Register event registered");
+                    _registeredNMEventHandlers = true;
+                }
+                else
+                {
+                    LOGERR("Failed to register INetworkManager::Register event");
+                    _registeredNMEventHandlers = false;
+                }
+            }
+        }
+
+        void XCastImplementation::unregisterNetworkEventHandlers()
+        {
+            if (_registeredNMEventHandlers && _networkManagerPlugin)
+            {
+                _networkManagerPlugin->Unregister(&_networkManagerNotification);
+                LOGINFO("INetworkManager::Unregister event unregistered");
+                _registeredNMEventHandlers = false;
             }
         }
 
@@ -451,10 +486,13 @@ namespace WPEFramework
 
             if(m_standbyBehavior == false)
             {
+                bool enabledStatus = false;
+                LOGINFO("m_xcastEnable:[%u] , m_powerState:[%d] ",m_xcastEnable,m_powerState);
                 if(m_xcastEnable && ( m_powerState == WPEFramework::Exchange::IPowerManager::POWER_STATE_ON))
-                    enableCastService(m_friendlyName,true);
-                else
-                    enableCastService(m_friendlyName,false);
+                {
+                    enabledStatus = true;
+                }
+                enableCastService(m_friendlyName, enabledStatus);
             }
             powerModeChangeActive = false;
         }
@@ -535,9 +573,10 @@ namespace WPEFramework
             LOGINFO("Timer triggered to monitor the GDial, check after 5sec");
             startTimer(LOCATE_CAST_FIRST_TIMEOUT_IN_MILLIS);
         }
+
         bool XCastImplementation::connectToGDialService(void)
         {
-            LOGINFO("XCastImplementation::connectToGDialService");
+            LOGINFO("Entering ...");
             std::string interface,ipaddress;
             bool status = false;
 
@@ -547,89 +586,101 @@ namespace WPEFramework
                 status = m_xcast_manager->initialize(interface,m_networkStandbyMode);
                 if( true == status)
                 {
-                    m_activeInterfaceName = interface;
+                    m_activeInterfaceName = getInterfaceNameToType(interface);
                 }
             }
             LOGINFO("GDialService[%u]IF[%s]IP[%s]",status,interface.c_str(),ipaddress.c_str());
+            LOGINFO("Exiting ...");
             return status;
+        }
+
+        string XCastImplementation::getInterfaceNameToType(const string & interface)
+        {
+            if(interface == "wlan0")
+                return string("WIFI");
+            else if(interface == "eth0")
+                return string("ETHERNET");
+            return string("");
         }
 
         bool XCastImplementation::getDefaultNameAndIPAddress(std::string& interface, std::string& ipaddress)
         {
-            // Read host IP from thunder service and save it into external_network.json
-            JsonObject Params, Result, Params0, Result0;
+            LOGINFO("Entering ...");
             bool returnValue = false;
 
-            getThunderPlugins();
+            InitializeNetworkManager(_service);
 
-            if (nullptr == m_NetworkPluginObj)
+            if (nullptr == _networkManagerPlugin)
             {
                 LOGINFO("WARN::Unable to get Network plugin handle not yet");
                 return false;
             }
 
-            uint32_t ret = m_NetworkPluginObj->Invoke<JsonObject, JsonObject>(THUNDER_RPC_TIMEOUT, _T("getDefaultInterface"), Params0, Result0);
-            if (Core::ERROR_NONE == ret)
-            {
-                if (Result0["success"].Boolean())
-                {
-                    interface = Result0["interface"].String();
-                }
-                else
-                {
-                    LOGERR("XCastImplementation: failed to load interface");
-                }
-            }
+            uint32_t rc = Core::ERROR_GENERAL;
+            rc = _networkManagerPlugin->GetPrimaryInterface(interface);
 
-            Params.Set(_T("interface"), interface);
-            Params.Set(_T("ipversion"), string("IPv4"));
-
-            ret = m_NetworkPluginObj->Invoke<JsonObject, JsonObject>(THUNDER_RPC_TIMEOUT, _T("getIPSettings"), Params, Result);
-            if (Core::ERROR_NONE == ret)
+            if (Core::ERROR_NONE != rc)
             {
-                if (Result["success"].Boolean())
-                {
-                    ipaddress = Result["ipaddr"].String();
-                    LOGINFO("ipAddress = %s",ipaddress.c_str());
-                    returnValue = true;
-                }
-                else
-                {
-                    LOGERR("getIPSettings failed");
-                }
+                LOGERR("Failed to get Primary Interface from NM: %u",rc);
             }
             else
             {
-                LOGERR("Failed to invoke method \"getIPSettings\". Error: %d",ret);
+                Exchange::INetworkManager::IPAddress address{};
+
+                LOGINFO("Primary Interface is [%s]",interface.c_str());
+                rc = _networkManagerPlugin->GetIPSettings(interface, "IPv4", address);
+
+                if (Core::ERROR_NONE != rc)
+                {
+                    LOGERR("Failed to get IP Settings from NM: %u",rc);
+                }
+                else
+                {
+                    if (!address.ipaddress.empty())
+                    {
+                        ipaddress = address.ipaddress;
+                        if ("IPv4" == address.ipversion)
+                        {
+                            if( 32 < address.prefix || 0 == address.prefix )
+                            {
+                                LOGERR("Invalid prefix %d", address.prefix);
+                            }
+                            else
+                            {
+                                returnValue = true;
+                                LOGINFO("IPv4[%s] Prefix[%d] DHCP[%s]GW[%s]PriDNS[%s]SecDNS[%s]",
+                                        address.ipaddress.c_str(),
+                                        address.prefix,
+                                        address.dhcpserver.c_str(),
+                                        address.gateway.c_str(),
+                                        address.primarydns.c_str(),
+                                        address.secondarydns.c_str());
+                            }
+                        }
+                        else
+                        {
+                            LOGWARN("Non IPv4 Address returned");
+                        }
+                    }
+                }
             }
+            LOGINFO("Exiting ...");
             return returnValue;
         }
 
-        
-        void XCastImplementation::eventHandler_pluginState(const JsonObject& parameters)
+        void XCastImplementation::updateNWConnectivityStatus(std::string nwInterface, bool nwConnected, std::string ipaddress)
         {
-            LOGINFO("Plugin state changed");
-
-            if( 0 == strncmp(parameters["callsign"].String().c_str(), NETWORK_CALLSIGN_VER, parameters["callsign"].String().length()))
-            {
-                if ( 0 == strncmp( parameters["state"].String().c_str(),"Deactivated", parameters["state"].String().length()))
-                {
-                    LOGINFO("%s plugin got deactivated with reason : %s",parameters["callsign"].String().c_str(), parameters["reason"].String().c_str());
-                    _instance->activatePlugin(parameters["callsign"].String());
-                }
-            }
-        }
-
-         void XCastImplementation::updateNWConnectivityStatus(std::string nwInterface, bool nwConnected, std::string ipaddress)
-        {
+            std::string mappedInterface = getInterfaceNameToType(nwInterface);
             bool status = false;
+
+            LOGINFO("Interface[%s]Mapped[%s] Connected[%u] IP[%s]",nwInterface.c_str(),mappedInterface.c_str(),nwConnected,ipaddress.c_str());
             if(nwConnected)
             {
-                if(nwInterface.compare("ETHERNET")==0){
+                if(mappedInterface.compare("ETHERNET")==0){
                     LOGINFO("Connectivity type Ethernet");
                     status = true;
                 }
-                else if(nwInterface.compare("WIFI")==0){
+                else if(mappedInterface.compare("WIFI")==0){
                     LOGINFO("Connectivity type WIFI");
                     status = true;
                 }
@@ -645,8 +696,8 @@ namespace WPEFramework
             {
                 if (status)
                 {
-                    if ((0 != nwInterface.compare(m_activeInterfaceName)) ||
-                        ((0 == nwInterface.compare(m_activeInterfaceName)) && !ipaddress.empty()))
+                    if ((0 != mappedInterface.compare(m_activeInterfaceName)) ||
+                        ((0 == mappedInterface.compare(m_activeInterfaceName)) && !ipaddress.empty()))
                     {
                         if (m_xcast_manager)
                         {
@@ -659,113 +710,21 @@ namespace WPEFramework
                 }
             }
         }
-        void XCastImplementation::eventHandler_ipAddressChanged(const JsonObject& parameters)
-        {
-            if(parameters["status"].String() == "ACQUIRED")
-            {
-                string interface = parameters["interface"].String();
-                string ipv4Address = parameters["ip4Address"].String();
-                bool isAcquired = false;
-                if (!ipv4Address.empty())
-                {
-                    isAcquired = true;
-                }
-                updateNWConnectivityStatus(interface.c_str(), isAcquired, ipv4Address.c_str());
-            }
-        }
 
-        void XCastImplementation::eventHandler_onDefaultInterfaceChanged(const JsonObject& parameters)
-        {
-            std::string oldInterfaceName, newInterfaceName;
-            oldInterfaceName = parameters["oldInterfaceName"].String();
-            newInterfaceName = parameters["newInterfaceName"].String();
-
-            LOGINFO("XCast onDefaultInterfaceChanged, old interface: %s, new interface: %s", oldInterfaceName.c_str(), newInterfaceName.c_str());
-            updateNWConnectivityStatus(newInterfaceName.c_str(), true);
-        }
-        int XCastImplementation::activatePlugin(string callsign)
-        {
-            JsonObject result, params;
-            params["callsign"] = callsign;
-            int rpcRet = Core::ERROR_GENERAL;
-            if (nullptr != m_ControllerObj)
-            {
-                rpcRet =  m_ControllerObj->Invoke("activate", params, result);
-                if(Core::ERROR_NONE == rpcRet)
-                    {
-                    LOGINFO("Activated %s plugin", callsign.c_str());
-                }
-                else
-                {
-                    LOGERR("Could not activate %s plugin.  Failed with %d", callsign.c_str(), rpcRet);
-                }
-            }
-            else
-            {
-                LOGERR("Controller not active");
-            }
-            return rpcRet;
-        }
-
-        int XCastImplementation::deactivatePlugin(string callsign)
-        {
-            JsonObject result, params;
-            params["callsign"] = callsign;
-            int rpcRet = Core::ERROR_GENERAL;
-
-            if (m_NetworkPluginObj && (callsign == NETWORK_CALLSIGN_VER))
-            {
-                m_NetworkPluginObj->Unsubscribe(THUNDER_RPC_TIMEOUT, _T("onDefaultInterfaceChanged"));
-                m_NetworkPluginObj->Unsubscribe(THUNDER_RPC_TIMEOUT, _T("onIPAddressStatusChanged"));
-                delete m_NetworkPluginObj;
-                m_NetworkPluginObj = nullptr;
-            }
-
-            if (nullptr != m_ControllerObj)
-            {
-                rpcRet =  m_ControllerObj->Invoke("deactivate", params, result);
-                if(Core::ERROR_NONE == rpcRet)
-                {
-                    LOGINFO("Deactivated %s plugin", callsign.c_str());
-                }
-                else
-                {
-                    LOGERR("Could not deactivate %s plugin.  Failed with %d", callsign.c_str(), rpcRet);
-                }
-            }
-            else
-            {
-                LOGERR("Controller not active");
-            }
-            return rpcRet;
-        }
-
-        bool XCastImplementation::isPluginActivated(string callsign)
-        {
-            std::string method = "status@" + callsign;
-            bool isActive = false;
-            Core::JSON::ArrayType<PluginHost::MetaData::Service> response;
-            if (nullptr != m_ControllerObj)
-            {
-                int ret  = m_ControllerObj->Get(THUNDER_RPC_TIMEOUT, method, response);
-                isActive = (ret == Core::ERROR_NONE && response.Length() > 0 && response[0].JSONState == PluginHost::IShell::ACTIVATED);
-                LOGINFO("Plugin \"%s\" is %s, error=%d", callsign.c_str(), isActive ? "active" : "not active", ret);
-            }
-            else
-            {
-                LOGERR("Controller not active");
-            }
-            return isActive;
-        }
         void XCastImplementation::onLocateCastTimer()
         {
-            if( false == connectToGDialService())
+            LOGINFO("Timer Entrying ...");
             {
-                LOGINFO("Retry after 10 sec...");
-                m_locateCastTimer.setInterval(LOCATE_CAST_SECOND_TIMEOUT_IN_MILLIS);
-                return ;
+                lock_guard<mutex> lck(m_TimerMutexSync);
+                if( false == connectToGDialService())
+                {
+                    LOGINFO("Retry after 10 sec...");
+                    m_locateCastTimer.setInterval(LOCATE_CAST_SECOND_TIMEOUT_IN_MILLIS);
+                    LOGINFO("Timer Exiting ...");
+                    return ;
+                }
+                stopTimer();
             }
-            stopTimer();
 
             if ((NULL != m_xcast_manager) && m_isDynamicRegistrationsRequired )
             {
@@ -777,17 +736,16 @@ namespace WPEFramework
                 m_xcast_manager->registerApplications (appConfigList);
             }
             else {
-                LOGINFO("m_xcast_manager: %p: m_isDynamicRegistrationsRequired[%u]",
-                        m_xcast_manager,
-                        m_isDynamicRegistrationsRequired);
+                LOGINFO("m_xcast_manager: %p: m_isDynamicRegistrationsRequired[%u]",m_xcast_manager,m_isDynamicRegistrationsRequired);
             }
             m_xcast_manager->enableCastService(friendlyNameCache,xcastEnableCache);
-            LOGINFO("XCastImplementation::onLocateCastTimer : Timer still active ? %d ",m_locateCastTimer.isActive());
+            LOGINFO("Timer still active ? %d ",m_locateCastTimer.isActive());
+            LOGINFO("Timer Exiting ...");
         }
 
         uint32_t XCastImplementation::enableCastService(string friendlyname,bool enableService) 
         {
-            LOGINFO("ARGS = %s : %d", friendlyname.c_str(), enableService);
+            LOGINFO("friendlyname[%s] status[%d]", friendlyname.c_str(), enableService);
             if (nullptr != m_xcast_manager)
             {
                 m_xcast_manager->enableCastService(friendlyname,enableService);
@@ -796,19 +754,25 @@ namespace WPEFramework
             friendlyNameCache = std::move(friendlyname);
             return 0;
         }
+
         void XCastImplementation::startTimer(int interval)
         {
+            LOGINFO("Entering ...");
             stopTimer();
             m_locateCastTimer.start(interval);
+            LOGINFO("Exiting ...");
         }
 
         void XCastImplementation::stopTimer()
         {
+            LOGINFO("Entering ...");
             if (m_locateCastTimer.isActive())
             {
                 m_locateCastTimer.stop();
             }
+            LOGINFO("Exiting ...");
         }
+
         bool XCastImplementation::isTimerActive()
         {
             return (m_locateCastTimer.isActive());
@@ -823,7 +787,7 @@ namespace WPEFramework
         {
             _adminLock.Lock();
             
-            LOGINFO("XCastImplementation::Dispatch: event = %d, callsign = %s", event, callsign.c_str());
+            LOGINFO("Event = %d, callsign = %s", event, callsign.c_str());
             std::list<Exchange::IXCast::INotification*>::iterator index(_xcastNotification.begin());
             while (index != _xcastNotification.end())
             {
@@ -881,147 +845,7 @@ namespace WPEFramework
             _adminLock.Unlock();
         }
 
-        std::string XCastImplementation::getSecurityToken()
-        {
-            if (nullptr == _service)
-            {
-                return (std::string(""));
-            }
-
-            std::string token;
-            auto security = _service->QueryInterfaceByCallsign<PluginHost::IAuthenticate>("SecurityAgent");
-            if (nullptr != security)
-            {
-                std::string payload = "http://localhost";
-                if (security->CreateToken(static_cast<uint16_t>(payload.length()),
-                                            reinterpret_cast<const uint8_t *>(payload.c_str()),
-                                            token) == Core::ERROR_NONE)
-                {
-                    LOGINFO("got security token - %s", token.empty() ? "" : token.c_str());
-                }
-                else
-                {
-                    LOGERR("failed to get security token");
-                }
-                security->Release();
-            }
-            else
-            {
-                LOGERR("No security agent\n");
-            }
-
-            std::string query = "token=" + token;
-            Core::SystemInfo::SetEnvironment(_T("THUNDER_ACCESS"), (_T(SERVER_DETAILS)));
-            return query;
-        }
-
-        // Thunder plugins communication
-        void XCastImplementation::getThunderPlugins()
-        {
-            string token = getSecurityToken();
-
-            if (nullptr == m_ControllerObj)
-            {
-                if(token.empty())
-                {
-                    m_ControllerObj = new WPEFramework::JSONRPC::LinkType<Core::JSON::IElement>("", "", false);
-                }
-                else
-                {
-                    m_ControllerObj = new WPEFramework::JSONRPC::LinkType<Core::JSON::IElement>("","", false, token);
-                }
-
-                if (nullptr != m_ControllerObj)
-                {
-                    LOGINFO("JSONRPC: Controller: initialization ok");
-                    bool isSubscribed = false;
-                    auto ev_ret = m_ControllerObj->Subscribe<JsonObject>(THUNDER_RPC_TIMEOUT, _T("statechange"),&XCastImplementation::eventHandler_pluginState,this);
-                    if (ev_ret == Core::ERROR_NONE)
-                    {
-                        LOGINFO("Controller - statechange event subscribed");
-                        isSubscribed = true;
-                    }
-                    else
-                    {
-                        LOGERR("Controller - statechange event failed to subscribe : %d",ev_ret);
-                    }
-
-                    if (!isPluginActivated(NETWORK_CALLSIGN_VER))
-                    {
-                        activatePlugin(NETWORK_CALLSIGN_VER);
-                        _networkPluginState = PLUGIN_DEACTIVATED;
-                    }
-                    else
-                    {
-                        _networkPluginState = PLUGIN_ACTIVATED;
-                    }
-
-                    if (false == isSubscribed)
-                    {
-                        delete m_ControllerObj;
-                        m_ControllerObj = nullptr;
-                    }
-                }
-                else
-                {
-                    LOGERR("Unable to get Controller obj");
-                }
-            }
-
-            if (nullptr == m_NetworkPluginObj)
-            {
-                std::string callsign = NETWORK_CALLSIGN_VER;
-                if(token.empty())
-                {
-                    m_NetworkPluginObj = new WPEFramework::JSONRPC::LinkType<Core::JSON::IElement>(_T(NETWORK_CALLSIGN_VER),"");
-                }
-                else
-                {
-                    m_NetworkPluginObj = new WPEFramework::JSONRPC::LinkType<Core::JSON::IElement>(_T(NETWORK_CALLSIGN_VER),"", false, token);
-                }
-    
-                if (nullptr == m_NetworkPluginObj)
-                {
-                    LOGERR("JSONRPC: %s: initialization failed", NETWORK_CALLSIGN_VER);
-                }
-                else
-                {
-                    LOGINFO("JSONRPC: %s: initialization ok", NETWORK_CALLSIGN_VER);
-                    // Network monitor so we can know ip address of host inside container
-                    if(m_NetworkPluginObj)
-                    {
-                        bool isSubscribed = false;
-                        auto ev_ret = m_NetworkPluginObj->Subscribe<JsonObject>(THUNDER_RPC_TIMEOUT, _T("onDefaultInterfaceChanged"), &XCastImplementation::eventHandler_onDefaultInterfaceChanged,this);
-                        if ( Core::ERROR_NONE == ev_ret )
-                        {
-                            LOGINFO("Network - Default Interface changed event : subscribed");
-                            ev_ret = m_NetworkPluginObj->Subscribe<JsonObject>(THUNDER_RPC_TIMEOUT, _T("onIPAddressStatusChanged"), &XCastImplementation::eventHandler_ipAddressChanged,this);
-                            if ( Core::ERROR_NONE == ev_ret )
-                            {
-                                LOGINFO("Network - IP address status changed event : subscribed");
-                                isSubscribed = true;
-                            }
-                            else
-                            {
-                                LOGERR("Network - IP address status changed event : failed to subscribe : %d", ev_ret);
-                            }
-                        }
-                        else
-                        {
-                            LOGERR("Network - Default Interface changed event : failed to subscribe : %d", ev_ret);
-                        }
-                        if (false == isSubscribed)
-                        {
-                            LOGERR("Network events subscription failed");
-                            delete m_NetworkPluginObj;
-                            m_NetworkPluginObj = nullptr;
-                        }
-                    }
-                }
-            }
-            LOGINFO("Exiting..!!!");
-        }
-void XCastImplementation::dumpDynamicAppCacheList(string strListName, std::vector<DynamicAppConfig*>& appConfigList)
+        void XCastImplementation::dumpDynamicAppCacheList(string strListName, std::vector<DynamicAppConfig*>& appConfigList)
         {
             LOGINFO ("=================Current Apps[%s] size[%d] ===========================", strListName.c_str(), (int)appConfigList.size());
             for (DynamicAppConfig* pDynamicAppConfig : appConfigList)
@@ -1037,13 +861,13 @@ void XCastImplementation::dumpDynamicAppCacheList(string strListName, std::vecto
             LOGINFO ("=================================================================");
         }  
 
-        Core::hresult XCastImplementation::SetApplicationState(const string& applicationName, const Exchange::IXCast::State& state, const string& applicationId, const Exchange::IXCast::ErrorCode& error,Exchange::IXCast::XCastSuccess &success){
-            LOGINFO("ARGS = %s : %s : %d : %d ", applicationName.c_str(), applicationId.c_str() , state , error);
+        Core::hresult XCastImplementation::SetApplicationState(const string& applicationName, const Exchange::IXCast::State& state, const string& applicationId, const Exchange::IXCast::ErrorCode& error,Exchange::IXCast::XCastSuccess &success)
+        {
+            LOGINFO("App[%s] AppId[%s] State[%d] Error[%d]", applicationName.c_str(), applicationId.c_str() , state , error);
             success.success = false;
             uint32_t status = Core::ERROR_GENERAL;
             if(!applicationName.empty() && (nullptr != m_xcast_manager))
             {
-                LOGINFO("XCastImplementation::SetApplicationState  ARGS = %s : %s : %d : %d ", applicationName.c_str(), applicationId.c_str() , state , error);
                 string appstate = "";
                 if (state == Exchange::IXCast::State::RUNNING)
                 {
@@ -1081,7 +905,7 @@ void XCastImplementation::dumpDynamicAppCacheList(string strListName, std::vecto
                 }
                 else
                 {
-                    LOGERR("XCastImplementation::SetApplicationState - Invalid Error Code");
+                    LOGERR("Invalid Error Code [%u]",error);
                     return Core::ERROR_GENERAL;
                 }
 
@@ -1091,12 +915,13 @@ void XCastImplementation::dumpDynamicAppCacheList(string strListName, std::vecto
             }
             else
             {
-                LOGERR("XCastImplementation::SetApplicationState - m_xcast_manager is NULL");
+                LOGERR("m_xcast_manager is NULL");
             }
             return status;
         }
-	Core::hresult XCastImplementation::GetProtocolVersion(string &protocolVersion , bool &success) {
-            LOGINFO("XCastImplementation::getProtocolVersion");
+
+        Core::hresult XCastImplementation::GetProtocolVersion(string &protocolVersion , bool &success)
+        {
             success = false;
             if (nullptr != m_xcast_manager)
             {
@@ -1106,8 +931,10 @@ void XCastImplementation::dumpDynamicAppCacheList(string strListName, std::vecto
             }
             return Core::ERROR_NONE;
         }
-        Core::hresult XCastImplementation::SetNetworkStandbyMode(bool networkStandbyMode) {
-            LOGINFO("nwStandbymode: %d", networkStandbyMode);
+
+        Core::hresult XCastImplementation::SetNetworkStandbyMode(bool networkStandbyMode)
+        {
+            LOGINFO("nwStandbymode [%d]", networkStandbyMode);
             if (nullptr != m_xcast_manager)
             {
                 m_xcast_manager->setNetworkStandbyMode(networkStandbyMode);
@@ -1115,20 +942,23 @@ void XCastImplementation::dumpDynamicAppCacheList(string strListName, std::vecto
             }
             return 0;
         }
-        Core::hresult XCastImplementation::SetManufacturerName(const string &manufacturername, Exchange::IXCast::XCastSuccess &success) {
+
+        Core::hresult XCastImplementation::SetManufacturerName(const string &manufacturername, Exchange::IXCast::XCastSuccess &success)
+        {
             uint32_t status = Core::ERROR_GENERAL;
-            LOGINFO("ManufacturerName : %s", manufacturername.c_str());
+            LOGINFO("ManufacturerName [%s]", manufacturername.c_str());
             success.success = false;
             if (nullptr != m_xcast_manager)
             {
                 m_xcast_manager->setManufacturerName(manufacturername);
-                 success.success = true;
+                success.success = true;
                 status = Core::ERROR_NONE;
             }
             return status;
         }
-		Core::hresult XCastImplementation::GetManufacturerName(string &manufacturername , bool &success){
-            LOGINFO("XCastImplementation:getManufacturerName");
+
+        Core::hresult XCastImplementation::GetManufacturerName(string &manufacturername , bool &success)
+        {
             if (nullptr != m_xcast_manager)
             {
                 manufacturername = m_xcast_manager->getManufacturerName();
@@ -1137,27 +967,29 @@ void XCastImplementation::dumpDynamicAppCacheList(string strListName, std::vecto
             }
             else
             {
-                LOGINFO("XCastImplementation::getManufacturerName m_xcast_manager is NULL");
+                LOGERR("m_xcast_manager is NULL");
                 success = false;
                 return Core::ERROR_GENERAL;
             }
             return Core::ERROR_NONE;
         }
-		Core::hresult XCastImplementation::SetModelName(const string &modelname, Exchange::IXCast::XCastSuccess &success) { 
+
+        Core::hresult XCastImplementation::SetModelName(const string &modelname, Exchange::IXCast::XCastSuccess &success)
+        { 
             uint32_t status = Core::ERROR_GENERAL;
             success.success = false;
-            LOGINFO("ModelName : %s", modelname.c_str());
-
+            LOGINFO("ModelName [%s]", modelname.c_str());
             if (nullptr != m_xcast_manager)
             {
                 m_xcast_manager->setModelName(modelname);
-                 success.success = true;
+                success.success = true;
                 status = Core::ERROR_NONE;
             }
             return status;
         }
-		Core::hresult XCastImplementation::GetModelName(string &modelname , bool &success) { 
-            LOGINFO("XCastImplementation::getModelName");
+
+        Core::hresult XCastImplementation::GetModelName(string &modelname , bool &success)
+        { 
             if (nullptr != m_xcast_manager)
             {
                 modelname = m_xcast_manager->getModelName();
@@ -1165,21 +997,22 @@ void XCastImplementation::dumpDynamicAppCacheList(string strListName, std::vecto
             }
             else
             {
-                LOGINFO("XCastImplementation::getModelName m_xcast_manager is NULL");
+                LOGERR("m_xcast_manager is NULL");
                 return Core::ERROR_GENERAL;
             }
             success = true;
             return Core::ERROR_NONE;
         }
 
-        Core::hresult XCastImplementation::SetEnabled(const bool& enabled, Exchange::IXCast::XCastSuccess &success){
+        Core::hresult XCastImplementation::SetEnabled(const bool& enabled, Exchange::IXCast::XCastSuccess &success)
+        {
             LOGINFO("setEnabled [%d]",enabled);
             bool isEnabled = false;
             bool currentNetworkStandbyMode = m_networkStandbyMode;
 
             m_xcastEnable= enabled;
             success.success = false;
-            if ((!_registeredEventHandlers) && (enabled))
+            if ((!_registeredPowerEventHandlers) && (enabled))
             {
                 checkPowerAndNetworkStandbyStates();
             }
@@ -1187,13 +1020,13 @@ void XCastImplementation::dumpDynamicAppCacheList(string strListName, std::vecto
             if (m_xcastEnable && ( (m_standbyBehavior == true) || ((m_standbyBehavior == false)&&(m_powerState == WPEFramework::Exchange::IPowerManager::POWER_STATE_ON))))
             {
                 isEnabled = true;
-                registerEventHandlers();
+                registerPowerEventHandlers();
             }
             else
             {
-                unregisterEventHandlers();
+                unregisterPowerEventHandlers();
             }
-            LOGINFO("XCastImplementation::setEnabled : %d, enabled : %d" , m_xcastEnable, isEnabled);
+            LOGINFO("m_xcastEnable[%d], isEnabled[%d]" , m_xcastEnable, isEnabled);
             enableCastService(m_friendlyName,isEnabled);
             if (currentNetworkStandbyMode != m_networkStandbyMode) {
                 SetNetworkStandbyMode(m_networkStandbyMode);
@@ -1202,16 +1035,18 @@ void XCastImplementation::dumpDynamicAppCacheList(string strListName, std::vecto
             return Core::ERROR_NONE;
         }
 
-        Core::hresult XCastImplementation::GetEnabled(bool &enabled , bool &success ) {
-            LOGINFO("XCastImplementation::getEnabled - %d",m_xcastEnable);
+        Core::hresult XCastImplementation::GetEnabled(bool &enabled , bool &success )
+        {
+            LOGINFO("m_xcastEnable [%d]",m_xcastEnable);
             enabled = m_xcastEnable;
             success = true;
             return Core::ERROR_NONE;
-         }
-       
-	Core::hresult XCastImplementation::SetStandbyBehavior(const Exchange::IXCast::StandbyBehavior &standbybehavior, Exchange::IXCast::XCastSuccess &success) { 
-            LOGINFO("XCastImplementation::setStandbyBehavior\n");
-             success.success = false;
+        }
+
+        Core::hresult XCastImplementation::SetStandbyBehavior(const Exchange::IXCast::StandbyBehavior &standbybehavior, Exchange::IXCast::XCastSuccess &success)
+        { 
+            LOGINFO("standbybehavior [%d]", standbybehavior);
+            success.success = false;
             bool enabled = false;
             if (standbybehavior == Exchange::IXCast::StandbyBehavior::ACTIVE)
             {
@@ -1223,16 +1058,18 @@ void XCastImplementation::dumpDynamicAppCacheList(string strListName, std::vecto
             }
             else
             {
-                LOGERR("XCastImplementation::setStandbyBehavior - Invalid standby behavior ");
+                LOGERR("Invalid standby behavior [%d]", standbybehavior);
                 return Core::ERROR_GENERAL;
             }
             m_standbyBehavior = enabled;
-             success.success = true;
-            LOGINFO("XCastImplementation::setStandbyBehavior m_standbyBehavior : %d", m_standbyBehavior);
+            success.success = true;
+            LOGINFO("m_standbyBehavior[%d]", m_standbyBehavior);
             return Core::ERROR_NONE;
         }
-	Core::hresult XCastImplementation::GetStandbyBehavior(Exchange::IXCast::StandbyBehavior &standbybehavior, bool &success) { 
-            LOGINFO("XCastImplementation::getStandbyBehavior m_standbyBehavior :%d",m_standbyBehavior);
+
+        Core::hresult XCastImplementation::GetStandbyBehavior(Exchange::IXCast::StandbyBehavior &standbybehavior, bool &success)
+        { 
+            LOGINFO("m_standbyBehavior[%d]",m_standbyBehavior);
             if(m_standbyBehavior)
                 standbybehavior = Exchange::IXCast::StandbyBehavior::ACTIVE;
             else
@@ -1240,38 +1077,39 @@ void XCastImplementation::dumpDynamicAppCacheList(string strListName, std::vecto
             success = true;
             return Core::ERROR_NONE;
         }
-	Core::hresult XCastImplementation::SetFriendlyName(const string& friendlyname, Exchange::IXCast::XCastSuccess &success) { 
-            LOGINFO("XCastImplementation::setFriendlyName - %s", friendlyname.c_str());
+
+        Core::hresult XCastImplementation::SetFriendlyName(const string& friendlyname, Exchange::IXCast::XCastSuccess &success)
+        { 
+            LOGINFO("friendlyname[%s]", friendlyname.c_str());
             uint32_t result = Core::ERROR_GENERAL;
-             success.success = false;
+            
+            success.success = false;
             bool enabledStatus = false;
             if (!friendlyname.empty())
             {
                 m_friendlyName = friendlyname;
-                LOGINFO("XCastImplementation::setFriendlyName  :%s",m_friendlyName.c_str());
                 if (m_xcastEnable && ( (m_standbyBehavior == true) || ((m_standbyBehavior == false)&&(m_powerState == WPEFramework::Exchange::IPowerManager::POWER_STATE_ON))))
-                    {
-                        enabledStatus = true;                
-                    }
-                    else
-                    {
-                        enabledStatus = false;
-                    }
-                    enableCastService(m_friendlyName,enabledStatus);
-                     success.success = true;
-                    result = Core::ERROR_NONE;
+                {
+                    enabledStatus = true;
+                }
+                enableCastService(m_friendlyName,enabledStatus);
+                success.success = true;
+                result = Core::ERROR_NONE;
             }
             return result;
         }
-	Core::hresult XCastImplementation::GetFriendlyName(string &friendlyname , bool &success ) { 
-            LOGINFO("XCastImplementation::getFriendlyName :%s ",m_friendlyName.c_str());
+
+        Core::hresult XCastImplementation::GetFriendlyName(string &friendlyname , bool &success )
+        { 
+            LOGINFO("m_friendlyName[%s]",m_friendlyName.c_str());
             friendlyname = m_friendlyName;
             success = true;
             return Core::ERROR_NONE;
         }
 
-        bool XCastImplementation::deleteFromDynamicAppCache(vector<string>& appsToDelete) {
-            LOGINFO("XCastImplementation::deleteFromDynamicAppCache");
+        bool XCastImplementation::deleteFromDynamicAppCache(vector<string>& appsToDelete)
+        {
+            LOGINFO("Entering ...");
             bool ret = true;
             {lock_guard<mutex> lck(m_appConfigMutex);
                 /*Check if existing cache need to be updated*/
@@ -1300,15 +1138,14 @@ void XCastImplementation::dumpDynamicAppCacheList(string strListName, std::vecto
                     free (pDynamicAppConfigOld); pDynamicAppConfigOld = NULL;
                 }
                 entriesTodelete.clear();
-
             }
+            LOGINFO("Exiting ...");
             //Even if requested app names not there return true.
             return ret;
         }
+
         void XCastImplementation::updateDynamicAppCache(Exchange::IXCast::IApplicationInfoIterator* const appInfoList)
         {
-            LOGINFO("XcastService::UpdateDynamicAppCache");
-
             std::vector <DynamicAppConfig*> appConfigList;
             if (appInfoList != nullptr)
             {
@@ -1355,12 +1192,12 @@ void XCastImplementation::dumpDynamicAppCacheList(string strListName, std::vecto
                     }
                     else
                     {
-                        LOGINFO("Memory allocation failed for DynamicAppConfig");
+                        LOGERR("Memory allocation failed for DynamicAppConfig");
                         return;
                     }
                 }
             }
-          
+
             dumpDynamicAppCacheList(string("appConfigList"), appConfigList);
             vector<string> appsToDelete;
             for (DynamicAppConfig* pDynamicAppConfig : appConfigList) {
@@ -1385,8 +1222,9 @@ void XCastImplementation::dumpDynamicAppCacheList(string strListName, std::vecto
             return;
         }
 
-        Core::hresult XCastImplementation::RegisterApplications(Exchange::IXCast::IApplicationInfoIterator* const appInfoList, Exchange::IXCast::XCastSuccess &success) { 
-            LOGINFO("XCastImplementation::registerApplications \n");
+        Core::hresult XCastImplementation::RegisterApplications(Exchange::IXCast::IApplicationInfoIterator* const appInfoList, Exchange::IXCast::XCastSuccess &success)
+        {
+            LOGINFO("Entering ...");
             enableCastService(m_friendlyName,false);
             m_isDynamicRegistrationsRequired = true;
             updateDynamicAppCache(appInfoList);
@@ -1396,24 +1234,27 @@ void XCastImplementation::dumpDynamicAppCacheList(string strListName, std::vecto
                 appConfigList = m_appConfigCache;
             }
             dumpDynamicAppCacheList(string("m_appConfigCache"), appConfigList);
-	        lock_guard<mutex> lck(m_appConfigMutex);
+            lock_guard<mutex> lck(m_appConfigMutex);
             //Pass the dynamic cache to xdial process
             m_xcast_manager->registerApplications(m_appConfigCache);
 
+            LOGINFO("m_xcastEnable[%d] m_standbyBehavior[%d] m_powerState[%d]", m_xcastEnable, m_standbyBehavior, m_powerState);
             /*Reenabling cast service after registering Applications*/
-            if (m_xcastEnable && ( (m_standbyBehavior == true) || ((m_standbyBehavior == false)&&(m_powerState == WPEFramework::Exchange::IPowerManager::POWER_STATE_ON)) ) ) {
-                LOGINFO("Enable CastService  m_xcastEnable: %d m_standbyBehavior: %d m_powerState:%d", m_xcastEnable, m_standbyBehavior, m_powerState);
+            if (m_xcastEnable && ( (m_standbyBehavior == true) || ((m_standbyBehavior == false)&&(m_powerState == WPEFramework::Exchange::IPowerManager::POWER_STATE_ON))))
+            {
                 enableCastService(m_friendlyName,true);
             }
             else {
-                LOGINFO("CastService not enabled m_xcastEnable: %d m_standbyBehavior: %d m_powerState:%d", m_xcastEnable, m_standbyBehavior, m_powerState);
+                LOGINFO("CastService not enabled");
             }
             success.success = true;
+            LOGINFO("Exiting ...");
             return Core::ERROR_NONE;
         }
-	Core::hresult XCastImplementation::UnregisterApplications(Exchange::IXCast::IStringIterator* const apps, Exchange::IXCast::XCastSuccess &success) 
+
+        Core::hresult XCastImplementation::UnregisterApplications(Exchange::IXCast::IStringIterator* const apps, Exchange::IXCast::XCastSuccess &success)
         {
-            LOGINFO("XcastService::unregisterApplications \n ");
+            LOGINFO("Entering ...");
             auto returnStatus = false;
             /*Disable cast service before registering Applications*/
             enableCastService(m_friendlyName,false);
@@ -1437,15 +1278,17 @@ void XCastImplementation::dumpDynamicAppCacheList(string strListName, std::vecto
             dumpDynamicAppCacheList(string("m_appConfigCache"), appConfigList);
             m_xcast_manager->registerApplications(appConfigList);
 
+            LOGINFO("m_xcastEnable[%d] m_standbyBehavior[%d] m_powerState[%d]", m_xcastEnable, m_standbyBehavior, m_powerState);
             /*Reenabling cast service after registering Applications*/
-            if (m_xcastEnable && ( (m_standbyBehavior == true) || ((m_standbyBehavior == false)&&(m_powerState == WPEFramework::Exchange::IPowerManager::POWER_STATE_ON)) ) ) {
-                LOGINFO("Enable CastService  m_xcastEnable: %d m_standbyBehavior: %d m_powerState:%d", m_xcastEnable, m_standbyBehavior, m_powerState);
+            if (m_xcastEnable && ( (m_standbyBehavior == true) || ((m_standbyBehavior == false)&&(m_powerState == WPEFramework::Exchange::IPowerManager::POWER_STATE_ON))))
+            {
                 enableCastService(m_friendlyName,true);
             }
             else {
-                LOGINFO("CastService not enabled m_xcastEnable: %d m_standbyBehavior: %d m_powerState:%d", m_xcastEnable, m_standbyBehavior, m_powerState);
+                LOGINFO("CastService not enabled");
             }
             success.success = (returnStatus)? true : false;
+            LOGINFO("Exiting ...");
             return (returnStatus)? Core::ERROR_NONE : Core::ERROR_GENERAL;
         }
 
@@ -1455,6 +1298,7 @@ void XCastImplementation::dumpDynamicAppCacheList(string strListName, std::vecto
             new_powerState = WPEFramework::Exchange::IPowerManager::POWER_STATE_OFF;
             Core::hresult status = Core::ERROR_GENERAL;
             bool ret = true;
+            LOGINFO("PowerState[%s]",powerState.c_str());
             if ("ON" == powerState )
             {
                 new_powerState = WPEFramework::Exchange::IPowerManager::POWER_STATE_ON;
@@ -1491,7 +1335,7 @@ void XCastImplementation::dumpDynamicAppCacheList(string strListName, std::vecto
             return ret;
         }
 
-
+#if 0
         void XCastImplementation::getUrlFromAppLaunchParams (const char *app_name, const char *payload, const char *query_string, const char *additional_data_url, char *url)
         {
             LOGINFO("getUrlFromAppLaunchParams : Application launch request: appName: %s  query: [%s], payload: [%s], additionalDataUrl [%s]\n",
@@ -1586,6 +1430,6 @@ void XCastImplementation::dumpDynamicAppCacheList(string strListName, std::vecto
                 LOGINFO(" url is [%s]\r\n", url);
             }
         }
-        
+#endif
     } // namespace Plugin
 } // namespace WPEFramework

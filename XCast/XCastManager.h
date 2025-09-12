@@ -63,11 +63,8 @@ public:
      *@param enableService - Enable/Disable the SSDP discovery of Dial server
      */
     void enableCastService(string friendlyname,bool enableService = true);
-    /**
-     *This function will update friendly name.
-     *@param friendlyname - friendlyname
-     */
-    void updateFriendlyName(string friendlyname);
+
+    //void updateFriendlyName(string friendlyname);
     void registerApplications (std::vector<DynamicAppConfig*>& appConfigList);
     string  getProtocolVersion(void);
     void setNetworkStandbyMode(bool nwStandbymode);
@@ -102,7 +99,7 @@ public:
 private:
     //Internal methods
     XCastNotifier * m_observer;
-    bool IsAppEnabled(char* strAppName);
+    //bool IsAppEnabled(char* strAppName);
     void getWiFiInterface(std::string& WiFiInterfaceName);
     void getGDialInterfaceName(std::string& interfaceName);
     std::string getReceiverID(void);

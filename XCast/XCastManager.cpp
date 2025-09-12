@@ -431,26 +431,13 @@ void XCastManager::enableCastService(string friendlyname,bool enableService)
     lock_guard<recursive_mutex> lock(m_mutexSync);
     if(gdialCastObj != NULL)
     {
+        LOGINFO("ARGS = %s : %d ", friendlyname.c_str(), enableService);
         std::string activation = enableService ? "true": "false";
         gdialCastObj->ActivationChanged( activation, friendlyname);
         LOGINFO("XcastService send onActivationChanged");
     }
     else
         LOGINFO(" gdialCastObj is NULL ");    
-}
-
-void XCastManager::updateFriendlyName(string friendlyname)
-{
-    LOGINFO("ARGS = %s ", friendlyname.c_str());
-    lock_guard<recursive_mutex> lock(m_mutexSync);
-    if(gdialCastObj != NULL)
-    {
-        gdialCastObj->FriendlyNameChanged( friendlyname);
-        m_defaultfriendlyName = friendlyname;
-        LOGINFO("XcastService send FriendlyNameChanged");
-    }
-    else
-        LOGINFO(" gdialCastObj is NULL ");
 }
 
 string XCastManager::getProtocolVersion(void)
@@ -476,11 +463,11 @@ int XCastManager::setManufacturerName( string manufacturer)
     int status = 0;
     LOGINFO("Manufacturer[%s]", manufacturer.c_str());
     lock_guard<recursive_mutex> lock(m_mutexSync);
+    m_manufacturerName = manufacturer;
     if(gdialCastObj != NULL)
     {
         gdialCastObj->setManufacturerName( manufacturer );
         status = 1;
-        m_manufacturerName = manufacturer;
     }
     else
         LOGINFO(" gdialCastObj is NULL ");
@@ -499,11 +486,11 @@ int XCastManager::setModelName( string model)
     int status = 0;
     lock_guard<recursive_mutex> lock(m_mutexSync);
     LOGINFO("Model[%s]", model.c_str());
+    m_modelName = model;
     if(gdialCastObj != NULL)
     {
         gdialCastObj->setModelName(model);
         status = 1;
-        m_modelName = model;
     }
     else
         LOGINFO(" gdialCastObj is NULL ");
@@ -577,13 +564,28 @@ XCastManager * XCastManager::getInstance()
     return XCastManager::_instance;
 }
 
+#if 0
+void XCastManager::updateFriendlyName(string friendlyname)
+{
+    LOGINFO("ARGS = %s ", friendlyname.c_str());
+    lock_guard<recursive_mutex> lock(m_mutexSync);
+    if(gdialCastObj != NULL)
+    {
+        gdialCastObj->FriendlyNameChanged( friendlyname);
+        m_defaultfriendlyName = friendlyname;
+        LOGINFO("XcastService send FriendlyNameChanged");
+    }
+    else
+        LOGINFO(" gdialCastObj is NULL ");
+}
+
 bool XCastManager::IsAppEnabled(char* strAppName)
 {
     bool ret = false;
 #ifdef RFC_ENABLED
     char* strfound = NULL;
     RFC_ParamData_t param;
-    WDMP_STATUS wdmpStatus = getRFCParameter(const_cast<char *>("Xcast"), "Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.Feature.XDial.AppList", &param);
+    WDMP_STATUS wdmpStatus = getRFCParameter(const_cast<char *>("XCastPlugin"), "Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.Feature.XDial.AppList", &param);
     if (wdmpStatus == WDMP_SUCCESS || wdmpStatus == WDMP_ERR_DEFAULT_VALUE)
     {
         if (NULL != strAppName) {
@@ -600,3 +602,4 @@ bool XCastManager::IsAppEnabled(char* strAppName)
 
     return ret;
 }
+#endif /*NOT Used*/
