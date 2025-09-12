@@ -118,7 +118,7 @@ namespace WPEFramework {
 								_parent.Deactivated(connection);
 							}
 						}
-		
+
 						private:
 							XCast &_parent;
 				};
@@ -149,10 +149,10 @@ namespace WPEFramework {
 					PluginHost::IShell *_service{};
 					uint32_t _connectionId{};
 					Exchange::IXCast *_xcast{};
+					Exchange::IConfiguration* mConfigure;
 					Core::Sink<Notification> _xcastNotification;
 
 					friend class Notification;
         };
-
     } // namespace Plugin
 } // namespace WPEFramework
