@@ -73,7 +73,7 @@ protected:
     Core::ProxyType<Plugin::XCastImplementation> xcastImpl;
 
     NiceMock<COMLinkMock> comLinkMock;
-    PLUGINHOST_DISPATCHER* dispatcher;
+    PLUGINHOST_DISPATCHER* dispatcher = nullptr;
     Core::ProxyType<WorkerPoolImplementation> workerPool;
     
     NiceMock<FactoriesImplementation> factoriesImplementation;
