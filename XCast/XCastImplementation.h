@@ -187,13 +187,13 @@ namespace WPEFramework
                     void onActiveInterfaceChange(const string prevActiveInterface, const string currentActiveinterface) override
                     {
                         LOGINFO("Active interface changed [%s] -- > [%s]",prevActiveInterface.c_str(), currentActiveinterface.c_str());
-                        _parent.onActiveInterfaceChange(prevActiveInterface, currentActiveinterface);
+                        _parent.onActiveInterfaceChange(std::move(prevActiveInterface), std::move(currentActiveinterface));
                     }
 
                     void onIPAddressChange(const string interface, const string ipversion, const string ipaddress, const Exchange::INetworkManager::IPStatus status) override
                     {
                         LOGINFO("IP Address changed: Interface [%s] IP Version [%s] Address [%s] Status [%d]", interface.c_str(), ipversion.c_str(), ipaddress.c_str(), status);
-                        _parent.onIPAddressChange(interface, ipversion, ipaddress, status);
+                        _parent.onIPAddressChange(std::move(interface), std::move(ipversion), std::move(ipaddress), status);
                     }
 
                     void onInterfaceStateChange(const Exchange::INetworkManager::InterfaceState state, const string interface) override

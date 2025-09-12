@@ -46,6 +46,7 @@ namespace WPEFramework
             : _service(nullptr)
             , _connectionId(0)
             , _xcast(nullptr)
+            , mConfigure(nullptr)
             , _xcastNotification(this)
         {
             SYSLOG(Logging::Startup, (_T("XCast Constructor")));
