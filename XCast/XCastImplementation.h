@@ -208,8 +208,6 @@ namespace WPEFramework
             static XCastManager* m_xcast_manager;
             guint m_FriendlyNameUpdateTimerID{0};
             TpTimer m_locateCastTimer;
-            PluginState _networkPluginState;
-            
             
             WPEFramework::JSONRPC::LinkType<WPEFramework::Core::JSON::IElement> *m_ControllerObj = nullptr;
             WPEFramework::JSONRPC::LinkType<WPEFramework::Core::JSON::IElement> *m_NetworkPluginObj = nullptr;

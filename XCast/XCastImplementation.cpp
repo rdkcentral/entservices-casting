@@ -948,13 +948,8 @@ namespace WPEFramework
 
                     if (!isPluginActivated(NETWORK_CALLSIGN_VER))
                     {
-                        activatePlugin(NETWORK_CALLSIGN_VER);
-                        _networkPluginState = PLUGIN_DEACTIVATED;
-                    }
-                    else
-                    {
-                        _networkPluginState = PLUGIN_ACTIVATED;
-                    }
+                        LOGERR("%s is not activated", NETWORK_CALLSIGN_VER);
+                    } 
 
                     if (false == isSubscribed)
                     {
