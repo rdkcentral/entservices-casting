@@ -201,9 +201,9 @@ namespace WPEFramework
                         LOGINFO("Interface State Changed: Interface [%s] State [%d]", interface.c_str(), state);
                     }
 
-                    void onInternetStatusChange(const Exchange::INetworkManager::InternetStatus prevState, const Exchange::INetworkManager::InternetStatus currState) override
+                    void onInternetStatusChange(const Exchange::INetworkManager::InternetStatus prevState, const Exchange::INetworkManager::InternetStatus currState, const string interface) override
                     {
-                        LOGINFO("Internet Status Changed: [%d] -- > [%d]",prevState, currState);
+                        LOGINFO("Internet Status Changed for Interface [%s]: [%d] -- > [%d]", interface.c_str(), prevState, currState);
                     }
 
                     void onAvailableSSIDs(const string jsonOfScanResults) override
