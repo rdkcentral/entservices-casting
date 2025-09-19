@@ -38,14 +38,14 @@ namespace Plugin {
     
     // Implement all methods from Barton.h
     
-    const string Barton::Initialize(VARIABLE_IS_NOT_USED PluginHost::IShell* service) {
+    const string Barton::Initialize(PluginHost::IShell* service) {
         string message;
         
         ASSERT(service != nullptr);
         return (message);
     }
     
-    void Barton::Deinitialize(VARIABLE_IS_NOT_USED PluginHost::IShell* service) {
+    void Barton::Deinitialize(PluginHost::IShell* service) {
     }
     
     string Barton::Information() const {
