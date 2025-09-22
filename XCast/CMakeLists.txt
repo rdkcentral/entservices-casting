@@ -84,6 +84,13 @@ endif (USE_THUNDER_R4)
 find_package(DS)
 find_package(IARMBus)
 find_package(CEC)
+find_library(NMPROXY_LIB NAMES ${NAMESPACE}NetworkManagerProxy PATHS ${CMAKE_SYSROOT}/usr/lib/wpeframework/proxystubs)
+
+if(NMPROXY_LIB)
+    message(STATUS "Found NMPROXY_LIB: ${NMPROXY_LIB}")
+else()
+    message(FATAL_ERROR "NMPROXY_LIB not found! Please check the path and library name.")
+endif()
 
 if (RDK_SERVICE_L2_TEST)
     message ("L2 test Enabled")
@@ -103,7 +110,7 @@ target_include_directories(${PLUGIN_IMPLEMENTATION} PRIVATE ${GLIB_INCLUDE_DIRS}
 target_include_directories(${PLUGIN_IMPLEMENTATION} PRIVATE ${RFC_INCLUDE_DIRS} ../helpers)
 
 if(NOT RDK_SERVICES_L1_TEST)
-      target_link_libraries(${PLUGIN_IMPLEMENTATION} PRIVATE ${NAMESPACE}Plugins::${NAMESPACE}Plugins ${RFC_LIBRARIES} ${IARMBUS_LIBRARIES} ${XDIAL_LIBRARIES} ${NAMESPACE}Definitions::${NAMESPACE}Definitions)
+      target_link_libraries(${PLUGIN_IMPLEMENTATION} PRIVATE ${NAMESPACE}Plugins::${NAMESPACE}Plugins ${RFC_LIBRARIES} ${IARMBUS_LIBRARIES} ${XDIAL_LIBRARIES} ${NMPROXY_LIB} ${NAMESPACE}Definitions::${NAMESPACE}Definitions)
 else(RDK_SERVICES_L1_TEST)
       target_link_libraries(${PLUGIN_IMPLEMENTATION} PRIVATE ${NAMESPACE}Plugins::${NAMESPACE}Plugins ${RFC_LIBRARIES} ${IARMBUS_LIBRARIES} ${NAMESPACE}Definitions::${NAMESPACE}Definitions)
 endif()
