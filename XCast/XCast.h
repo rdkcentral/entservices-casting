@@ -70,35 +70,35 @@ namespace WPEFramework {
 						INTERFACE_ENTRY(RPC::IRemoteConnection::INotification)
 						END_INTERFACE_MAP
 
-						 virtual void OnApplicationLaunchRequestWithParam(const string& appName, const string& strPayLoad, const string& strQuery, const string& strAddDataUrl) override
+						virtual void OnApplicationLaunchRequestWithParam(const string& appName, const string& strPayLoad, const string& strQuery, const string& strAddDataUrl) override
 						{
-							LOGINFO("OnApplicationLaunchRequestWithParam: appName=%s, strPayLoad=%s, strQuery=%s, strAddDataUrl=%s",
+							LOGINFO("[EVENT] appName[%s] strPayLoad[%s] strQuery[%s] strAddDataUrl[%s]",
 								appName.c_str(), strPayLoad.c_str(), strQuery.c_str(), strAddDataUrl.c_str());
 							Exchange::JXCast::Event::OnApplicationLaunchRequestWithParam(_parent, appName, strPayLoad, strQuery, strAddDataUrl);
 						}
 						virtual void OnApplicationLaunchRequest(const string& appName, const string& parameter) override
 						{
-							LOGINFO("OnApplicationLaunchRequest: appName=%s, parameter=%s", appName.c_str(), parameter.c_str());
+							LOGINFO("[EVENT] appName[%s] parameter[%s]", appName.c_str(), parameter.c_str());
 							Exchange::JXCast::Event::OnApplicationLaunchRequest(_parent, appName, parameter);
 						}
 						virtual void OnApplicationStopRequest(const string& appName, const string& appID) override
 						{
-							LOGINFO("OnApplicationStopRequest: appName=%s, appID=%s", appName.c_str(), appID.c_str());
+							LOGINFO("[EVENT] appName[%s] appID[%s]", appName.c_str(), appID.c_str());
 							Exchange::JXCast::Event::OnApplicationStopRequest(_parent, appName, appID);
 						}
 						virtual void OnApplicationHideRequest(const string& appName, const string& appID) override
 						{
-							LOGINFO("OnApplicationHideRequest: appName=%s, appID=%s", appName.c_str(), appID.c_str());
+							LOGINFO("[EVENT] appName[%s] appID[%s]", appName.c_str(), appID.c_str());
 							Exchange::JXCast::Event::OnApplicationHideRequest(_parent, appName, appID);
 						}
 						virtual void OnApplicationStateRequest(const string& appName, const string& appID) override
 						{
-							LOGINFO("OnApplicationStateRequest: appName=%s, appID=%s", appName.c_str(), appID.c_str());
+							LOGINFO("[EVENT] appName[%s] appID[%s]", appName.c_str(), appID.c_str());
 							Exchange::JXCast::Event::OnApplicationStateRequest(_parent, appName, appID);
 						}
 						virtual void OnApplicationResumeRequest(const string& appName, const string& appID) override
 						{
-							LOGINFO("OnApplicationResumeRequest: appName=%s, appID=%s", appName.c_str(), appID.c_str());
+							LOGINFO("[EVENT] appName[%s] appID[%s]", appName.c_str(), appID.c_str());
 							Exchange::JXCast::Event::OnApplicationResumeRequest(_parent, appName, appID);
 						}
 							

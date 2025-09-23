@@ -28,8 +28,6 @@
 #include <string> 
 #include <vector>
 
-#define LOG_INPARAM() { string json; parameters.ToString(json); NMLOG_INFO("params=%s", json.c_str() ); }
-
 #define SERVER_DETAILS "127.0.0.1:9998"
 #define THUNDER_RPC_TIMEOUT 5000
 
@@ -192,7 +190,7 @@ namespace WPEFramework
 
         void XCastImplementation::onActiveInterfaceChange(const string prevActiveInterface, const string currentActiveinterface)
         {
-            LOGINFO("Interface changed, old interface: %s, new interface: %s", prevActiveInterface.c_str(), currentActiveinterface.c_str());
+            LOGINFO("Interface changed, old interface[%s], new interface[%s]", prevActiveInterface.c_str(), currentActiveinterface.c_str());
             updateNWConnectivityStatus(currentActiveinterface.c_str(), true);
         }
 
@@ -218,11 +216,11 @@ namespace WPEFramework
                 m_SystemPluginObj = new WPEFramework::JSONRPC::LinkType<Core::JSON::IElement>(_T(SYSTEM_CALLSIGN_VER), (_T(SYSTEM_CALLSIGN_VER)), false);
                 if (nullptr == m_SystemPluginObj)
                 {
-                    LOGERR("JSONRPC: %s: initialization failed", SYSTEM_CALLSIGN_VER);
+                    LOGERR("JSONRPC: [%s]: initialization failed", SYSTEM_CALLSIGN_VER);
                 }
                 else
                 {
-                    LOGINFO("JSONRPC: %s: initialization ok", SYSTEM_CALLSIGN_VER);
+                    LOGINFO("JSONRPC: [%s]: initialization ok", SYSTEM_CALLSIGN_VER);
                 }
             }
             LOGINFO("Exiting..!!!");
@@ -265,14 +263,14 @@ namespace WPEFramework
             string message;
             string value;
             parameters.ToString(message);
-            LOGINFO("[Friendly Name Event], %s : %s", __FUNCTION__,message.c_str());
+            LOGINFO("[Friendly Name Event] Msg[%s]", message.c_str());
 
             if (parameters.HasLabel("friendlyName"))
             {
                 value = parameters["friendlyName"].String();
 
                 m_friendlyName = std::move(value);
-                LOGINFO("onFriendlyNameUpdateHandler  :%s",m_friendlyName.c_str());
+                LOGINFO("friendlyName[%s]",m_friendlyName.c_str());
                 if (m_FriendlyNameUpdateTimerID)
                 {
                     g_source_remove(m_FriendlyNameUpdateTimerID);
@@ -334,7 +332,7 @@ namespace WPEFramework
                 m_SystemPluginObj->Subscribe<JsonObject>(1000, "onFriendlyNameChanged", &XCastImplementation::onFriendlyNameUpdateHandler, this);
                 if (Core::ERROR_NONE == updateSystemFriendlyName())
                 {
-                    LOGINFO("XCast::Initialize m_friendlyName:  %s\n ",m_friendlyName.c_str());
+                    LOGINFO("updateSystemFriendlyName successfully [%s]",m_friendlyName.c_str());
                 }
             }
             else if ((_service) && ( nullptr == service ))
@@ -505,7 +503,7 @@ namespace WPEFramework
 
         void XCastImplementation::onXcastApplicationLaunchRequestWithParam (string appName, string strPayLoad, string strQuery, string strAddDataUrl)
         {
-            LOGINFO("Notify LaunchRequestWithParam, appName: %s, strPayLoad: %s, strQuery: %s, strAddDataUrl: %s",
+            LOGINFO("[EVENT] appName[%s], strPayLoad[%s], strQuery[%s], strAddDataUrl[%s]",
                     appName.c_str(),strPayLoad.c_str(),strQuery.c_str(),strAddDataUrl.c_str());
             JsonObject params;
             params["appName"]  = appName.c_str();
@@ -517,7 +515,7 @@ namespace WPEFramework
 
         void XCastImplementation::onXcastApplicationLaunchRequest(string appName, string parameter)
         {
-            LOGINFO("Notify LaunchRequest, appName: %s, parameter: %s",appName.c_str(),parameter.c_str());
+            LOGINFO("[EVENT] appName[%s], parameter[%s]",appName.c_str(),parameter.c_str());
             JsonObject params;
             params["appName"]  = appName.c_str();
             params["parameter"]  = parameter.c_str();
@@ -526,7 +524,7 @@ namespace WPEFramework
 
         void XCastImplementation::onXcastApplicationStopRequest(string appName, string appId)
         {
-            LOGINFO("Notify StopRequest, appName: %s, appId: %s",appName.c_str(),appId.c_str());
+            LOGINFO("[EVENT] appName[%s], appId[%s]",appName.c_str(),appId.c_str());
             JsonObject params;
             params["appName"]  = appName.c_str();
             params["appId"]  = appId.c_str();
@@ -535,7 +533,7 @@ namespace WPEFramework
 
         void XCastImplementation::onXcastApplicationHideRequest(string appName, string appId)
         {
-            LOGINFO("Notify StopRequest, appName: %s, appId: %s",appName.c_str(),appId.c_str());
+            LOGINFO("[EVENT] appName[%s], appId[%s]",appName.c_str(),appId.c_str());
             JsonObject params;
             params["appName"]  = appName.c_str();
             params["appId"]  = appId.c_str();
@@ -544,7 +542,7 @@ namespace WPEFramework
 
         void XCastImplementation::onXcastApplicationResumeRequest(string appName, string appId)
         {
-            LOGINFO("Notify StopRequest, appName: %s, appId: %s",appName.c_str(),appId.c_str());
+            LOGINFO("[EVENT] appName[%s], appId[%s]",appName.c_str(),appId.c_str());
             JsonObject params;
             params["appName"]  = appName.c_str();
             params["appId"]  = appId.c_str();
@@ -553,7 +551,7 @@ namespace WPEFramework
 
         void XCastImplementation::onXcastApplicationStateRequest(string appName, string appId)
         {
-            LOGINFO("Notify StopRequest, appName: %s, appId: %s",appName.c_str(),appId.c_str());
+            LOGINFO("[EVENT] appName[%s], appId[%s]",appName.c_str(),appId.c_str());
             JsonObject params;
             params["appName"]  = appName.c_str();
             params["appId"]  = appId.c_str();
@@ -562,7 +560,7 @@ namespace WPEFramework
 
         void XCastImplementation::onXcastUpdatePowerStateRequest(string powerState)
         {
-            LOGINFO("Notify updatePowerState, state: %s",powerState.c_str());
+            LOGINFO("[EVENT] powerState[%s]",powerState.c_str());
             JsonObject params;
             params["powerstate"]  = powerState.c_str();
             setPowerState(powerState);
@@ -786,8 +784,8 @@ namespace WPEFramework
         void XCastImplementation::Dispatch(Event event, string callsign, const JsonObject params)
         {
             _adminLock.Lock();
-            
-            LOGINFO("Event = %d, callsign = %s", event, callsign.c_str());
+
+            LOGINFO("Event[%d] callsign[%s]", event, callsign.c_str());
             std::list<Exchange::IXCast::INotification*>::iterator index(_xcastNotification.begin());
             while (index != _xcastNotification.end())
             {
@@ -934,7 +932,7 @@ namespace WPEFramework
 
         Core::hresult XCastImplementation::SetNetworkStandbyMode(bool networkStandbyMode)
         {
-            LOGINFO("nwStandbymode [%d]", networkStandbyMode);
+            LOGINFO("networkStandbyMode [%d]", networkStandbyMode);
             if (nullptr != m_xcast_manager)
             {
                 m_xcast_manager->setNetworkStandbyMode(networkStandbyMode);
@@ -1126,12 +1124,12 @@ namespace WPEFramework
                         index ++;
                     }
                     if (!found) {
-                        LOGINFO("%s not existing in the dynamic cache", appNameToDelete.c_str());
+                        LOGINFO("[%s] not existing in the dynamic cache", appNameToDelete.c_str());
                     }
                 }
                 std::sort(entriesTodelete.begin(), entriesTodelete.end(), std::greater<int>());
                 for (int indexToDelete : entriesTodelete) {
-                    LOGINFO("Going to delete the entry: %d from m_appConfigCache  size: %d", indexToDelete, (int)m_appConfigCache.size());
+                    LOGINFO("Going to delete the entry: [%d] from m_appConfigCache  size: [%d]", indexToDelete, (int)m_appConfigCache.size());
                     //Delete the old unwanted item here.
                     DynamicAppConfig* pDynamicAppConfigOld = m_appConfigCache[indexToDelete];
                     m_appConfigCache.erase (m_appConfigCache.begin()+indexToDelete);
@@ -1153,7 +1151,7 @@ namespace WPEFramework
                 Exchange::IXCast::ApplicationInfo appInfo;
                 while (appInfoList->Next(appInfo))
                 {
-                    LOGINFO("Application: %s", appInfo.appName.c_str());
+                    LOGINFO("Application: [%s]", appInfo.appName.c_str());
                     DynamicAppConfig* pDynamicAppConfig = (DynamicAppConfig*) malloc (sizeof(DynamicAppConfig));
                     if(pDynamicAppConfig)
                     {
@@ -1181,7 +1179,7 @@ namespace WPEFramework
 
                         pDynamicAppConfig->allowStop = appInfo.allowStop ? true : false;
 
-                        LOGINFO("appName:%s, prefixes:%s, cors:%s, allowStop:%d, query:%s, payload:%s",
+                        LOGINFO("appName[%s], prefixes[%s], cors[%s], allowStop[%d], query[%s], payload[%s]",
                                 pDynamicAppConfig->appName,
                                 pDynamicAppConfig->prefixes,
                                 pDynamicAppConfig->cors,
@@ -1205,14 +1203,14 @@ namespace WPEFramework
             }
             deleteFromDynamicAppCache (appsToDelete);
 
-            LOGINFO("appConfigList count: %d", (int)appConfigList.size());
+            LOGINFO("appConfigList count[%d]", (int)appConfigList.size());
             //Update the new entries here.
             {
                 lock_guard<mutex> lck(m_appConfigMutex);
                 for (DynamicAppConfig* pDynamicAppConfig : appConfigList) {
                     m_appConfigCache.push_back(pDynamicAppConfig);
                 }
-                LOGINFO("m_appConfigCache count: %d", (int)m_appConfigCache.size());
+                LOGINFO("m_appConfigCache count[%d]", (int)m_appConfigCache.size());
             }
             //Clear the tempopary list here
             appsToDelete.clear();
@@ -1264,7 +1262,7 @@ namespace WPEFramework
             string appName;
             while (apps->Next(appName))
             {
-                LOGINFO("Going to delete the app: %s from dynamic cache", appName.c_str());
+                LOGINFO("Going to delete the app [%s] from dynamic cache", appName.c_str());
                 appsToDelete.push_back(appName);
             }
             
@@ -1334,102 +1332,5 @@ namespace WPEFramework
             }
             return ret;
         }
-
-#if 0 /*NOT USED*/
-        void XCastImplementation::getUrlFromAppLaunchParams (const char *app_name, const char *payload, const char *query_string, const char *additional_data_url, char *url)
-        {
-            LOGINFO("getUrlFromAppLaunchParams : Application launch request: appName: %s  query: [%s], payload: [%s], additionalDataUrl [%s]\n",
-                app_name, query_string, payload, additional_data_url);
-
-            int url_len = DIAL_MAX_PAYLOAD+DIAL_MAX_ADDITIONALURL+100;
-            memset (url, '\0', url_len);
-            if(strcmp(app_name,"YouTube") == 0) {
-                if ((payload != NULL) && (additional_data_url != NULL)){
-                    snprintf( url, url_len, "https://www.youtube.com/tv?%s&additionalDataUrl=%s", payload, additional_data_url);
-                }else if (payload != NULL){
-                    snprintf( url, url_len, "https://www.youtube.com/tv?%s", payload);
-                }else{
-                    snprintf( url, url_len, "https://www.youtube.com/tv");
-                }
-            }
-            else if(strcmp(app_name,"YouTubeTV") == 0) {
-                if ((payload != NULL) && (additional_data_url != NULL)){
-                    snprintf( url, url_len, "https://www.youtube.com/tv/upg?%s&additionalDataUrl=%s", payload, additional_data_url);
-                }else if (payload != NULL){
-                    snprintf( url, url_len, "https://www.youtube.com/tv/upg?%s", payload);
-                }else{
-                    snprintf( url, url_len, "https://www.youtube.com/tv/upg?");
-                }
-            }
-            else if(strcmp(app_name,"YouTubeKids") == 0) {
-                if ((payload != NULL) && (additional_data_url != NULL)){
-                    snprintf( url, url_len, "https://www.youtube.com/tv_kids?%s&additionalDataUrl=%s", payload, additional_data_url);
-                }else if (payload != NULL){
-                    snprintf( url, url_len, "https://www.youtube.com/tv_kids?%s", payload);
-                }else{
-                    snprintf( url, url_len, "https://www.youtube.com/tv_kids?");
-                }
-            }
-            else if(strcmp(app_name,"Netflix") == 0) {
-                memset( url, 0, url_len );
-                strncat( url, "source_type=12", url_len - strlen(url) - 1);
-                if(payload != NULL)
-                {
-                    const char * pUrlEncodedParams;
-                    pUrlEncodedParams = payload;
-                    if( pUrlEncodedParams ){
-                        strncat( url, "&dial=", url_len - strlen(url) - 1);
-                        strncat( url, pUrlEncodedParams, url_len - strlen(url) - 1);
-                    }
-                }
-
-                if(additional_data_url != NULL){
-                    strncat(url, "&additionalDataUrl=", url_len - strlen(url) - 1);
-                    strncat(url, additional_data_url, url_len - strlen(url) - 1);
-                }
-            }
-            else {
-                memset( url, 0, url_len );
-                url_len -= DIAL_MAX_ADDITIONALURL+1; //save for &additionalDataUrl
-                url_len -= 1; //save for nul byte
-                LOGINFO("query_string=[%s]\r\n", query_string);
-                int has_query = query_string && strlen(query_string);
-                int has_payload = 0;
-                if (has_query) {
-                    snprintf(url + strlen(url), url_len, "%s", query_string);
-                    url_len -= strlen(query_string);
-                }
-                if(payload && strlen(payload)) {
-                    const char payload_key[] = "dialpayload=";
-                    if(url_len >= 0){
-                        if (has_query) {
-                            snprintf(url + strlen(url), url_len, "%s", "&");
-                            url_len -= 1;
-                        }
-                        if(url_len >= 0) {
-                            snprintf(url + strlen(url), url_len, "%s%s", payload_key, payload);
-                            url_len -= strlen(payload_key) + strlen(payload);
-                            has_payload = 1;
-                        }
-                    }
-                    else {
-                        LOGINFO("there is not enough room for payload\r\n");
-                    }
-                }
-                
-                if(additional_data_url != NULL){
-                    if ((has_query || has_payload) && url_len >= 0) {
-                        snprintf(url + strlen(url), url_len, "%s", "&");
-                        url_len -= 1;
-                    }
-                    if (url_len >= 0) {
-                        snprintf(url + strlen(url), url_len, "additionalDataUrl=%s", additional_data_url);
-                        url_len -= strlen(additional_data_url) + 18;
-                    }
-                }
-                LOGINFO(" url is [%s]\r\n", url);
-            }
-        }
-#endif
     } // namespace Plugin
 } // namespace WPEFramework

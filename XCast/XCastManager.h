@@ -64,7 +64,6 @@ public:
      */
     void enableCastService(string friendlyname,bool enableService = true);
 
-    //void updateFriendlyName(string friendlyname);
     void registerApplications (std::vector<DynamicAppConfig*>& appConfigList);
     string  getProtocolVersion(void);
     void setNetworkStandbyMode(bool nwStandbymode);
@@ -99,7 +98,6 @@ public:
 private:
     //Internal methods
     XCastNotifier * m_observer;
-    //bool IsAppEnabled(char* strAppName);
     void getWiFiInterface(std::string& WiFiInterfaceName);
     void getGDialInterfaceName(std::string& interfaceName);
     std::string getReceiverID(void);
