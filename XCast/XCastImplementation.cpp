@@ -268,53 +268,23 @@ namespace WPEFramework
             if (parameters.HasLabel("friendlyName"))
             {
                 value = parameters["friendlyName"].String();
-
                 m_friendlyName = std::move(value);
                 LOGINFO("friendlyName[%s]",m_friendlyName.c_str());
-                if (m_FriendlyNameUpdateTimerID)
-                {
-                    g_source_remove(m_FriendlyNameUpdateTimerID);
-                    m_FriendlyNameUpdateTimerID = 0;
-                }
-                m_FriendlyNameUpdateTimerID = g_timeout_add(50, XCastImplementation::update_friendly_name_timercallback, this);
-                if (0 == m_FriendlyNameUpdateTimerID)
-                {
-                    bool enabledStatus = false;
-                    LOGWARN("Failed to create the timer. Setting friendlyName immediately");
-                    if (m_xcastEnable && ( (m_standbyBehavior == true) || ((m_standbyBehavior == false)&&(m_powerState == WPEFramework::Exchange::IPowerManager::POWER_STATE_ON))))
-                    {
-                        enabledStatus = true;
-                    }
-                    LOGINFO("Updating FriendlyName [%s] status[%x]",m_friendlyName.c_str(),enabledStatus);
-                    enableCastService(m_friendlyName,enabledStatus);
-                }
-                else
-                {
-                    LOGINFO("Timer triggered to update friendlyName");
-                }
+                std::thread friendlyNameChangeThread = std::thread(&XCastImplementation::threadSystemFriendlyNameChangeEvent,this);
+                friendlyNameChangeThread.detach();
+                LOGINFO("creating worker thread for threadFriendlyNameChangeEvent m_friendlyName[%s]",m_friendlyName.c_str());
             }
         }
 
-        gboolean XCastImplementation::update_friendly_name_timercallback(gpointer userdata)
+        void XCastImplementation::threadSystemFriendlyNameChangeEvent(void)
         {
-            XCastImplementation *self = (XCastImplementation *)userdata;
             bool enabledStatus = false;
-
             if (m_xcastEnable && ( (m_standbyBehavior == true) || ((m_standbyBehavior == false)&&(m_powerState == WPEFramework::Exchange::IPowerManager::POWER_STATE_ON))))
             {
                 enabledStatus = true;
             }
-
-            if (self)
-            {
-                LOGINFO("Updating FriendlyName from Timer [%s] status[%x]",m_friendlyName.c_str(),enabledStatus);
-                self->enableCastService(m_friendlyName,enabledStatus);
-            }
-            else
-            {
-                LOGERR("instance NULL");
-            }
-            return G_SOURCE_REMOVE;
+            LOGINFO("Updating FriendlyName from Timer [%s] status[%x]",m_friendlyName.c_str(),enabledStatus);
+            enableCastService(m_friendlyName,enabledStatus);
         }
 
         uint32_t XCastImplementation::Configure(PluginHost::IShell* service)

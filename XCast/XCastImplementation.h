@@ -139,9 +139,9 @@ namespace WPEFramework
                 public:
                     void OnPowerModeChanged(const PowerState currentState, const PowerState newState) override
                     {
-                        LOGINFO("onPowerModeChanged: State Changed %d -- > %d\r",currentState, newState);
+                        LOGINFO("onPowerModeChanged: State Changed [%d] -- > [%d]",currentState, newState);
                         m_powerState = newState;
-                        LOGWARN("creating worker thread for threadPowerModeChangeEvent m_powerState :%d",m_powerState);
+                        LOGINFO("creating worker thread for threadPowerModeChangeEvent m_powerState :%d",m_powerState);
                         std::thread powerModeChangeThread = std::thread(&XCastImplementation::threadPowerModeChangeEvent,&_parent);
                         powerModeChangeThread.detach();
                     }
@@ -263,7 +263,6 @@ namespace WPEFramework
 
         private:
             static XCastManager* m_xcast_manager;
-            guint m_FriendlyNameUpdateTimerID{0};
             TpTimer m_locateCastTimer;
             
             WPEFramework::JSONRPC::LinkType<WPEFramework::Core::JSON::IElement> *m_SystemPluginObj = NULL;
@@ -321,7 +320,7 @@ namespace WPEFramework
             
             void getSystemPlugin();
             int updateSystemFriendlyName();
-            static gboolean update_friendly_name_timercallback(gpointer userdata);
+            void threadSystemFriendlyNameChangeEvent(void);
             void onFriendlyNameUpdateHandler(const JsonObject& parameters);
             
             void onXcastUpdatePowerStateRequest(string powerState);
