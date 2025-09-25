@@ -33,7 +33,7 @@ git clone --branch R4.4.1 https://github.com/rdkcentral/Thunder.git
 
 git clone --branch develop https://github.com/rdkcentral/entservices-apis.git
 
-git clone https://$GITHUB_TOKEN@github.com/rdkcentral/entservices-testframework.git
+git clone --branch develop https://$GITHUB_TOKEN@github.com/rdkcentral/entservices-testframework.git
 
 ############################
 # Build Thunder-Tools
@@ -83,6 +83,7 @@ cmake --build build/Thunder --target install
 echo "======================================================================================"
 echo "buliding entservices-apis"
 cd entservices-apis
+cp -rvf $GITHUB_WORKSPACE/entservices-testframework/interfaceFiles/* $GITHUB_WORKSPACE/entservices-apis/apis/
 rm -rf jsonrpc/DTV.json
 cd ..
 
