@@ -146,7 +146,7 @@ namespace WPEFramework
                         powerModeChangeThread.detach();
                     }
 
-                    void OnNetworkStandbyModeChanged(const bool enabled)
+                    void OnNetworkStandbyModeChanged(const bool enabled) override
                     {
                         _parent.m_networkStandbyMode = enabled;
                         LOGWARN("creating worker thread for threadNetworkStandbyModeChangeEvent Mode :%u", _parent.m_networkStandbyMode);
