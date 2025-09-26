@@ -22,159 +22,315 @@
 #include "Module.h"
 #include <interfaces/Ids.h>
 #include <interfaces/IXCast.h>
+#include <interfaces/IPowerManager.h>
 #include <interfaces/IConfiguration.h>
-#include "tracing/Logging.h"
+#include <interfaces/INetworkManager.h>
+ 
+#include <com/com.h>
+#include <core/core.h>
+#include <mutex>
+#include <vector>
+#include <glib.h> 
+
 #include "XCastManager.h"
 #include "XCastNotifier.h"
-#include <vector>
 
-namespace WPEFramework {
-namespace Plugin {
+#include "libIBus.h"
+#include "PowerManagerInterface.h"
 
-    class XCastImplementation : public Exchange::IXCast, public PluginHost::IStateControl, public XCastNotifier {
-    public:
-        enum PluginState
+
+#define SYSTEM_CALLSIGN "org.rdk.System"
+#define SYSTEM_CALLSIGN_VER SYSTEM_CALLSIGN".1"
+#define SECURITY_TOKEN_LEN_MAX 1024
+
+using PowerState = WPEFramework::Exchange::IPowerManager::PowerState;
+
+namespace WPEFramework
+{
+    namespace Plugin
+    {
+        WPEFramework::Exchange::IPowerManager::PowerState m_powerState = WPEFramework::Exchange::IPowerManager::POWER_STATE_STANDBY;
+        class XCastImplementation : public Exchange::IXCast,public Exchange::IConfiguration, public XCastNotifier 
         {
-            PLUGIN_DEACTIVATED,
-            PLUGIN_ACTIVATED
-        };
-
-        enum Event {
-                LAUNCH_REQUEST_WITH_PARAMS,
-                LAUNCH_REQUEST,
-                STOP_REQUEST,
-                HIDE_REQUEST,
-                STATE_REQUEST,
-                RESUME_REQUEST,
-                UPDATE_POWERSTATE
+         public:
+            enum PluginState
+            {
+                PLUGIN_DEACTIVATED,
+                PLUGIN_ACTIVATED
             };
 
-        class EXTERNAL Job : public Core::IDispatch {
-        protected:
-             Job(XCastImplementation *tts, Event event,string callsign,JsonObject &params)
-                : _xcast(tts)
-                , _event(event)
-                , _callsign(callsign)
-                , _params(params) {
-                if (_xcast != nullptr) {
-                    _xcast->AddRef();
-                }
-            }
+             // We do not allow this plugin to be copied !!
+             XCastImplementation();
+             ~XCastImplementation() override;
 
-       public:
-            Job() = delete;
-            Job(const Job&) = delete;
-            Job& operator=(const Job&) = delete;
-            ~Job() {
-                if (_xcast != nullptr) {
-                    _xcast->Release();
-                }
-            }
+              enum Event {
+                    LAUNCH_REQUEST_WITH_PARAMS,
+                    LAUNCH_REQUEST,
+                    STOP_REQUEST,
+                    HIDE_REQUEST,
+                    STATE_REQUEST,
+                    RESUME_REQUEST,
+                    UPDATE_POWERSTATE
+            };
+ 
+             static XCastImplementation *instance(XCastImplementation *XCastImpl = nullptr);
+ 
+             // We do not allow this plugin to be copied !!
+             XCastImplementation(const XCastImplementation &) = delete;
+             XCastImplementation &operator=(const XCastImplementation &) = delete;
 
-       public:
-            static Core::ProxyType<Core::IDispatch> Create(XCastImplementation *tts, Event event,string callsign,JsonObject params) {
-#ifndef USE_THUNDER_R4
-                return (Core::proxy_cast<Core::IDispatch>(Core::ProxyType<Job>::Create(tts, event, callsign, params)));
-#else
-                return (Core::ProxyType<Core::IDispatch>(Core::ProxyType<Job>::Create(tts, event, callsign, params)));
-#endif
-            }
+        public:
+             class EXTERNAL Job : public Core::IDispatch {
+                protected:
+                    Job(XCastImplementation *tts, Event event,string callsign,JsonObject &params)
+                        : _xcast(tts)
+                        , _event(event)
+                        , _callsign(callsign)
+                        , _params(params) {
+                        if (_xcast != nullptr) {
+                            _xcast->AddRef();
+                        }
+                    }
 
-            virtual void Dispatch() {
-                _xcast->Dispatch(_event, _callsign, _params);
-            }
+                public:
+                    Job() = delete;
+                    Job(const Job&) = delete;
+                    Job& operator=(const Job&) = delete;
+                    ~Job() {
+                        if (_xcast != nullptr) {
+                            _xcast->Release();
+                        }
+                    }
+
+                public:
+                    static Core::ProxyType<Core::IDispatch> Create(XCastImplementation *tts, Event event,string callsign,JsonObject params) {
+                        #ifndef USE_THUNDER_R4
+                            return (Core::proxy_cast<Core::IDispatch>(Core::ProxyType<Job>::Create(tts, event, callsign, params)));
+                        #else
+                            return (Core::ProxyType<Core::IDispatch>(Core::ProxyType<Job>::Create(tts, event, callsign, params)));
+                        #endif
+                    }
+
+                    virtual void Dispatch() {
+                        _xcast->Dispatch(_event, _callsign, _params);
+                    }
+
+                private:
+                    XCastImplementation *_xcast;
+                    const Event _event;
+                    const string _callsign;
+                    const JsonObject _params;
+            };
 
         private:
-            XCastImplementation *_xcast;
-            const Event _event;
-            const string _callsign;
-            const JsonObject _params;
-        };
+            class PowerManagerNotification : public Exchange::IPowerManager::INetworkStandbyModeChangedNotification,
+                                                     public Exchange::IPowerManager::IModeChangedNotification {
+                private:
+                    PowerManagerNotification(const PowerManagerNotification&) = delete;
+                    PowerManagerNotification& operator=(const PowerManagerNotification&) = delete;
 
-    public:
-        // We do not allow this plugin to be copied !!
-        XCastImplementation(const XCastImplementation&) = delete;
-        XCastImplementation& operator=(const XCastImplementation&) = delete;
+                public:
+                    explicit PowerManagerNotification(XCastImplementation& parent)
+                    : _parent(parent)
+                    {
+                    }
+                    ~PowerManagerNotification() override = default;
 
-        virtual void Register(Exchange::IXCast::INotification* sink) override ;
-        virtual void Unregister(Exchange::IXCast::INotification* sink) override ;
+                public:
+                    void OnPowerModeChanged(const PowerState currentState, const PowerState newState) override
+                    {
+                        LOGINFO("onPowerModeChanged: State Changed [%d] -- > [%d]",currentState, newState);
+                        m_powerState = newState;
+                        LOGINFO("creating worker thread for threadPowerModeChangeEvent m_powerState :%d",m_powerState);
+                        std::thread powerModeChangeThread = std::thread(&XCastImplementation::threadPowerModeChangeEvent,&_parent);
+                        powerModeChangeThread.detach();
+                    }
 
-        virtual PluginHost::IStateControl::state State() const override { return PluginHost::IStateControl::RESUMED; }
-        virtual uint32_t Request(const command state) override { return Core::ERROR_GENERAL; }
-        virtual void Register(IStateControl::INotification* notification) override {}
-        virtual void Unregister(IStateControl::INotification* notification) override {}
+                    void OnNetworkStandbyModeChanged(const bool enabled) override
+                    {
+                        _parent.m_networkStandbyMode = enabled;
+                        LOGWARN("creating worker thread for threadNetworkStandbyModeChangeEvent Mode :%u", _parent.m_networkStandbyMode);
+                        std::thread networkStandbyModeChangeThread = std::thread(&XCastImplementation::networkStandbyModeChangeEvent,&_parent);
+                        networkStandbyModeChangeThread.detach();
+                    }
 
-        virtual uint32_t Initialize(bool networkStandbyMode) override;
-        virtual void Deinitialize(void) override;
+                    template <typename T>
+                    T* baseInterface()
+                    {
+                        static_assert(std::is_base_of<T, PowerManagerNotification>(), "base type mismatch");
+                        return static_cast<T*>(this);
+                    }
 
-        virtual uint32_t applicationStateChanged(const string& appName, const string& appstate, const string& appId, const string& error) const override;
-        virtual uint32_t enableCastService(string friendlyname,bool enableService) const override;
-        virtual uint32_t getProtocolVersion(string &protocolVersion) const override;
-        virtual uint32_t registerApplications(Exchange::IXCast::IApplicationInfoIterator* const appLists) override;
-        virtual uint32_t setNetworkStandbyMode(bool nwStandbymode) override;
+                    BEGIN_INTERFACE_MAP(PowerManagerNotification)
+                    INTERFACE_ENTRY(Exchange::IPowerManager::INetworkStandbyModeChangedNotification)
+                    INTERFACE_ENTRY(Exchange::IPowerManager::IModeChangedNotification)
+                    END_INTERFACE_MAP
 
-        uint32_t setManufacturerName(string manufacturerName) const override;
-        uint32_t getManufacturerName(std::string &manufacturerName) const override;
-        uint32_t setModelName(string modelName) const override;
-        uint32_t getModelName(std::string &modelName) const override;
+                private:
+                    XCastImplementation& _parent;
+            };
 
-        virtual void onXcastApplicationLaunchRequestWithLaunchParam (string appName, string strPayLoad, string strQuery, string strAddDataUrl) override ;
-        virtual void onXcastApplicationLaunchRequest(string appName, string parameter) override ;
-        virtual void onXcastApplicationStopRequest(string appName, string appId) override ;
-        virtual void onXcastApplicationHideRequest(string appName, string appId) override ;
-        virtual void onXcastApplicationResumeRequest(string appName, string appId) override ;
-        virtual void onXcastApplicationStateRequest(string appName, string appId) override ;
-        virtual void onXcastUpdatePowerStateRequest(string powerState) override;
-        virtual void onGDialServiceStopped(void) override;
+            class NetworkManagerNotification : public Exchange::INetworkManager::INotification
+            {
+                private:
+                    NetworkManagerNotification(const NetworkManagerNotification&) = delete;
+                    NetworkManagerNotification& operator=(const NetworkManagerNotification&) = delete;
 
-        BEGIN_INTERFACE_MAP(XCastImplementation)
+                public:
+                    explicit NetworkManagerNotification(XCastImplementation& parent)
+                    : _parent(parent)
+                    {
+                    }
+                    ~NetworkManagerNotification() override = default;
+
+                public:
+                    void onActiveInterfaceChange(const string prevActiveInterface, const string currentActiveinterface) override
+                    {
+                        LOGINFO("Active interface changed [%s] -- > [%s]",prevActiveInterface.c_str(), currentActiveinterface.c_str());
+                        _parent.onActiveInterfaceChange(std::move(prevActiveInterface), std::move(currentActiveinterface));
+                    }
+
+                    void onIPAddressChange(const string interface, const string ipversion, const string ipaddress, const Exchange::INetworkManager::IPStatus status) override
+                    {
+                        LOGINFO("IP Address changed: Interface [%s] IP Version [%s] Address [%s] Status [%d]", interface.c_str(), ipversion.c_str(), ipaddress.c_str(), status);
+                        _parent.onIPAddressChange(std::move(interface), std::move(ipversion), std::move(ipaddress), status);
+                    }
+
+                    void onInterfaceStateChange(const Exchange::INetworkManager::InterfaceState state, const string interface) override
+                    {
+                        LOGINFO("Interface State Changed: Interface [%s] State [%d]", interface.c_str(), state);
+                    }
+
+                    void onInternetStatusChange(const Exchange::INetworkManager::InternetStatus prevState, const Exchange::INetworkManager::InternetStatus currState, const string interface) override
+                    {
+                        LOGINFO("Internet Status Changed for Interface [%s]: [%d] -- > [%d]", interface.c_str(), prevState, currState);
+                    }
+
+                    void onAvailableSSIDs(const string jsonOfScanResults) override
+                    {
+                        LOGINFO("SSIDs: [%s]", jsonOfScanResults.c_str());
+                    }
+
+                    void onWiFiStateChange(const Exchange::INetworkManager::WiFiState state) override
+                    {
+                        LOGINFO("WiFi State changed: [%d]", state);
+                    }
+
+                    void onWiFiSignalQualityChange(const string ssid, const string strength, const string noise, const string snr, const Exchange::INetworkManager::WiFiSignalQuality quality) override
+                    {
+                        LOGINFO("WiFi Signal Quality changed: SSID [%s] Strength [%s] Noise [%s] SNR [%s] Quality [%d]", ssid.c_str(), strength.c_str(), noise.c_str(), snr.c_str(), quality);
+                    }
+
+                    BEGIN_INTERFACE_MAP(NetworkManagerNotification)
+                    INTERFACE_ENTRY(Exchange::INetworkManager::INotification)
+                    END_INTERFACE_MAP
+
+                private:
+                    XCastImplementation& _parent;
+            };
+ 
+        public:
+            Core::hresult Register(Exchange::IXCast::INotification *notification) override;
+            Core::hresult Unregister(Exchange::IXCast::INotification *notification) override; 
+            
+            Core::hresult SetApplicationState(const string& applicationName, const Exchange::IXCast::State& state, const string& applicationId, const Exchange::IXCast::ErrorCode& error,  Exchange::IXCast::XCastSuccess &success) override;
+            Core::hresult GetProtocolVersion(string &protocolVersion, bool &success) override;
+            Core::hresult SetManufacturerName(const string &manufacturername,  Exchange::IXCast::XCastSuccess &success) override;
+            Core::hresult GetManufacturerName(string &manufacturername, bool &success) override;
+            Core::hresult SetModelName(const string &modelname,  Exchange::IXCast::XCastSuccess &success) override;
+            Core::hresult GetModelName(string &modelname, bool &success) override;
+            Core::hresult SetEnabled(const bool& enabled,  Exchange::IXCast::XCastSuccess &success) override;
+            Core::hresult GetEnabled(bool &enabled , bool &success ) override;
+            Core::hresult SetStandbyBehavior(const Exchange::IXCast::StandbyBehavior &standbybehavior,  Exchange::IXCast::XCastSuccess &success) override;
+            Core::hresult GetStandbyBehavior(Exchange::IXCast::StandbyBehavior &standbybehavior, bool &success) override;
+            Core::hresult SetFriendlyName(const string &friendlyname,  Exchange::IXCast::XCastSuccess &success) override;
+            Core::hresult GetFriendlyName(string &friendlyname , bool &success ) override;
+            Core::hresult RegisterApplications(Exchange::IXCast::IApplicationInfoIterator* const appInfoList,  Exchange::IXCast::XCastSuccess &success) override;
+            Core::hresult UnregisterApplications(Exchange::IXCast::IStringIterator* const apps,  Exchange::IXCast::XCastSuccess &success) override;
+
+            virtual void onXcastApplicationLaunchRequestWithParam (string appName, string strPayLoad, string strQuery, string strAddDataUrl) override ;
+            virtual void onXcastApplicationLaunchRequest(string appName, string parameter) override ;
+            virtual void onXcastApplicationStopRequest(string appName, string appId) override ;
+            virtual void onXcastApplicationHideRequest(string appName, string appId) override ;
+            virtual void onXcastApplicationResumeRequest(string appName, string appId) override ;
+            virtual void onXcastApplicationStateRequest(string appName, string appId) override ;
+            virtual void onGDialServiceStopped(void) override;
+
+            BEGIN_INTERFACE_MAP(XCastImplementation)
             INTERFACE_ENTRY(Exchange::IXCast)
-            INTERFACE_ENTRY(PluginHost::IStateControl)
-        END_INTERFACE_MAP
+            INTERFACE_ENTRY(Exchange::IConfiguration)
+            END_INTERFACE_MAP
 
-    private:
-        static XCastManager* m_xcast_manager;
-        mutable Core::CriticalSection _adminLock;
-        TpTimer m_locateCastTimer;
-        WPEFramework::JSONRPC::LinkType<WPEFramework::Core::JSON::IElement> *m_ControllerObj = nullptr;
-        WPEFramework::JSONRPC::LinkType<WPEFramework::Core::JSON::IElement> *m_NetworkPluginObj = nullptr;
-        PluginState _networkPluginState;
-        std::list<Exchange::IXCast::INotification*> _notificationClients;
-        static XCastImplementation* _instance;
-        bool m_networkStandbyMode{false};
-        PluginHost::IShell* mShell;
-        
-        void dispatchEvent(Event,string callsign, const JsonObject &params);
-        void Dispatch(Event event,string callsign, const JsonObject params);
+        private:
+            static XCastManager* m_xcast_manager;
+            TpTimer m_locateCastTimer;
+            
+            WPEFramework::JSONRPC::LinkType<WPEFramework::Core::JSON::IElement> *m_SystemPluginObj = NULL;
+            PluginHost::IShell* _service;
 
-        void dumpDynamicAppCacheList(string strListName, std::vector<DynamicAppConfig*> appConfigList);
+            PowerManagerInterfaceRef _powerManagerPlugin;
+            Core::Sink<PowerManagerNotification> _pwrMgrNotification;
+            void threadPowerModeChangeEvent(void);
+            void networkStandbyModeChangeEvent(void);
+            static bool m_xcastEnable;
+            static bool m_standbyBehavior;
+            bool m_networkStandbyMode;
+            bool _registeredPowerEventHandlers;
+            bool _registeredNMEventHandlers;
 
-        void onLocateCastTimer();
-        void startTimer(int interval);
-        void stopTimer();
-        bool isTimerActive();
+        private:
+            Exchange::INetworkManager* _networkManagerPlugin;
+            mutable Core::CriticalSection _adminLock;
+             
+            std::list<Exchange::IXCast::INotification *> _xcastNotification; // List of registered notifications
+            Core::Sink<NetworkManagerNotification> _networkManagerNotification;
 
-        std::string getSecurityToken();
-        void getThunderPlugins();
-        int activatePlugin(string callsign);
-        int deactivatePlugin(string callsign);
-        bool isPluginActivated(string callsign);
-        void eventHandler_onDefaultInterfaceChanged(const JsonObject& parameters);
-        void eventHandler_ipAddressChanged(const JsonObject& parameters);
-        void eventHandler_pluginState(const JsonObject& parameters);
+            void dumpDynamicAppCacheList(string strListName, std::vector<DynamicAppConfig*>& appConfigList);
+            bool deleteFromDynamicAppCache(vector<string>& appsToDelete);
 
-        bool connectToGDialService(void);
-        bool getDefaultNameAndIPAddress(std::string& interface, std::string& ipaddress);
-        void updateNWConnectivityStatus(std::string nwInterface, bool nwConnected, std::string ipaddress = "");
+            void dispatchEvent(Event,string callsign, const JsonObject &params);
+            void Dispatch(Event event,string callsign, const JsonObject params);
 
-        // IConfiguration interface
-        uint32_t Configure(PluginHost::IShell* shell);
+            uint32_t Initialize(bool networkStandbyMode);
+            void Deinitialize(void);
 
-    public:
-        XCastImplementation();
-        virtual ~XCastImplementation();
+            void onActiveInterfaceChange(const string prevActiveInterface, const string currentActiveinterface);
+            void onIPAddressChange(const string interface, const string ipversion, const string ipaddress, const Exchange::INetworkManager::IPStatus status);
 
-        friend class Job;
-    };
-} // namespace Plugin
+            void onLocateCastTimer();
+            void startTimer(int interval);
+            void stopTimer();
+            bool isTimerActive();
+
+            void registerPowerEventHandlers();
+            void unregisterPowerEventHandlers();
+            void checkPowerAndNetworkStandbyStates();
+            void InitializePowerManager(PluginHost::IShell *service);
+
+            void registerNetworkEventHandlers();
+            void unregisterNetworkEventHandlers();
+            void InitializeNetworkManager(PluginHost::IShell *service);
+            string getInterfaceNameToType(const string & interface);
+
+            bool connectToGDialService(void);
+            bool getDefaultNameAndIPAddress(std::string& interface, std::string& ipaddress);
+            void updateNWConnectivityStatus(std::string nwInterface, bool nwConnected, std::string ipaddress = "");
+            uint32_t enableCastService(string friendlyname,bool enableService);
+            uint32_t Configure(PluginHost::IShell* shell);
+            
+            void getSystemPlugin();
+            int updateSystemFriendlyName();
+            void threadSystemFriendlyNameChangeEvent(void);
+            void onFriendlyNameUpdateHandler(const JsonObject& parameters);
+            
+            void onXcastUpdatePowerStateRequest(string powerState);
+            uint32_t SetNetworkStandbyMode(bool networkStandbyMode);
+            bool setPowerState(const std::string& powerState);
+            void updateDynamicAppCache(Exchange::IXCast::IApplicationInfoIterator* const appInfoList);
+            
+        public:
+            static XCastImplementation* _instance;
+            friend class Job;
+        };
+    } // namespace Plugin
 } // namespace WPEFramework

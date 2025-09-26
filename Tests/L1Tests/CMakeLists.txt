@@ -108,27 +108,16 @@ endmacro()
 
 # PLUGIN_MIRACAST
 set (MIRACAST_INC ${CMAKE_SOURCE_DIR}/../entservices-casting/Miracast/MiracastPlayer ${CMAKE_SOURCE_DIR}/../entservices-casting/Miracast/MiracastPlayer/RTSP ${CMAKE_SOURCE_DIR}/../entservices-casting/Miracast/MiracastService ${CMAKE_SOURCE_DIR}/../entservices-casting/Miracast/MiracastService/P2P ${CMAKE_SOURCE_DIR}/../entservices-casting/Miracast/common ${CMAKE_SOURCE_DIR}/../entservices-casting/helpers)
-set (MIRACAST_LIBS ${NAMESPACE}MiracastPlayer ${NAMESPACE}MiracastService)
+set (MIRACAST_LIBS ${NAMESPACE}MiracastPlayer ${NAMESPACE}MiracastService ${NAMESPACE}MiracastServiceImplementation ${NAMESPACE}MiracastPlayerImplementation)
 set (MIRACAST_SRC tests/test_MiracastService.cpp tests/test_MiracastPlayer.cpp)
 add_plugin_test_ex(PLUGIN_MIRACAST "${MIRACAST_SRC}" "${MIRACAST_INC}" "${MIRACAST_LIBS}")
 
 # PLUGIN_XCAST
 set (XCAST_INC ${CMAKE_SOURCE_DIR}/../entservices-casting/XCast ${CMAKE_SOURCE_DIR}/../entservices-casting/helpers)
-set (XCAST_LIBS ${NAMESPACE}XCast)
+set (XCAST_LIBS ${NAMESPACE}XCast ${NAMESPACE}XCastImplementation)
 add_plugin_test_ex(PLUGIN_XCAST tests/test_XCast.cpp "${XCAST_INC}" "${XCAST_LIBS}")
 
 add_library(${MODULE_NAME} SHARED ${TEST_SRC})
-
-if (RDK_SERVICES_L1_TEST)
-   find_library(TESTMOCKLIB_LIBRARIES NAMES L1TestMocklib)
-   if (TESTMOCKLIB_LIBRARIES)
-       message ("Found mock libraries ${TESTMOCKLIB_LIBRARIES} library")
-       target_link_libraries(${MODULE_NAME} ${TESTMOCKLIB_LIBRARIES})
-   else (TESTMOCKLIB_LIBRARIES)
-       message ("Require ${TESTMOCKLIB_LIBRARIES} library")
-   endif (TESTMOCKLIB_LIBRARIES)
-endif (RDK_SERVICES_L1_TEST)
-
 
 include_directories(${TEST_INC})
 
