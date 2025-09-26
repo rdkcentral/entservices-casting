@@ -207,6 +207,11 @@ jobs:
           #token : ${{ secrets.RDKCM_RDKE }}
           run: rm -rf $GITHUB_WORKSPACE/entservices-apis/jsonrpc/DTV.json
 
+      - name: Apply patches entservices-apis
+        run: |
+          cd $GITHUB_WORKSPACE/entservices-apis
+          cp -rvf $GITHUB_WORKSPACE/entservices-testframework/interfaceFiles/* $GITHUB_WORKSPACE/entservices-apis/apis/
+          cd -
 
       - name: Build entservices-apis
         run: >
@@ -450,6 +455,7 @@ jobs:
           -DUSE_THUNDER_R4=ON
           -DHIDE_NON_EXTERNAL_SYMBOLS=OFF
           -DPLUGIN_MIRACAST=ON
+          -DPLUGIN_XCAST=ON
           &&
           cmake --build build/entservices-casting -j8
           &&
@@ -521,6 +527,7 @@ jobs:
           -DCMAKE_BUILD_TYPE=Debug
           -DDS_FOUND=ON
           -DPLUGIN_MIRACAST=ON
+          -DPLUGIN_XCAST=ON
           -DRDK_SERVICES_L1_TEST=ON
           -DUSE_THUNDER_R4=ON
           -DHIDE_NON_EXTERNAL_SYMBOLS=OFF
