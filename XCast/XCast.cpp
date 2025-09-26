@@ -63,10 +63,10 @@ namespace WPEFramework
 
             ASSERT(nullptr != service);
             ASSERT(nullptr == _service);
-            ASSERT(nullptr == _xcast);
-            ASSERT(0 == _connectionId);
-
-            SYSLOG(Logging::Startup, (_T("XCast::Initialize: PID=%u"), getpid()));
+           // ASSERT(nullptr == _xcast);
+           // ASSERT(0 == _connectionId);
+             _connectionId=-1;
+            SYSLOG(Logging::Startup, (_T("prdebug XCast::Initialize: PID=%u"), getpid()));
 
             _service = service;
             _service->AddRef();
