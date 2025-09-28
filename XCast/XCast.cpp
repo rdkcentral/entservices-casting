@@ -65,8 +65,11 @@ namespace WPEFramework
             ASSERT(nullptr != service);
             ASSERT(nullptr == _service);
             ASSERT(nullptr == _xcast);
-             SYSLOG(Logging::Startup, (_T("preeja XCast::Initialize:just before connection id")));
-            ASSERT(0 == _connectionId);
+            SYSLOG(Logging::Startup, (_T("preeja XCast::Initialize:just before connection id")));
+            If (connectionId != 0 ) {
+                SYSLOG(Logging::Startup, (_T("Failed to do the initialize")));
+                return message;
+            }
             
             SYSLOG(Logging::Startup, (_T("prdebug XCast::Initialize: PID=%u"), getpid()));
 
