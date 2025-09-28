@@ -60,11 +60,12 @@ namespace WPEFramework
         const string XCast::Initialize(PluginHost::IShell *service)
         {
             string message = "";
-
+             SYSLOG(Logging::Startup, (_T("preeja XCast::Initialize:IN)));
              _connectionId=-1;
             ASSERT(nullptr != service);
             ASSERT(nullptr == _service);
             ASSERT(nullptr == _xcast);
+             SYSLOG(Logging::Startup, (_T("preeja XCast::Initialize:just before connection id)));
             ASSERT(0 == _connectionId);
             
             SYSLOG(Logging::Startup, (_T("prdebug XCast::Initialize: PID=%u"), getpid()));
