@@ -61,11 +61,12 @@ namespace WPEFramework
         {
             string message = "";
 
+             _connectionId=-1;
             ASSERT(nullptr != service);
             ASSERT(nullptr == _service);
-           // ASSERT(nullptr == _xcast);
-           // ASSERT(0 == _connectionId);
-             _connectionId=-1;
+            ASSERT(nullptr == _xcast);
+            ASSERT(0 == _connectionId);
+            
             SYSLOG(Logging::Startup, (_T("prdebug XCast::Initialize: PID=%u"), getpid()));
 
             _service = service;
