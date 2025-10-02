@@ -60,13 +60,18 @@ namespace WPEFramework
         const string XCast::Initialize(PluginHost::IShell *service)
         {
             string message = "";
-
+             SYSLOG(Logging::Startup, (_T("preeja XCast::Initialize:IN")));
+             _connectionId=-1;
             ASSERT(nullptr != service);
             ASSERT(nullptr == _service);
             ASSERT(nullptr == _xcast);
-            ASSERT(0 == _connectionId);
-
-            SYSLOG(Logging::Startup, (_T("XCast::Initialize: PID=%u"), getpid()));
+            SYSLOG(Logging::Startup, (_T("preeja XCast::Initialize:just before connection id")));
+            If (connectionId != 0 ) {
+                SYSLOG(Logging::Startup, (_T("Failed to do the initialize")));
+                return message;
+            }
+            
+            SYSLOG(Logging::Startup, (_T("prdebug XCast::Initialize: PID=%u"), getpid()));
 
             _service = service;
             _service->AddRef();
