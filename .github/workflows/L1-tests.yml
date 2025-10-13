@@ -323,6 +323,9 @@ jobs:
           &&
           cmake --install build/googletest
 
+      - name: Install GDB
+        run: sudo apt-get update && sudo apt-get install -y gdb
+    
       - name: Build mocks
         run: >
           cmake
@@ -460,6 +463,19 @@ jobs:
           cmake --build build/entservices-casting -j8
           &&
           cmake --install build/entservices-casting
+          &&
+          gdb -batch \
+          -ex "file build/entservices-casting/PLUGIN_XCAST_test" \
+          -ex "run" \
+          -ex "bt" \
+          -ex "quit" \
+          > gdb_output.txt || true
+      
+      - name: Upload GDB Output
+        uses: actions/upload-artifact@v3
+        with:
+          name: gdb-log
+          path: gdb_output.txt
 
       - name: Build entservices-testframework
         run: >
