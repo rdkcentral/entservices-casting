@@ -463,19 +463,6 @@ jobs:
           cmake --build build/entservices-casting -j8
           &&
           cmake --install build/entservices-casting
-          &&
-          gdb -batch \
-          -ex "file build/entservices-casting/PLUGIN_XCAST_test" \
-          -ex "run" \
-          -ex "bt" \
-          -ex "quit" \
-          > gdb_output.txt || true
-      
-      - name: Upload GDB Output
-        uses: actions/upload-artifact@v4
-        with:
-          name: gdb-log
-          path: gdb_output.txt
 
       - name: Build entservices-testframework
         run: >
@@ -662,7 +649,20 @@ jobs:
           RdkServicesL1Test &&
           cp -rf $(pwd)/rdkL1TestResults.json $GITHUB_WORKSPACE/rdkL1TestResultsWithValgrind.json &&
           rm -rf $(pwd)/rdkL1TestResults.json
+          &&
+          gdb -batch \
+          -ex "file RdkServicesL1Test" \
+          -ex "run" \
+          -ex "bt" \
+          -ex "quit" \
+          > gdb_output.txt || true
 
+      - name: Upload GDB Output
+        uses: actions/upload-artifact@v4
+        with:
+          name: gdb-log
+          path: gdb_output.txt
+      
       - name: Generate coverage
         if: ${{ matrix.coverage == 'with-coverage' && !env.ACT }}
         run: >
