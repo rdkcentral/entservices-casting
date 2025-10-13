@@ -472,7 +472,7 @@ jobs:
           > gdb_output.txt || true
       
       - name: Upload GDB Output
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: gdb-log
           path: gdb_output.txt
