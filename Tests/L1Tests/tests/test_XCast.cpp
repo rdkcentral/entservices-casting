@@ -548,9 +548,6 @@ TEST_F(XCastTest, unRegisterAllApplications)
     EXPECT_EQ(Core::ERROR_NONE, mJsonRpcHandler.Invoke(connection, _T("unregisterApplications"), _T("{\"applications\": [\"Youtube\"]}"), response));
     EXPECT_EQ(response, string("{\"success\":true}"));
 
-    GDialNotifier* gdialNotifier = gdialService::getObserverHandle();
-    ASSERT_NE(gdialNotifier, nullptr);
-    gdialNotifier->onStopped();
     wg.Wait();
 
     if (Core::ERROR_NONE == status)
@@ -839,6 +836,82 @@ TEST_F(XCastTest, onPowerManagerEvents)
     WaitGroup wg;
     wg.Add();
 
+    EXPECT_CALL(*p_gdialserviceImplMock, RegisterApplications(::testing::_))
+        .Times(3)
+        .WillOnce(::testing::Invoke([](RegisterAppEntryList* appConfigList)
+            {
+                int i = 0;
+                if (nullptr == appConfigList ) {
+                    TEST_LOG("appConfigList is NULL");
+                    return GDIAL_SERVICE_INVALID_PARAM_ERROR;
+                }
+                for (RegisterAppEntry* appEntry : appConfigList->getValues())
+                {
+                    TEST_LOG("Current Index: %d", i);
+                    TEST_LOG("Names[%s]Prefix[%s]Cors[%s]AllowStop[%d]",appEntry->Names.c_str(),appEntry->prefixes.c_str(),appEntry->cors.c_str(),appEntry->allowStop);
+                    if (0 == i)
+                    {
+                        EXPECT_EQ(appEntry->Names, string("Youtube"));
+                        EXPECT_EQ(appEntry->prefixes, string("myYouTube"));
+                        EXPECT_EQ(appEntry->cors, string(".youtube.com"));
+                        EXPECT_EQ(appEntry->allowStop, 1 );
+                    }
+                    else if (1 == i)
+                    {
+                        EXPECT_EQ(appEntry->Names, string("Netflix"));
+                        EXPECT_EQ(appEntry->prefixes, string("myNetflix"));
+                        EXPECT_EQ(appEntry->cors, string(".netflix.com"));
+                        EXPECT_EQ(appEntry->allowStop, 0 );
+                    }
+                    ++i;
+                }
+                return GDIAL_SERVICE_ERROR_NONE;
+            }))
+        .WillOnce(::testing::Invoke([](RegisterAppEntryList* appConfigList)
+            {
+                int i = 0;
+                if (nullptr == appConfigList ) {
+                    TEST_LOG("appConfigList is NULL");
+                    return GDIAL_SERVICE_INVALID_PARAM_ERROR;
+                }
+                for (RegisterAppEntry* appEntry : appConfigList->getValues())
+                {
+                    TEST_LOG("Current Index: %d", i);
+                    TEST_LOG("Names[%s]Prefix[%s]Cors[%s]AllowStop[%d]",appEntry->Names.c_str(),appEntry->prefixes.c_str(),appEntry->cors.c_str(),appEntry->allowStop);
+                    if (0 == i)
+                    {
+                        EXPECT_EQ(appEntry->Names, string("Netflix"));
+                        EXPECT_EQ(appEntry->prefixes, string("myNetflix"));
+                        EXPECT_EQ(appEntry->cors, string(".netflix.com"));
+                        EXPECT_EQ(appEntry->allowStop, 0);
+                    }
+                    ++i;
+                }
+                return GDIAL_SERVICE_ERROR_NONE;
+            }))
+        .WillOnce(::testing::Invoke([](RegisterAppEntryList* appConfigList)
+            {
+                int i = 0;
+                if (nullptr == appConfigList ) {
+                    TEST_LOG("appConfigList is NULL");
+                    return GDIAL_SERVICE_INVALID_PARAM_ERROR;
+                }
+                for (RegisterAppEntry* appEntry : appConfigList->getValues())
+                {
+                    TEST_LOG("Current Index: %d", i);
+                    TEST_LOG("Names[%s]Prefix[%s]Cors[%s]AllowStop[%d]",appEntry->Names.c_str(),appEntry->prefixes.c_str(),appEntry->cors.c_str(),appEntry->allowStop);
+                    if (0 == i)
+                    {
+                        EXPECT_EQ(appEntry->Names, string("Netflix"));
+                        EXPECT_EQ(appEntry->prefixes, string("myNetflix"));
+                        EXPECT_EQ(appEntry->cors, string(".netflix.com"));
+                        EXPECT_EQ(appEntry->allowStop, 0);
+                    }
+                    ++i;
+                }
+                return GDIAL_SERVICE_ERROR_NONE;
+            }));
+
     EXPECT_CALL(PowerManagerMock::Mock(), GetPowerState(::testing::_, ::testing::_))
         .Times(::testing::AnyNumber())
         .WillRepeatedly(::testing::Invoke(
@@ -892,8 +965,19 @@ TEST_F(XCastTest, onPowerManagerEvents)
     EXPECT_EQ(Core::ERROR_NONE, mJsonRpcHandler.Invoke(connection, _T("getEnabled"), _T("{}"), response));
     EXPECT_EQ(response, string("{\"enabled\":true,\"success\":true}"));
 
+    EXPECT_EQ(Core::ERROR_NONE, mJsonRpcHandler.Invoke(connection, _T("registerApplications"), _T("{\"applications\": [{\"name\": \"Youtube\",\"prefix\": \"myYouTube\",\"cors\": \".youtube.com\",\"query\": \"source_type=12\",\"payload\": \"youtube_payload\",\"allowStop\": 1 },{\"name\": \"Netflix\",\"prefix\": \"myNetflix\",\"cors\": \".netflix.com\",\"query\": \"source_type=12\",\"payload\": \"netflix_payload\",\"allowStop\": 0}]}"), response));
+    EXPECT_EQ(response, string("{\"success\":true}"));
+
+    EXPECT_EQ(Core::ERROR_NONE, mJsonRpcHandler.Invoke(connection, _T("unregisterApplications"), _T("{\"applications\": [\"Youtube\"]}"), response));
+    EXPECT_EQ(response, string("{\"success\":true}"));
+
     ASSERT_NE(_networkStandbyModeChangedNotification, nullptr);
     ASSERT_NE(_modeChangedNotification, nullptr);
+
+    // Added to trigger registerApplication handling based on timer
+    ASSERT_NE(_networkManagerNotification, nullptr);
+    _networkManagerNotification->onActiveInterfaceChange("eth0", "wlan0");
+    usleep(50);
 
     _networkStandbyModeChangedNotification->OnNetworkStandbyModeChanged(true);
     usleep(50);

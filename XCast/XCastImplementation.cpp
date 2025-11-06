@@ -74,7 +74,6 @@ namespace WPEFramework
         static bool m_isDynamicRegistrationsRequired = false;
 
         static bool m_is_restart_req = false;
-        static int m_sleeptime = 1;
 
         XCastImplementation::XCastImplementation()
         : _service(nullptr),
@@ -437,7 +436,6 @@ namespace WPEFramework
             LOGINFO(" threadPowerModeChangeEvent m_standbyBehavior:%d , m_powerState:%d ",m_standbyBehavior,m_powerState);
             if(m_powerState == WPEFramework::Exchange::IPowerManager::POWER_STATE_ON)
             {
-                m_sleeptime = 1;
                 if (m_is_restart_req)
                 {
                     Deinitialize();
@@ -448,7 +446,6 @@ namespace WPEFramework
             }
             else if (m_powerState == WPEFramework::Exchange::IPowerManager::POWER_STATE_STANDBY_DEEP_SLEEP )
             {
-                m_sleeptime = 3;
                 m_is_restart_req = true; //After DEEPSLEEP, restart xdial again for next transition.
             }
 
@@ -534,12 +531,6 @@ namespace WPEFramework
             JsonObject params;
             params["powerstate"]  = powerState.c_str();
             setPowerState(powerState);
-        }
-
-        void XCastImplementation::onGDialServiceStopped(void)
-        {
-            LOGINFO("Timer triggered to monitor the GDial, check after 5sec");
-            startTimer(LOCATE_CAST_FIRST_TIMEOUT_IN_MILLIS);
         }
 
         bool XCastImplementation::connectToGDialService(void)
@@ -1297,7 +1288,6 @@ namespace WPEFramework
                 else
                 {
                     LOGINFO("changing power state [%d] -> [%d] success",cur_powerState,new_powerState);
-                    sleep(m_sleeptime);
                 }
             }
             return ret;
