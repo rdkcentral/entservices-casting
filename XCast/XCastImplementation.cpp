@@ -162,6 +162,9 @@ namespace WPEFramework
                         startTimer(LOCATE_CAST_FIRST_TIMEOUT_IN_MILLIS);
                     }
                 }
+                else {
+                    LOGERR("Failed to get XCastManager instance");
+                }
             }
             LOGINFO("Exiting ..!!!");
             return Core::ERROR_NONE;
@@ -685,19 +688,20 @@ namespace WPEFramework
                 stopTimer();
             }
 
-            if ((NULL != m_xcast_manager) && m_isDynamicRegistrationsRequired )
+            if (nullptr != m_xcast_manager)
             {
-                std::vector<DynamicAppConfig*> appConfigList;
-                lock_guard<mutex> lck(m_appConfigMutex);
-                appConfigList = m_appConfigCache;
-                dumpDynamicAppCacheList(string("CachedAppsFromTimer"), appConfigList);
-                LOGINFO("> calling registerApplications");
-                m_xcast_manager->registerApplications (appConfigList);
+                LOGINFO("isDynamicRegistrationsRequired[%u]",m_isDynamicRegistrationsRequired);
+                if (m_isDynamicRegistrationsRequired)
+                {
+                    std::vector<DynamicAppConfig*> appConfigList;
+                    lock_guard<mutex> lck(m_appConfigMutex);
+                    appConfigList = m_appConfigCache;
+                    dumpDynamicAppCacheList(string("CachedAppsFromTimer"), appConfigList);
+                    LOGINFO("> calling registerApplications");
+                    m_xcast_manager->registerApplications (appConfigList);
+                }
+                m_xcast_manager->enableCastService(friendlyNameCache,xcastEnableCache);
             }
-            else {
-                LOGINFO("m_xcast_manager: %p: m_isDynamicRegistrationsRequired[%u]",m_xcast_manager,m_isDynamicRegistrationsRequired);
-            }
-            m_xcast_manager->enableCastService(friendlyNameCache,xcastEnableCache);
             LOGINFO("Timer still active ? %d ",m_locateCastTimer.isActive());
             LOGINFO("Timer Exiting ...");
         }
@@ -1195,7 +1199,9 @@ namespace WPEFramework
             dumpDynamicAppCacheList(string("m_appConfigCache"), appConfigList);
             lock_guard<mutex> lck(m_appConfigMutex);
             //Pass the dynamic cache to xdial process
-            m_xcast_manager->registerApplications(m_appConfigCache);
+            if (nullptr != m_xcast_manager) {
+                m_xcast_manager->registerApplications(m_appConfigCache);
+            }
 
             LOGINFO("m_xcastEnable[%d] m_standbyBehavior[%d] m_powerState[%d]", m_xcastEnable, m_standbyBehavior, m_powerState);
             /*Reenabling cast service after registering Applications*/
@@ -1235,7 +1241,9 @@ namespace WPEFramework
                 appConfigList = m_appConfigCache;
             }
             dumpDynamicAppCacheList(string("m_appConfigCache"), appConfigList);
-            m_xcast_manager->registerApplications(appConfigList);
+            if (nullptr != m_xcast_manager) {
+                m_xcast_manager->registerApplications(appConfigList);
+            }
 
             LOGINFO("m_xcastEnable[%d] m_standbyBehavior[%d] m_powerState[%d]", m_xcastEnable, m_standbyBehavior, m_powerState);
             /*Reenabling cast service after registering Applications*/
