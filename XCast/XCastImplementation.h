@@ -254,7 +254,6 @@ namespace WPEFramework
             virtual void onXcastApplicationHideRequest(string appName, string appId) override ;
             virtual void onXcastApplicationResumeRequest(string appName, string appId) override ;
             virtual void onXcastApplicationStateRequest(string appName, string appId) override ;
-            virtual void onGDialServiceStopped(void) override;
 
             BEGIN_INTERFACE_MAP(XCastImplementation)
             INTERFACE_ENTRY(Exchange::IXCast)

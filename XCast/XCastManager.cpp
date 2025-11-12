@@ -94,14 +94,6 @@ void XCastManager::onApplicationStateRequest(string appName, string appID)
     }
 }
 
-void XCastManager::onStopped(void)
-{
-    if ( nullptr != m_observer )
-    {
-        m_observer->onGDialServiceStopped();
-    }
-}
-
 void XCastManager::updatePowerState(string powerState)
 {
     if ( nullptr != m_observer )
