@@ -26,7 +26,6 @@ using namespace std;
 class XCastNotifier
 {
 public:
-    virtual void onGDialServiceStopped(void)=0;
     virtual void onXcastApplicationLaunchRequest(string appName, string parameter)=0;
     virtual void onXcastApplicationLaunchRequestWithParam (string appName,string strPayLoad, string strQuery, string strAddDataUrl)=0;
     virtual void onXcastApplicationStopRequest(string appName, string appID)=0;
