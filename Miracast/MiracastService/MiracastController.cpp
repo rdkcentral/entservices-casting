@@ -952,7 +952,7 @@ void MiracastController::Controller_Thread(void *args)
                                         authType = "pbc",
                                         deviceType = "unknown",
                                         result = "";
-                            m_groupInfo = new GroupInfo;
+                            m_groupInfo = new GroupInfo();
                             size_t found = event_buffer.find("client");
                             size_t found_space = event_buffer.find(" ");
 
@@ -1004,7 +1004,6 @@ void MiracastController::Controller_Thread(void *args)
                                 std::string default_gw_ip = "";
 
                                 // STB is a client in the p2p group
-                                m_groupInfo->isGO = false;
                                 m_groupInfo->localIPAddr = start_DHCPClient(m_groupInfo->interface, default_gw_ip);
                                 if (m_groupInfo->localIPAddr.empty())
                                 {

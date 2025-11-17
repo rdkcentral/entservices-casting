@@ -125,6 +125,18 @@ typedef struct group_info
     std::string ipMask;
     std::string srcDevIPAddr;
     std::string localIPAddr;
+    
+    // Constructor to ensure proper initialization
+    group_info() 
+        : interface("")
+        , isGO(false)
+        , SSID("")
+        , goDevAddr("")
+        , ipAddr("")
+        , ipMask("")
+        , srcDevIPAddr("")
+        , localIPAddr("")
+    {}
 } GroupInfo;
 
 typedef enum msg_type_e
