@@ -548,9 +548,11 @@ TEST_F(XCastTest, unRegisterAllApplications)
     EXPECT_EQ(Core::ERROR_NONE, mJsonRpcHandler.Invoke(connection, _T("unregisterApplications"), _T("{\"applications\": [\"Youtube\"]}"), response));
     EXPECT_EQ(response, string("{\"success\":true}"));
 
-    GDialNotifier* gdialNotifier = gdialService::getObserverHandle();
-    ASSERT_NE(gdialNotifier, nullptr);
-    gdialNotifier->onStopped();
+    // Added to trigger registerApplication handling based on timer
+    ASSERT_NE(_networkManagerNotification, nullptr);
+    _networkManagerNotification->onActiveInterfaceChange("eth0", "wlan0");
+    usleep(50);
+
     wg.Wait();
 
     if (Core::ERROR_NONE == status)
