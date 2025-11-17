@@ -84,16 +84,19 @@ namespace WPEFramework
                     {
                         message = _T("XCast could not be configured");
                     }
+                    else
+                    {
+                        LOGINFO("XCastImpl Initialise() successfully");
+                        // Register for notifications
+                        _xcast->Register(&_xcastNotification);
+                        // Invoking Plugin API register to wpeframework
+                        Exchange::JXCast::Register(*this, _xcast);
+                    }
                 }
                 else
                 {
                     message = _T("XCast implementation did not provide a configuration interface");
                 }
-                // Register for notifications
-                _xcast->Register(&_xcastNotification);
-                
-                // Invoking Plugin API register to wpeframework
-                Exchange::JXCast::Register(*this, _xcast);
             }
             else
             {
@@ -103,7 +106,7 @@ namespace WPEFramework
 
             if (0 != message.length())
             {
-                printf("XCast::Initialize: Failed to initialise XCast plugin");
+                LOGERR("'%s'", message.c_str());
                 Deinitialize(service);
             }
 
@@ -113,14 +116,9 @@ namespace WPEFramework
         void XCast::Deinitialize(PluginHost::IShell *service)
         {
             ASSERT(_service == service);
-            printf("XCast::Deinitialize: service = %p", service);
+            LOGINFO("XCast::Deinitialize: service = %p", service);
             SYSLOG(Logging::Shutdown, (string(_T("XCast::Deinitialize"))));
 
-            // Make sure the Activated and Deactivated are no longer called before we start cleaning up..
-            if (_service != nullptr)
-            {
-                _service->Unregister(&_xcastNotification);
-            }
             if (nullptr != _xcast)
             {
                 _xcast->Unregister(&_xcastNotification);
@@ -130,7 +128,11 @@ namespace WPEFramework
                     uint32_t result = mConfigure->Configure(nullptr);
                     if(result != Core::ERROR_NONE)
                     {
-                        LOGERR("XCast deinitialised could not be configured");
+                        LOGERR("Failed to Deinitialize() XCastImpl");
+                    }
+                    else
+                    {
+                        LOGINFO("XCastImpl Deinitialize() successfully");
                     }
                     mConfigure->Release();
                     mConfigure = nullptr;
@@ -138,8 +140,6 @@ namespace WPEFramework
                 // Stop processing:
                 RPC::IRemoteConnection *connection = service->RemoteConnection(_connectionId);
                 VARIABLE_IS_NOT_USED uint32_t result = _xcast->Release();
-
-                _xcast = nullptr;
 
                 // It should have been the last reference we are releasing,
                 // so it should endup in a DESTRUCTION_SUCCEEDED, if not we
@@ -153,14 +153,16 @@ namespace WPEFramework
                     connection->Terminate();
                     connection->Release();
                 }
+                // Make sure the Activated and Deactivated are no longer called before we start cleaning up..
+                if (nullptr != _service)
+                {
+                    _service->Unregister(&_xcastNotification);
+                    _service->Release();
+                    _service = nullptr;
+                }
+                _xcast = nullptr;
             }
             _connectionId = 0;
-
-            if (_service != nullptr)
-            {
-                _service->Release();
-                _service = nullptr;
-            }
             SYSLOG(Logging::Shutdown, (string(_T("XCast de-initialised"))));
         }
 
