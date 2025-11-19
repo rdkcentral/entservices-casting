@@ -64,6 +64,9 @@ MiracastController::MiracastController(void)
     m_p2p_ctrl_obj = nullptr;
     m_controller_thread = nullptr;
     m_tcpserverSockfd = -1;
+    m_connectionStatus = false;
+    m_start_discovering_enabled = false;
+    m_connect_req_notified = false;
     setP2PBackendDiscovery(false);
 
     MIRACASTLOG_TRACE("Exiting...");
@@ -156,6 +159,7 @@ std::string MiracastController::parse_p2p_event_data(const char *tmpBuff, const 
             if (0 == strncmp("name", lookup_data, strlen(lookup_data)))
             {
                 quote_start = strstr(ret_equal, "'");
+                if (quote_start
                 quote_end = strstr(quote_start + 1, "'");
             }
 
