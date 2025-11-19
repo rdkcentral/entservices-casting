@@ -65,8 +65,6 @@ MiracastController::MiracastController(void)
     m_controller_thread = nullptr;
     m_tcpserverSockfd = -1;
     m_connectionStatus = false;
-    m_start_discovering_enabled = false;
-    m_connect_req_notified = false;
     setP2PBackendDiscovery(false);
 
     MIRACASTLOG_TRACE("Exiting...");
