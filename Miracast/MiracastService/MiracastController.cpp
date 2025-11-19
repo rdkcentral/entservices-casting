@@ -954,7 +954,16 @@ void MiracastController::Controller_Thread(void *args)
                                         authType = "pbc",
                                         deviceType = "unknown",
                                         result = "";
-                            m_groupInfo = new GroupInfo;
+                            m_groupInfo = new GroupInfo();
+                            // Initialize all GroupInfo members to safe defaults
+                            m_groupInfo->interface.clear();
+                            m_groupInfo->isGO = false;
+                            m_groupInfo->SSID.clear();
+                            m_groupInfo->goDevAddr.clear();
+                            m_groupInfo->ipAddr.clear();
+                            m_groupInfo->ipMask.clear();
+                            m_groupInfo->srcDevIPAddr.clear();
+                            m_groupInfo->localIPAddr.clear();
                             size_t found = event_buffer.find("client");
                             size_t found_space = event_buffer.find(" ");
 
