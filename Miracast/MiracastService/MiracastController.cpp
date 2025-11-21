@@ -64,6 +64,7 @@ MiracastController::MiracastController(void)
     m_p2p_ctrl_obj = nullptr;
     m_controller_thread = nullptr;
     m_tcpserverSockfd = -1;
+    m_connectionStatus = false;
     setP2PBackendDiscovery(false);
 
     MIRACASTLOG_TRACE("Exiting...");
@@ -156,13 +157,17 @@ std::string MiracastController::parse_p2p_event_data(const char *tmpBuff, const 
             if (0 == strncmp("name", lookup_data, strlen(lookup_data)))
             {
                 quote_start = strstr(ret_equal, "'");
-                quote_end = strstr(quote_start + 1, "'");
+                if (quote_start) {
+                    quote_end = strstr(quote_start + 1, "'");
+                }
             }
 
             if (0 == strncmp("ssid", lookup_data, strlen(lookup_data)))
             {
                 quote_start = strstr(ret_equal, "\"");
-                quote_end = strstr(quote_start + 1, "\"");
+                if (quote_start) {
+                    quote_end = strstr(quote_start + 1, "\"");
+                }
             }
 
             if (quote_start && quote_end) {
@@ -952,7 +957,16 @@ void MiracastController::Controller_Thread(void *args)
                                         authType = "pbc",
                                         deviceType = "unknown",
                                         result = "";
-                            m_groupInfo = new GroupInfo;
+                            m_groupInfo = new GroupInfo();
+                            // Initialize all GroupInfo members to safe defaults
+                            m_groupInfo->interface.clear();
+                            m_groupInfo->isGO = false;
+                            m_groupInfo->SSID.clear();
+                            m_groupInfo->goDevAddr.clear();
+                            m_groupInfo->ipAddr.clear();
+                            m_groupInfo->ipMask.clear();
+                            m_groupInfo->srcDevIPAddr.clear();
+                            m_groupInfo->localIPAddr.clear();
                             size_t found = event_buffer.find("client");
                             size_t found_space = event_buffer.find(" ");
 

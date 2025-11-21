@@ -123,7 +123,7 @@ bool XCastManager::initialize(const std::string& gdial_interface_name, bool netw
 
     lock_guard<recursive_mutex> lock(m_mutexSync);
 #ifdef RFC_ENABLED
-    RFC_ParamData_t param;
+    RFC_ParamData_t param = {0};
     WDMP_STATUS wdmpStatus = WDMP_SUCCESS;
     wdmpStatus = getRFCParameter(const_cast<char *>("XCastPlugin"), "Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.Feature.XDial.Enable", &param);
     if (wdmpStatus == WDMP_SUCCESS || wdmpStatus == WDMP_ERR_DEFAULT_VALUE)
