@@ -996,7 +996,7 @@ MiracastError MiracastRTSPMsg::initiate_TCP(std::string goIP)
                 }
                 else
                 {
-                    int error;
+                    int error = 0;
                     socklen_t len = sizeof(error);
                     if (getsockopt(m_tcpSockfd, SOL_SOCKET, SO_ERROR, &error, &len) == 0 && error == 0)
                     {
