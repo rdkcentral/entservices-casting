@@ -1625,4 +1625,4 @@ void ControllerThreadCallback(void *args)
         miracast_ctrler_obj->Controller_Thread(nullptr);
     }
     MIRACASTLOG_TRACE("Exiting...");
- }
+}
