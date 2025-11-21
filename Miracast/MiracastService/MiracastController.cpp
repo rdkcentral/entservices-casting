@@ -157,14 +157,17 @@ std::string MiracastController::parse_p2p_event_data(const char *tmpBuff, const 
             if (0 == strncmp("name", lookup_data, strlen(lookup_data)))
             {
                 quote_start = strstr(ret_equal, "'");
-                if (quote_start
-                quote_end = strstr(quote_start + 1, "'");
+                if (quote_start) {
+                    quote_end = strstr(quote_start + 1, "'");
+                }
             }
 
             if (0 == strncmp("ssid", lookup_data, strlen(lookup_data)))
             {
                 quote_start = strstr(ret_equal, "\"");
-                quote_end = strstr(quote_start + 1, "\"");
+                if (quote_start) {
+                    quote_end = strstr(quote_start + 1, "\"");
+                }
             }
 
             if (quote_start && quote_end) {
