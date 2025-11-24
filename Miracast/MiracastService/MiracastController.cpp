@@ -28,7 +28,7 @@ MiracastController *MiracastController::getInstance(MiracastError &error_code, M
     MIRACASTLOG_TRACE("Entering...");
     if (nullptr == m_miracast_ctrl_obj)
     {
-        m_miracast_ctrl_obj = new MiracastController();
+        m_miracast_ctrl_obj = new (std::nothrow) MiracastController();
         if (nullptr != m_miracast_ctrl_obj)
         {
             m_miracast_ctrl_obj->m_notify_handler = notifier;
@@ -93,7 +93,7 @@ MiracastError MiracastController::create_ControllerFramework(std::string p2p_ctr
     MiracastError ret_code = MIRACAST_OK;
     MIRACASTLOG_TRACE("Entering...");
 
-    m_controller_thread = new MiracastThread(CONTROLLER_THREAD_NAME,
+    m_controller_thread = new (std::nothrow) MiracastThread(CONTROLLER_THREAD_NAME,
                                              CONTROLLER_THREAD_STACK,
                                              CONTROLLER_MSGQ_COUNT,
                                              CONTROLLER_MSGQ_SIZE,

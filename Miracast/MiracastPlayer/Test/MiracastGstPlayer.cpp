@@ -36,7 +36,11 @@ MiracastGstPlayer *MiracastGstPlayer::getInstance()
 {
 	if (m_GstPlayer == nullptr)
 	{
-		m_GstPlayer = new MiracastGstPlayer();
+		m_GstPlayer = new (std::nothrow) MiracastGstPlayer();
+		if (nullptr == m_GstPlayer)
+		{
+			MIRACASTLOG_ERROR("Failed to allocate MiracastGstPlayer singleton");
+		}
 	}
 	return m_GstPlayer;
 }

@@ -500,11 +500,22 @@ void XCastManager::registerApplications(std::vector<DynamicAppConfig*>& appConfi
 {
     LOGINFO("Entering ...");
 
-    RegisterAppEntryList *appReqList = new RegisterAppEntryList;
+    RegisterAppEntryList *appReqList = new (std::nothrow) RegisterAppEntryList;
+    if (nullptr == appReqList)
+    {
+        LOGERR("Failed to allocate RegisterAppEntryList");
+        return;
+    }
 
     for (DynamicAppConfig* pDynamicAppConfig : appConfigList)
     {
-        RegisterAppEntry* appReq = new RegisterAppEntry;
+        RegisterAppEntry* appReq = new (std::nothrow) RegisterAppEntry;
+        if (nullptr == appReq)
+        {
+            LOGERR("Failed to allocate RegisterAppEntry");
+            delete appReqList;
+            return;
+        }
         
         appReq->Names = pDynamicAppConfig->appName;
         appReq->prefixes = pDynamicAppConfig->prefixes;
@@ -551,7 +562,11 @@ XCastManager * XCastManager::getInstance()
     LOGINFO("Entering ...");
     if(XCastManager::_instance == nullptr)
     {
-        XCastManager::_instance = new XCastManager();
+        XCastManager::_instance = new (std::nothrow) XCastManager();
+        if (nullptr == XCastManager::_instance)
+        {
+            LOGERR("Failed to allocate XCastManager singleton");
+        }
     }
     LOGINFO("Exiting ...");
     return XCastManager::_instance;
