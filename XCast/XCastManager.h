@@ -56,6 +56,7 @@ public:
      *   @param error - The error string if the requested application is not available or due to other errors
      *   @return indicates whether state is properly communicated to rtdial server.
      */
+    // Validate inputs: app and state must not be empty
     int applicationStateChanged( string app, string state, string id, string error);
     /**
      *This function will enable cast service by default.

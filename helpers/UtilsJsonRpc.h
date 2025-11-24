@@ -113,7 +113,10 @@
         param = parameters[paramName].Number(); \
     else \
         try { param = std::stoi( parameters[paramName].String()); } \
-        catch (...) { param = 0; } \
+        catch (...) { \
+            LOGERR("Failed to convert parameter '%s' to integer, using 0", paramName); \
+            param = 0; \
+        } \
 }
 #define getNumberParameterObject(parameters, paramName, param) { \
     if (WPEFramework::Core::JSON::Variant::type::NUMBER == parameters[paramName].Content()) \

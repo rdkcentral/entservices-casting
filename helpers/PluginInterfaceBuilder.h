@@ -130,6 +130,7 @@ namespace Plugin {
             }
         }while(count < retry_count);
 
+        LOGERR("Failed to create plugin interface '%s' after %d retries", callsign.c_str(), retry_count);
         return nullptr;
     }
 

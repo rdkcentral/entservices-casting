@@ -39,11 +39,16 @@ auto MoveFile(
 
     Directory(fileTo.PathName().c_str()).CreatePath();
 
-    bool result =
-        fileFrom.Exists() &&
-            !fileTo.Exists() &&
-            fileFrom.Open(true) &&
-            fileTo.Create();
+    // Remove TOCTOU vulnerability: Don't check before open, handle errors instead
+    bool result = fileFrom.Open(true);
+    
+    if (result) {
+        result = fileTo.Create();
+        if (!result) {
+            // File already exists or cannot be created
+            fileFrom.Close();
+        }
+    }
 
     if (result) {
         const uint32_t bufLen = 1024;
