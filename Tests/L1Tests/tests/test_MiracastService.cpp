@@ -109,7 +109,7 @@ namespace
         struct tm *tm_info;
         tm_info = localtime(&tv.tv_sec);
 
-        sprintf(time_str, ": %02d:%02d:%02d:%06ld", tm_info->tm_hour, tm_info->tm_min, tm_info->tm_sec, microseconds);
+        snprintf(time_str, sizeof(time_str), ": %02d:%02d:%02d:%06ld", tm_info->tm_hour, tm_info->tm_min, tm_info->tm_sec, microseconds);
     }
     void log( const char *func, const char *file, int line, int threadID,const char *format, ...)
     {

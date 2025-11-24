@@ -359,7 +359,7 @@ bool MiracastRTSPMsg::set_WFDVideoFormat(RTSP_WFD_VIDEO_FMT_STRUCT st_video_fmt)
     // Set the 1st to 3rd bits based on the value of skip_intervals
     video_frame_control_support |= ((0x07 & st_video_fmt.st_h264_codecs.max_skip_intervals) << 1); // 1:3 bits for intervals
 
-    sprintf( video_format_buffer , 
+    snprintf(video_format_buffer, sizeof(video_format_buffer),
                 "%02x %02x %02x %02x %08x %08x %08x %02x %04x %04x %02x ",
                 st_video_fmt.native,
                 st_video_fmt.preferred_display_mode_supported,
@@ -384,7 +384,7 @@ bool MiracastRTSPMsg::set_WFDVideoFormat(RTSP_WFD_VIDEO_FMT_STRUCT st_video_fmt)
     }
     else{
         memset( video_format_buffer , 0x00 , sizeof(video_format_buffer));
-        sprintf( video_format_buffer , 
+        snprintf(video_format_buffer, sizeof(video_format_buffer),
                     "%04x %04x",
                     st_video_fmt.st_h264_codecs.max_hres,
                     st_video_fmt.st_h264_codecs.max_vres );
@@ -447,7 +447,7 @@ bool MiracastRTSPMsg::set_WFDAudioCodecs( RTSP_WFD_AUDIO_FMT_STRUCT st_audio_fmt
     }
     memcpy(&m_wfd_audio_formats_st , &st_audio_fmt , sizeof(RTSP_WFD_AUDIO_FMT_STRUCT));
 
-    sprintf( audio_format_buffer , 
+    snprintf(audio_format_buffer, sizeof(audio_format_buffer),
                 "%s %08x %02x",
                 audio_format_str.c_str(),
                 st_audio_fmt.modes,

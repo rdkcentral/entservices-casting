@@ -44,6 +44,18 @@ inline bool isValidInt(char* x)
             break;
         }
     } while (x[i] != '\0');
+    
+    // Validate range to prevent integer overflow
+    if (Checked) {
+        try {
+            long long val = std::stoll(x);
+            if (val < INT_MIN || val > INT_MAX) {
+                Checked = false;
+            }
+        } catch (...) {
+            Checked = false;
+        }
+    }
     return Checked;
 }
 

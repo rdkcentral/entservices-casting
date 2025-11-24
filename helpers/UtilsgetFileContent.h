@@ -285,7 +285,13 @@ inline bool ExpandPropertiesInString(const char* input, const char* filePath, st
         if (endPos)
         {
             size_t variableLength = endPos - variablePos - 1;
-            char variable[variableLength + 1];
+            // Add bounds checking to prevent buffer overflow
+            const size_t MAX_VARIABLE_LENGTH = 256;
+            if (variableLength > MAX_VARIABLE_LENGTH || variableLength < 1) {
+                LOGERR("Variable length out of bounds: %zu", variableLength);
+                return false;
+            }
+            char variable[MAX_VARIABLE_LENGTH + 1];
             strncpy(variable, variablePos + 1, variableLength);
             variable[variableLength] = '\0';
 

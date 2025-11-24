@@ -46,19 +46,15 @@ namespace Utils {
         std::function<uint32_t(REALOBJECT*, const WPEFramework::Core::JSON::VariantContainer&, WPEFramework::Core::JSON::VariantContainer&)>
         getFunctionToCall(const std::string& debugname, const METHOD& method, REALOBJECT* objectPtr) {
             return [debugname, method](REALOBJECT *obj, const WPEFramework::Core::JSON::VariantContainer& in, WPEFramework::Core::JSON::VariantContainer& out) -> uint32_t {
-                isThreadUsingLockedApi = true;
+                // RAII guard for thread flag to ensure exception safety
+                struct ThreadFlagGuard {
+                    ThreadFlagGuard() { isThreadUsingLockedApi = true; }
+                    ~ThreadFlagGuard() { isThreadUsingLockedApi = false; }
+                } guard;
                 // printf("METHOD CALL, GETTING LOCK: REALOBJECT '%s', method: '%s' MUTEX:%p\n",typeid(REALOBJECT).name(), debugname.c_str(), &ApiLocks<REALOBJECT>::mtx); fflush(stdout);
                 std::lock_guard<std::recursive_mutex> lock(ApiLocks<REALOBJECT>::mtx);
                 LOGINFO("calling %s with lock: %p\n", debugname.c_str(), &ApiLocks<REALOBJECT>::mtx);
-                uint32_t ret;
-                try {
-                    ret = (obj->*method)(in, out);
-                } catch (...) {
-                    isThreadUsingLockedApi = false;
-                    throw;
-                }
-                isThreadUsingLockedApi = false;
-                return ret;
+                return (obj->*method)(in, out);
             };
         }
 

@@ -47,7 +47,7 @@ bool killProcess(string& input_pname)
         memset(&proc_info, 0, sizeof(proc_info));
         while (readproc(proc, &proc_info) != NULL)
         {
-            if (proc_info.cmd == input_pname)
+            if (proc_info.cmd != NULL && strcmp(proc_info.cmd, input_pname.c_str()) == 0)
             {
                 if (0 == kill(proc_info.tid, SIGTERM))
                 {

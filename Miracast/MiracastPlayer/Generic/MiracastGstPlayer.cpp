@@ -37,7 +37,11 @@ MiracastGstPlayer *MiracastGstPlayer::getInstance()
 {
     if (m_GstPlayer == nullptr)
     {
-        m_GstPlayer = new MiracastGstPlayer();
+        m_GstPlayer = new (std::nothrow) MiracastGstPlayer();
+        if (m_GstPlayer == nullptr) {
+            MIRACASTLOG_ERROR("Failed to allocate MiracastGstPlayer");
+            return nullptr;
+        }
     }
     return m_GstPlayer;
 }
@@ -114,7 +118,7 @@ bool MiracastGstPlayer::updateVideoSinkRectangle(void)
     if (( nullptr != m_video_sink ) && ( 0 < m_video_rect_st.width ) && ( 0 < m_video_rect_st.height ))
     {
         char rectString[64];
-        sprintf(rectString,"%d,%d,%d,%d", m_video_rect_st.startX, m_video_rect_st.startY,
+        snprintf(rectString, sizeof(rectString), "%d,%d,%d,%d", m_video_rect_st.startX, m_video_rect_st.startY,
                 m_video_rect_st.width, m_video_rect_st.height);
         g_object_set(G_OBJECT(m_video_sink), "window-set", rectString, nullptr);
     }
@@ -723,7 +727,7 @@ bool MiracastGstPlayer::createPipeline()
     GstStateChangeReturn ret;
     GstBus *bus = nullptr;
     bool return_value = true;
-    m_customQueueHandle = new MessageQueue(500,gstBufferReleaseCallback);
+    m_customQueueHandle = new (std::nothrow) MessageQueue(500,gstBufferReleaseCallback);
 
     if (nullptr == m_customQueueHandle)
     {

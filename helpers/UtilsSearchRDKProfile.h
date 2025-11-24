@@ -70,6 +70,9 @@ profile_t searchRdkProfile(void) {
         printf("Found RDK_PROFILE: NOT_FOUND \n");
         ret = NOT_FOUND;
     }
-    fclose(file);
+    
+    if (file != NULL) {
+        fclose(file);
+    }
     return ret;
 }
