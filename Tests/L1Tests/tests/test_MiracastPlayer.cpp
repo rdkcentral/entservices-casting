@@ -120,7 +120,7 @@ namespace {
         struct tm *tm_info;
         tm_info = localtime(&tv.tv_sec);
 
-        sprintf(time_str, ": %02d:%02d:%02d:%06ld", tm_info->tm_hour, tm_info->tm_min, tm_info->tm_sec, microseconds);
+        snprintf(time_str, sizeof(time_str), ": %02d:%02d:%02d:%06ld", tm_info->tm_hour, tm_info->tm_min, tm_info->tm_sec, microseconds);
     }
 
     void log( const char *func, const char *file, int line, int threadID,const char *format, ...)
@@ -413,7 +413,7 @@ namespace {
                             TEST_LOG("RTSP_SEND RESPONSE Messages");
                             if (temp_buffer.find("%s") != std::string::npos)
                             {
-                                sprintf( buffer , rtsp_req_resp_format , receivedCSeqNum.c_str());
+                                snprintf( buffer, sizeof(buffer), rtsp_req_resp_format , receivedCSeqNum.c_str());
                                 msg_buffer = buffer;
                                 TEST_LOG("Response sequence number replaced as [%s]",receivedCSeqNum.c_str());
                                 receivedCSeqNum.clear();
