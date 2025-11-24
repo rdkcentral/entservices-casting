@@ -139,8 +139,13 @@ namespace WPEFramework
                                       .withRetryCount(25)
                                       .createInterface();
                 }
-                if (!s_instance)
-                    s_instance = new CFrontPanel;
+                if (!s_instance) {
+                    s_instance = new (std::nothrow) CFrontPanel;
+                    if (!s_instance) {
+                        LOGERR("Failed to allocate CFrontPanel");
+                        return nullptr;
+                    }
+                }
 #ifdef USE_DS
                 try
                 {

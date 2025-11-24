@@ -250,9 +250,16 @@ bool MiracastCommon::execute_PopenCommand( const char* popen_command, const char
         }
 
         memset( buffer , 0x00 , sizeof(buffer));
+        size_t buffer_len = 0;
         while (getline(&current_line_buffer, &len, popen_pipe_ptr) != -1)
         {
-            sprintf(buffer + strlen(buffer), "%s" ,  current_line_buffer);
+            size_t remaining = sizeof(buffer) - buffer_len - 1;
+            if (remaining > 0) {
+                size_t to_copy = strnlen(current_line_buffer, remaining);
+                memcpy(buffer + buffer_len, current_line_buffer, to_copy);
+                buffer_len += to_copy;
+                buffer[buffer_len] = '\0';
+            }
             MIRACASTLOG_INFO("#### popen Output[%s] ####", buffer);
         }
         pclose(popen_pipe_ptr);

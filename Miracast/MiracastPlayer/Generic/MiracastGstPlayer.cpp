@@ -37,7 +37,11 @@ MiracastGstPlayer *MiracastGstPlayer::getInstance()
 {
     if (m_GstPlayer == nullptr)
     {
-        m_GstPlayer = new MiracastGstPlayer();
+        m_GstPlayer = new (std::nothrow) MiracastGstPlayer();
+        if (m_GstPlayer == nullptr) {
+            MIRACASTLOG_ERROR("Failed to allocate MiracastGstPlayer");
+            return nullptr;
+        }
     }
     return m_GstPlayer;
 }
@@ -723,7 +727,7 @@ bool MiracastGstPlayer::createPipeline()
     GstStateChangeReturn ret;
     GstBus *bus = nullptr;
     bool return_value = true;
-    m_customQueueHandle = new MessageQueue(500,gstBufferReleaseCallback);
+    m_customQueueHandle = new (std::nothrow) MessageQueue(500,gstBufferReleaseCallback);
 
     if (nullptr == m_customQueueHandle)
     {

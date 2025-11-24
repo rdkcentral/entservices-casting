@@ -70,12 +70,16 @@ MiracastP2P *MiracastP2P::getInstance(MiracastError &error_code,std::string p2p_
     MIRACASTLOG_TRACE("Entering..");
     if (nullptr == m_miracast_p2p_obj)
     {
-        m_miracast_p2p_obj = new MiracastP2P();
+        m_miracast_p2p_obj = new (std::nothrow) MiracastP2P();
         if (nullptr != m_miracast_p2p_obj){
             ret_code = m_miracast_p2p_obj->Init(p2p_ctrl_iface);
             if ( MIRACAST_OK != ret_code){
                 destroyInstance();
             }
+        }
+        else {
+            MIRACASTLOG_ERROR("Failed to allocate MiracastP2P");
+            ret_code = MIRACAST_P2P_INIT_FAILED;
         }
     }
     error_code = ret_code;

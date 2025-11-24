@@ -255,7 +255,7 @@ std::string MiracastController::start_DHCPClient(std::string interface, std::str
     std::size_t len = 0;
     unsigned char retry_count = 5;
 
-    sprintf( sys_cls_file_ifidx , "/sys/class/net/%s/ifindex" , interface.c_str());
+    snprintf(sys_cls_file_ifidx, sizeof(sys_cls_file_ifidx), "/sys/class/net/%s/ifindex", interface.c_str());
 
     std::ifstream ifIndexFile(sys_cls_file_ifidx);
 
@@ -264,9 +264,7 @@ std::string MiracastController::start_DHCPClient(std::string interface, std::str
         return std::string("");
     }
 
-    sprintf(command, "/sbin/udhcpc -v -i ");
-    sprintf(command + strlen(command), "%s" , interface.c_str());
-    sprintf(command + strlen(command), " -s /etc/wifi_p2p/udhcpc.script 2>&1");
+    snprintf(command, sizeof(command), "/sbin/udhcpc -v -i %s -s /etc/wifi_p2p/udhcpc.script 2>&1", interface.c_str());
     MIRACASTLOG_VERBOSE("command : [%s]", command);
 
     while ( retry_count-- )
@@ -280,20 +278,27 @@ std::string MiracastController::start_DHCPClient(std::string interface, std::str
         {
             MIRACASTLOG_VERBOSE("udhcpc output as below:\n");
             memset( data , 0x00 , sizeof(data));
+            size_t data_len = 0;
             while (getline(&current_line_buffer, &len, popen_file_ptr) != -1)
             {
-                sprintf(data + strlen(data), "%s" ,  current_line_buffer);
+                size_t remaining = sizeof(data) - data_len - 1;
+                if (remaining > 0) {
+                    size_t to_copy = strnlen(current_line_buffer, remaining);
+                    memcpy(data + data_len, current_line_buffer, to_copy);
+                    data_len += to_copy;
+                    data[data_len] = '\0';
+                }
                 popen_buffer = data;
                 MIRACASTLOG_INFO("data : [%s][%s]", data,popen_buffer.c_str());
 
-                if ( local_addr.empty() && (std::regex_search(popen_buffer, match, localipRegex)))
+                if ( local_addr.empty() && (std::regex_search(popen_buffer, match, localipRegex)) && match.size() > 1)
                 {
                     local_addr = match[1];
                     MIRACASTLOG_INFO("local IP addr obtained is %s\n", local_addr.c_str());
                 }
 
                 /* Here retrieved the default gw ip address. Later it can be used as GO IP address if P2P-GROUP started as PERSISTENT */
-                if ( gw_ip_addr.empty() && (std::regex_search(popen_buffer, match, goipRegex1)))
+                if ( gw_ip_addr.empty() && (std::regex_search(popen_buffer, match, goipRegex1)) && match.size() > 1)
                 {
                     gw_ip_addr = match[1];
                     MIRACASTLOG_INFO("GO IP addr obtained is %s\n", gw_ip_addr.c_str());
@@ -648,7 +653,11 @@ void MiracastController::create_DeviceCacheData(std::string deviceMAC,std::strin
     // Allocate memory and update the device cache info
     if ( nullptr == cur_device_info_ptr )
     {
-        cur_device_info_ptr = new DeviceInfo;
+        cur_device_info_ptr = new (std::nothrow) DeviceInfo;
+        if (nullptr == cur_device_info_ptr) {
+            MIRACASTLOG_ERROR("Failed to allocate DeviceInfo");
+            return;
+        }
         new_device_entry = true;
         force_overwrite = true;
         MIRACASTLOG_VERBOSE("#### Creating Device Cache ####");
@@ -825,20 +834,15 @@ void MiracastController::Controller_Thread(void *args)
 
                         if ( CONTROLLER_GO_DEVICE_LOST == controller_msgq_data.state )
                         {
-                            size_t found;
-                            int i = 0;
-
                             MIRACASTLOG_INFO("CONTROLLER_GO_DEVICE_LOST Received");
-                            for (auto devices : m_deviceInfoList)
+                            for (auto it = m_deviceInfoList.begin(); it != m_deviceInfoList.end(); ++it)
                             {
-                                found = devices->deviceMAC.find(deviceMAC);
-                                if (found != std::string::npos)
+                                if ((*it)->deviceMAC.find(deviceMAC) != std::string::npos)
                                 {
-                                    delete devices;
-                                    m_deviceInfoList.erase(m_deviceInfoList.begin() + i);
+                                    delete *it;
+                                    m_deviceInfoList.erase(it);
                                     break;
                                 }
-                                i++;
                             }
                         }
                         else
@@ -952,7 +956,11 @@ void MiracastController::Controller_Thread(void *args)
                                         authType = "pbc",
                                         deviceType = "unknown",
                                         result = "";
-                            m_groupInfo = new GroupInfo;
+                            m_groupInfo = new (std::nothrow) GroupInfo;
+                            if (nullptr == m_groupInfo) {
+                                MIRACASTLOG_ERROR("Failed to allocate GroupInfo");
+                                break;
+                            }
                             size_t found = event_buffer.find("client");
                             size_t found_space = event_buffer.find(" ");
 
@@ -1045,7 +1053,7 @@ void MiracastController::Controller_Thread(void *args)
                                 std::string peer_iface_mac = get_SourcePeerIface(mac_address);
                                 char command[128] = {0};
                                 std::string popen_buffer = "";
-                                sprintf( command, "awk '$4 == \"%s\" && $4 !~ /incomplete/ {print $1}' /proc/net/arp", peer_iface_mac.c_str());
+                                snprintf(command, sizeof(command), "awk '$4 == \"%s\" && $4 !~ /incomplete/ {print $1}' /proc/net/arp", peer_iface_mac.c_str());
 
                                 MiracastCommon::execute_PopenCommand( command , nullptr , 15 , popen_buffer , 1000000 );
                                 if (!popen_buffer.empty())
