@@ -96,9 +96,13 @@ namespace WPEFramework
                     Job() = delete;
                     Job(const Job&) = delete;
                     Job& operator=(const Job&) = delete;
-                    ~Job() {
+                    ~Job() noexcept {
                         if (_xcast != nullptr) {
-                            _xcast->Release();
+                            try {
+                                _xcast->Release();
+                            } catch (...) {
+                                // Swallow exceptions in destructor
+                            }
                         }
                     }
 

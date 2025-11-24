@@ -64,9 +64,14 @@ template<
 WSEndpoint<Role, MessagingInterface, PingPong, Encryption>::~WSEndpoint()
 {
     LOGINFO();
-    endpointImpl_.stop_perpetual();
-    closeConnection();
-    stopEventLoop();
+    try {
+        endpointImpl_.stop_perpetual();
+        closeConnection();
+        stopEventLoop();
+    } catch (...) {
+        // Swallow exceptions in destructor to prevent std::terminate
+        // and ensure thread cleanup attempt
+    }
 }
 
 template<

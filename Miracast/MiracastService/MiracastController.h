@@ -148,6 +148,8 @@ private:
     std::string m_localIp;
     vector<DeviceInfo *> m_deviceInfoList;
     GroupInfo *m_groupInfo;
+    // Mutex to protect shared boolean flags from data races
+    mutable std::mutex m_stateMutex;
     bool m_connectionStatus;
     bool m_p2p_backend_discovery{false};
     bool m_start_discovering_enabled{false};

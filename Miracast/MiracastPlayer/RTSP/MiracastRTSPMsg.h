@@ -549,6 +549,7 @@ class MiracastRTSPMsg
 
         static std::string format_string(const char *fmt, const std::vector<const char *> &args)
         {
+            const size_t MAX_FORMAT_SIZE = 8192; // 8KB limit
             std::string result = fmt;
             size_t arg_index = 0;
             size_t arg_count = args.size();
@@ -557,6 +558,10 @@ class MiracastRTSPMsg
                 size_t found = result.find("%s");
                 if (found != std::string::npos)
                 {
+                    // Check size limit before replacement
+                    if (result.length() + strlen(args[arg_index]) > MAX_FORMAT_SIZE) {
+                        break; // Prevent excessive size
+                    }
                     result.replace(found, 2, args[arg_index]);
                 }
                 ++arg_index;
