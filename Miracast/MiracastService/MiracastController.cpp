@@ -241,7 +241,7 @@ std::string MiracastController::start_DHCPClient(std::string interface, std::str
     MIRACASTLOG_TRACE("Entering...");
     char data[1024] = {0};
     char command[128] = {0};
-    char sys_cls_file_ifidx[128] = {0};
+    char sys_cls_file_ifidx[12] = {0};
     std::string local_addr = "",
                 gw_ip_addr = "",
                 popen_buffer = "",
