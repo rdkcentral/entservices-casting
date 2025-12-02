@@ -45,7 +45,7 @@ namespace WPEFramework
     namespace Plugin
     {
         SERVICE_REGISTRATION(XCastImplementation, 1, 0);
-        XCastImplementation *XCastImplementation::_instance = nullptr;
+        XCastImplementation *XCastImplementation::_instance = nullptr;    
         XCastManager* XCastImplementation::m_xcast_manager = nullptr;
         static std::vector <DynamicAppConfig*> m_appConfigCache;
         static std::mutex m_appConfigMutex;
