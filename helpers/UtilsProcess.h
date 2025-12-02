@@ -42,22 +42,26 @@ bool killProcess(string& input_pname)
     proc_t proc_info = {0};
     bool ret_value = false;
 
-    if (proc != NULL)
+    /* FIX: Ensure PROCTAB resource is always freed */
+    if (proc == NULL)
     {
-        memset(&proc_info, 0, sizeof(proc_info));
-        while (readproc(proc, &proc_info) != NULL)
+        LOGERR("Failed to open proc table");
+        return ret_value;
+    }
+
+    memset(&proc_info, 0, sizeof(proc_info));
+    while (readproc(proc, &proc_info) != NULL)
+    {
+        if (proc_info.cmd == input_pname)
         {
-            if (proc_info.cmd == input_pname)
+            if (0 == kill(proc_info.tid, SIGTERM))
             {
-                if (0 == kill(proc_info.tid, SIGTERM))
-                {
-                    ret_value = true;
-                    LOGINFO("Killed the process [%d] process name [%s]", proc_info.tid, proc_info.cmd);
-                }
+                ret_value = true;
+                LOGINFO("Killed the process [%d] process name [%s]", proc_info.tid, proc_info.cmd);
             }
         }
-        closeproc(proc);
     }
+    closeproc(proc);
     return ret_value;
 }
 
@@ -73,19 +77,23 @@ bool getChildProcessIDs(int input_ppid, vector<int>& processIds)
     proc_t proc_info = {0};
     bool ret_value = false;
 
-    if (proc != NULL)
+    /* FIX: Ensure PROCTAB resource is always freed */
+    if (proc == NULL)
     {
-        memset(&proc_info, 0, sizeof(proc_info));
-        while (readproc(proc, &proc_info) != NULL)
-        {
-            if (proc_info.ppid == input_ppid)
-            {
-                processIds.push_back(proc_info.tid);
-                ret_value = true;
-            }
-        }
-        closeproc(proc);
+        LOGERR("Failed to open proc table");
+        return ret_value;
     }
+
+    memset(&proc_info, 0, sizeof(proc_info));
+    while (readproc(proc, &proc_info) != NULL)
+    {
+        if (proc_info.ppid == input_ppid)
+        {
+            processIds.push_back(proc_info.tid);
+            ret_value = true;
+        }
+    }
+    closeproc(proc);
     return ret_value;
 }
 

@@ -43,7 +43,12 @@ namespace MIRACAST
         sync_stdout();
         if (level)
         {
-            set_loglevel(static_cast<LogLevel>(atoi(level)));
+            /* FIX: Validate level string before atoi to prevent issues with malformed input */
+            int level_val = atoi(level);
+            if (level_val >= FATAL_LEVEL && level_val <= TRACE_LEVEL)
+            {
+                set_loglevel(static_cast<LogLevel>(level_val));
+            }
         }
 
         if ( nullptr != module_name )
@@ -76,6 +81,12 @@ namespace MIRACAST
         if (((MIRACAST::FATAL_LEVEL != level)&&(MIRACAST::ERROR_LEVEL != level))&&
             (gDefaultLogLevel < level)){
                 return;
+        }
+
+        /* FIX: Add null pointer checks for func, file, and format parameters */
+        if (!func || !file || !format)
+        {
+            return;
         }
 
         va_list argptr;

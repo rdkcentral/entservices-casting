@@ -194,6 +194,11 @@ namespace WPEFramework
 
         void MiracastPlayer::Deactivated(RPC::IRemoteConnection* connection)
         {
+            /* FIX: Add null pointer check for connection before dereferencing */
+            if (nullptr == connection) {
+                LOGINFO("MiracastPlayer::Deactivated - null connection");
+                return;
+            }
             if (connection->Id() == mConnectionId) {
                 ASSERT(nullptr != mCurrentService);
                 LOGINFO("MiracastPlayer::Deactivated");

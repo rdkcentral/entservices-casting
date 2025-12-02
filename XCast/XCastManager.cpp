@@ -34,7 +34,9 @@ using namespace WPEFramework;
 #define EVENT_LOOP_ITERATION_IN_100MS     100000
 
 
+/* FIX: Add mutex protection for static gdialCastObj to prevent race conditions */
 static gdialService* gdialCastObj = NULL;
+static std::recursive_mutex gdialCastObjMutex;
 XCastManager * XCastManager::_instance = nullptr;
 std::string m_modelName = "";
 std::string m_manufacturerName = "";
@@ -255,9 +257,13 @@ bool XCastManager::initialize(const std::string& gdial_interface_name, bool netw
         gdial_args.push_back("--feature-wolwake");
     }
 
-    if (nullptr == gdialCastObj)
+    /* FIX: Protect gdialCastObj access with mutex */
     {
-        gdialCastObj = gdialService::getInstance(this,gdial_args,"XCastOutofProcess");
+        std::lock_guard<std::recursive_mutex> gdialLock(gdialCastObjMutex);
+        if (nullptr == gdialCastObj)
+        {
+            gdialCastObj = gdialService::getInstance(this,gdial_args,"XCastOutofProcess");
+        }
     }
 
     if (nullptr != gdialCastObj)
@@ -273,6 +279,8 @@ void XCastManager::deinitialize()
 {
     LOGINFO("Destroying gdialService instance");
     lock_guard<recursive_mutex> lock(m_mutexSync);
+    /* FIX: Protect gdialCastObj destruction with mutex */
+    std::lock_guard<std::recursive_mutex> gdialLock(gdialCastObjMutex);
     if (nullptr != gdialCastObj)
     {
         gdialService::destroyInstance();
@@ -284,6 +292,9 @@ void XCastManager::shutdown()
 {
     LOGINFO("Shutting down XCastManager");
     deinitialize();
+    /* FIX: Protect singleton destruction - should be called from single thread only */
+    static std::mutex shutdownMutex;
+    std::lock_guard<std::mutex> lock(shutdownMutex);
     if(XCastManager::_instance != nullptr)
     {
         delete XCastManager::_instance;

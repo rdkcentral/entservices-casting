@@ -39,11 +39,12 @@ typedef struct _DynamicAppConfig {
 
     public:
        _DynamicAppConfig(){
-           memset (appName, '\0', sizeof(appName));
-           memset (prefixes, '\0', sizeof(prefixes));
-           memset (cors, '\0', sizeof(cors));
-           memset (query, '\0', sizeof(query));
-           memset (payload, '\0', sizeof(payload));
+           /* FIX: Use 0 instead of '\0' for memset - second parameter is int value, not char */
+           memset (appName, 0, sizeof(appName));
+           memset (prefixes, 0, sizeof(prefixes));
+           memset (cors, 0, sizeof(cors));
+           memset (query, 0, sizeof(query));
+           memset (payload, 0, sizeof(payload));
        }
 }DynamicAppConfig;
 

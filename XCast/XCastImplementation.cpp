@@ -45,7 +45,9 @@ namespace WPEFramework
     namespace Plugin
     {
         SERVICE_REGISTRATION(XCastImplementation, 1, 0);
-        XCastImplementation *XCastImplementation::_instance = nullptr;    
+        /* FIX: Add mutex protection for singleton _instance */
+        XCastImplementation *XCastImplementation::_instance = nullptr;
+        static std::mutex _instanceMutex;
         XCastManager* XCastImplementation::m_xcast_manager = nullptr;
         static std::vector <DynamicAppConfig*> m_appConfigCache;
         static std::mutex m_appConfigMutex;
@@ -86,12 +88,16 @@ namespace WPEFramework
         {
             LOGINFO("Call constructor");
             m_locateCastTimer.connect( bind( &XCastImplementation::onLocateCastTimer, this ));
+            /* FIX: Thread-safe singleton assignment */
+            std::lock_guard<std::mutex> lock(_instanceMutex);
             XCastImplementation::_instance = this;
         }
 
         XCastImplementation::~XCastImplementation()
         {
             LOGINFO("Call destructor");
+            /* FIX: Thread-safe singleton cleanup */
+            std::lock_guard<std::mutex> lock(_instanceMutex);
             XCastImplementation::_instance = nullptr;
             _service = nullptr;
         }
