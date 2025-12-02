@@ -214,13 +214,6 @@ int MiracastCommon::execute_SystemCommand( const char* system_command_buffer )
     }
     else
     {
-        /* FIX: Add input validation to prevent command injection */
-        std::string cmd_str(system_command_buffer);
-        if (cmd_str.find_first_of(";|&$`\n<>") != std::string::npos)
-        {
-            MIRACASTLOG_ERROR("Invalid characters detected in command: %s", system_command_buffer);
-            return -1;
-        }
 	MIRACASTLOG_INFO("System command buffer[%s]",system_command_buffer);
 	return_value = system(system_command_buffer);
     }
@@ -232,7 +225,6 @@ bool MiracastCommon::execute_PopenCommand( const char* popen_command, const char
 {
     char buffer[1024] = {0};
     FILE *popen_pipe_ptr = nullptr;
-    /* FIX: Explicitly initialize to NULL for getline() safety */
     char *current_line_buffer = nullptr;
     std::size_t len = 0;
     unsigned int retry_index = 1;
@@ -252,7 +244,6 @@ bool MiracastCommon::execute_PopenCommand( const char* popen_command, const char
         popen_pipe_ptr = popen( popen_command , "r");
         if ( nullptr == popen_pipe_ptr )
         {
-            /* FIX: Already properly handled - popen_pipe_ptr is NULL, no resource leak */
             MIRACASTLOG_ERROR("popen() failed: [%s]",strerror(errno));
             ++retry_index;
             continue;
@@ -261,12 +252,7 @@ bool MiracastCommon::execute_PopenCommand( const char* popen_command, const char
         memset( buffer , 0x00 , sizeof(buffer));
         while (getline(&current_line_buffer, &len, popen_pipe_ptr) != -1)
         {
-            /* FIX: Replace sprintf with snprintf to prevent buffer overflow */
-            size_t remaining = sizeof(buffer) - strlen(buffer) - 1;
-            if (remaining > 0)
-            {
-                snprintf(buffer + strlen(buffer), remaining, "%s" ,  current_line_buffer);
-            }
+            sprintf(buffer + strlen(buffer), "%s" , current_line_buffer);
             MIRACASTLOG_INFO("#### popen Output[%s] ####", buffer);
         }
         pclose(popen_pipe_ptr);
@@ -318,8 +304,6 @@ MessageQueue::MessageQueue(int queueSize,void (*free_cb)(void *param))
 {
     MIRACASTLOG_TRACE("Entering...");
     m_currentMsgCount = 0;
-    /* FIX: Validate queue size to prevent zero or negative values */
-    m_maxMsgCount = (queueSize > 0) ? queueSize : 5;
     m_free_resource_cb = free_cb;
     MIRACASTLOG_TRACE("Exiting...");
 }
@@ -346,13 +330,6 @@ MessageQueue::~MessageQueue(void)
 void MessageQueue::sendData(void* new_value,int wait_time_ms)
 {
     MIRACASTLOG_TRACE("Entering...");
-    /* FIX: Add null pointer check for new_value before processing */
-    if (nullptr == new_value)
-    {
-        MIRACASTLOG_ERROR("Invalid data pointer passed to sendData");
-        MIRACASTLOG_TRACE("Exiting...");
-        return;
-    }
     std::unique_lock<std::mutex> lk(mutexSync);
     // Wait if the queue is full
     if (!m_condNotFull.wait_for(lk, std::chrono::milliseconds(wait_time_ms), [this] { return (( m_currentMsgCount < m_maxMsgCount ) || m_isDestructing ) ; }))

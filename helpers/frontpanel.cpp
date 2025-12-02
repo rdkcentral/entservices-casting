@@ -66,9 +66,7 @@ namespace WPEFramework
 
     namespace Plugin
     {
-        /* FIX: Add mutex protection for singleton s_instance to prevent race conditions */
         CFrontPanel* CFrontPanel::s_instance = NULL;
-        static std::mutex s_instanceMutex;
         static int globalLedBrightness = 100;
 #ifdef CLOCK_BRIGHTNESS_ENABLED
         static int clockBrightness = 100;
@@ -141,13 +139,8 @@ namespace WPEFramework
                                       .withRetryCount(25)
                                       .createInterface();
                 }
-                /* FIX: Thread-safe singleton creation with mutex */
                 if (!s_instance)
-                {
-                    std::lock_guard<std::mutex> lock(s_instanceMutex);
-                    if (!s_instance)
-                        s_instance = new CFrontPanel;
-                }
+                    s_instance = new CFrontPanel;
 #ifdef USE_DS
                 try
                 {

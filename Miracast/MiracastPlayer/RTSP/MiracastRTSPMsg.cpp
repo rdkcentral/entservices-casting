@@ -144,24 +144,18 @@ MiracastRTSPMsg *MiracastRTSPMsg::getInstance(MiracastError &error_code , Miraca
     MIRACASTLOG_TRACE("Entering...");
     error_code = MIRACAST_OK;
 
-    /* FIX: Add thread-safe singleton pattern with double-checked locking */
     if (nullptr == m_rtsp_msg_obj)
     {
-        static std::mutex creation_mutex;
-        std::lock_guard<std::mutex> lock(creation_mutex);
-        if (nullptr == m_rtsp_msg_obj)
+        m_rtsp_msg_obj = new MiracastRTSPMsg();
+        if (nullptr != m_rtsp_msg_obj)
         {
-            m_rtsp_msg_obj = new MiracastRTSPMsg();
-            if (nullptr != m_rtsp_msg_obj)
-            {
-                if ( MIRACAST_OK != m_rtsp_msg_obj->create_RTSPThread()){
-                    error_code = MIRACAST_RTSP_INIT_FAILED;
-                    delete m_rtsp_msg_obj;
-                    m_rtsp_msg_obj = nullptr;
-                }
-                else{
-                    m_rtsp_msg_obj->m_controller_thread = controller_thread_id;
-                }
+            if ( MIRACAST_OK != m_rtsp_msg_obj->create_RTSPThread()){
+                error_code = MIRACAST_RTSP_INIT_FAILED;
+                delete m_rtsp_msg_obj;
+                m_rtsp_msg_obj = nullptr;
+            }
+            else{
+                m_rtsp_msg_obj->m_controller_thread = controller_thread_id;
             }
         }
     }
@@ -365,8 +359,7 @@ bool MiracastRTSPMsg::set_WFDVideoFormat(RTSP_WFD_VIDEO_FMT_STRUCT st_video_fmt)
     // Set the 1st to 3rd bits based on the value of skip_intervals
     video_frame_control_support |= ((0x07 & st_video_fmt.st_h264_codecs.max_skip_intervals) << 1); // 1:3 bits for intervals
 
-    /* FIX: Replace sprintf with snprintf to prevent buffer overflow */
-    snprintf( video_format_buffer , sizeof(video_format_buffer), 
+    sprintf( video_format_buffer , 
                 "%02x %02x %02x %02x %08x %08x %08x %02x %04x %04x %02x ",
                 st_video_fmt.native,
                 st_video_fmt.preferred_display_mode_supported,
@@ -391,8 +384,7 @@ bool MiracastRTSPMsg::set_WFDVideoFormat(RTSP_WFD_VIDEO_FMT_STRUCT st_video_fmt)
     }
     else{
         memset( video_format_buffer , 0x00 , sizeof(video_format_buffer));
-        /* FIX: Replace sprintf with snprintf to prevent buffer overflow */
-        snprintf( video_format_buffer , sizeof(video_format_buffer), 
+        sprintf( video_format_buffer , 
                     "%04x %04x",
                     st_video_fmt.st_h264_codecs.max_hres,
                     st_video_fmt.st_h264_codecs.max_vres );
@@ -455,8 +447,7 @@ bool MiracastRTSPMsg::set_WFDAudioCodecs( RTSP_WFD_AUDIO_FMT_STRUCT st_audio_fmt
     }
     memcpy(&m_wfd_audio_formats_st , &st_audio_fmt , sizeof(RTSP_WFD_AUDIO_FMT_STRUCT));
 
-    /* FIX: Replace sprintf with snprintf to prevent buffer overflow */
-    snprintf( audio_format_buffer , sizeof(audio_format_buffer), 
+    sprintf( audio_format_buffer , 
                 "%s %08x %02x",
                 audio_format_str.c_str(),
                 st_audio_fmt.modes,

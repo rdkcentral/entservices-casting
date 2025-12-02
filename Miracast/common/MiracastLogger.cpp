@@ -43,12 +43,7 @@ namespace MIRACAST
         sync_stdout();
         if (level)
         {
-            /* FIX: Validate level string before atoi to prevent issues with malformed input */
-            int level_val = atoi(level);
-            if (level_val >= FATAL_LEVEL && level_val <= TRACE_LEVEL)
-            {
-                set_loglevel(static_cast<LogLevel>(level_val));
-            }
+            set_loglevel(static_cast<LogLevel>(atoi(level)));
         }
 
         if ( nullptr != module_name )

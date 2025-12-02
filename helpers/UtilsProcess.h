@@ -42,26 +42,22 @@ bool killProcess(string& input_pname)
     proc_t proc_info = {0};
     bool ret_value = false;
 
-    /* FIX: Ensure PROCTAB resource is always freed */
-    if (proc == NULL)
+    if (proc != NULL)
     {
-        LOGERR("Failed to open proc table");
-        return ret_value;
-    }
-
-    memset(&proc_info, 0, sizeof(proc_info));
-    while (readproc(proc, &proc_info) != NULL)
-    {
-        if (proc_info.cmd == input_pname)
+        memset(&proc_info, 0, sizeof(proc_info));
+        while (readproc(proc, &proc_info) != NULL)
         {
-            if (0 == kill(proc_info.tid, SIGTERM))
+            if (proc_info.cmd == input_pname)
             {
-                ret_value = true;
-                LOGINFO("Killed the process [%d] process name [%s]", proc_info.tid, proc_info.cmd);
+                if (0 == kill(proc_info.tid, SIGTERM))
+                {
+                    ret_value = true;
+                    LOGINFO("Killed the process [%d] process name [%s]", proc_info.tid, proc_info.cmd);
+                }
             }
         }
+        closeproc(proc);
     }
-    closeproc(proc);
     return ret_value;
 }
 
