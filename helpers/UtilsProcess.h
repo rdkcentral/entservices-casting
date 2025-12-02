@@ -73,23 +73,19 @@ bool getChildProcessIDs(int input_ppid, vector<int>& processIds)
     proc_t proc_info = {0};
     bool ret_value = false;
 
-    /* FIX: Ensure PROCTAB resource is always freed */
-    if (proc == NULL)
+    if (proc != NULL)
     {
-        LOGERR("Failed to open proc table");
-        return ret_value;
-    }
-
-    memset(&proc_info, 0, sizeof(proc_info));
-    while (readproc(proc, &proc_info) != NULL)
-    {
-        if (proc_info.ppid == input_ppid)
+        memset(&proc_info, 0, sizeof(proc_info));
+        while (readproc(proc, &proc_info) != NULL)
         {
-            processIds.push_back(proc_info.tid);
-            ret_value = true;
+            if (proc_info.ppid == input_ppid)
+            {
+                processIds.push_back(proc_info.tid);
+                ret_value = true;
+            }
         }
+        closeproc(proc);
     }
-    closeproc(proc);
     return ret_value;
 }
 

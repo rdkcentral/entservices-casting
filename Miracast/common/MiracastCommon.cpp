@@ -252,7 +252,7 @@ bool MiracastCommon::execute_PopenCommand( const char* popen_command, const char
         memset( buffer , 0x00 , sizeof(buffer));
         while (getline(&current_line_buffer, &len, popen_pipe_ptr) != -1)
         {
-            sprintf(buffer + strlen(buffer), "%s" , current_line_buffer);
+            sprintf(buffer + strlen(buffer), "%s" ,  current_line_buffer);
             MIRACASTLOG_INFO("#### popen Output[%s] ####", buffer);
         }
         pclose(popen_pipe_ptr);
@@ -304,6 +304,7 @@ MessageQueue::MessageQueue(int queueSize,void (*free_cb)(void *param))
 {
     MIRACASTLOG_TRACE("Entering...");
     m_currentMsgCount = 0;
+    m_maxMsgCount = queueSize;
     m_free_resource_cb = free_cb;
     MIRACASTLOG_TRACE("Exiting...");
 }
