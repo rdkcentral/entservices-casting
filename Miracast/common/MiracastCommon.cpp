@@ -85,13 +85,6 @@ void MiracastThread::send_message(void *message, size_t msg_size)
 {
     MIRACASTLOG_TRACE("Entering...");
     if (nullptr != m_g_queue){
-        /* FIX: Check message pointer before allocation to prevent wasted allocation */
-        if (nullptr == message)
-        {
-            MIRACASTLOG_ERROR("Invalid message pointer\n");
-            MIRACASTLOG_TRACE("Exiting...");
-            return;
-        }
         void *buffer = malloc(msg_size);
         if (nullptr == buffer)
         {
