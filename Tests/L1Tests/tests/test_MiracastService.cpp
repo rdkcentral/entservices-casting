@@ -109,7 +109,8 @@ namespace
         struct tm *tm_info;
         tm_info = localtime(&tv.tv_sec);
 
-        sprintf(time_str, ": %02d:%02d:%02d:%06ld", tm_info->tm_hour, tm_info->tm_min, tm_info->tm_sec, microseconds);
+        /* FIX: Replace sprintf with snprintf to prevent buffer overflow - assuming time_str buffer is 24 bytes */
+        snprintf(time_str, 24, ": %02d:%02d:%02d:%06ld", tm_info->tm_hour, tm_info->tm_min, tm_info->tm_sec, microseconds);
     }
     void log( const char *func, const char *file, int line, int threadID,const char *format, ...)
     {
@@ -119,6 +120,9 @@ namespace
         va_list argptr;
 
         current_time(time);
+
+        /* FIX: Add null pointer check for format parameter */
+        if (!format) return;
 
         va_start(argptr, format);
         vsnprintf(formatted, kFormatMessageSize, format, argptr);
