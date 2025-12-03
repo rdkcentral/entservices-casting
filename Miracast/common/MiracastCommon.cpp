@@ -257,8 +257,11 @@ bool MiracastCommon::execute_PopenCommand( const char* popen_command, const char
         }
         pclose(popen_pipe_ptr);
         popen_pipe_ptr = nullptr;
-        free(current_line_buffer);
-        current_line_buffer = nullptr;
+        if (current_line_buffer != nullptr)
+		{
+			free(current_line_buffer);
+			current_line_buffer = nullptr;
+		}
         popen_buffer = buffer;
         REMOVE_R(popen_buffer);
         REMOVE_N(popen_buffer);
@@ -289,12 +292,6 @@ bool MiracastCommon::execute_PopenCommand( const char* popen_command, const char
     if ( false == returnValue && ( 1 < retry_count ))
     {
         MIRACASTLOG_ERROR("Maximum retries[%u] reached and Popen couldn't success",retry_count);
-    }
-    /* FIX: Ensure current_line_buffer is freed if not already freed in the loop */
-    if (current_line_buffer != nullptr)
-    {
-        free(current_line_buffer);
-        current_line_buffer = nullptr;
     }
     MIRACASTLOG_TRACE("Exiting...");
     return returnValue;
