@@ -78,6 +78,12 @@ namespace MIRACAST
                 return;
         }
 
+        /* FIX: Add null pointer checks for func, file, and format parameters */
+        if (!func || !file || !format)
+        {
+            return;
+        }
+
         va_list argptr;
         va_start(argptr, format);
         vsnprintf(formatted, kFormatMessageSize, format, argptr);
