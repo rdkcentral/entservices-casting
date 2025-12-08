@@ -257,8 +257,11 @@ bool MiracastCommon::execute_PopenCommand( const char* popen_command, const char
         }
         pclose(popen_pipe_ptr);
         popen_pipe_ptr = nullptr;
-        free(current_line_buffer);
-        current_line_buffer = nullptr;
+        if (current_line_buffer != nullptr)
+		{
+			free(current_line_buffer);
+			current_line_buffer = nullptr;
+		}
         popen_buffer = buffer;
         REMOVE_R(popen_buffer);
         REMOVE_N(popen_buffer);
