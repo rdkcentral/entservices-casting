@@ -119,9 +119,9 @@ private:
      */
     bool getSerialNumberFromDeviceInfo(std::string& serialNumber);
     /**
-     * Generates a UUID version 5 (namespace-based) from the provided string.
+     * Generates DNS namespace UUID aligning to RFC 4122 using the provided string input.
      * @param serialNumber The serial number string to use as the basis for the UUID.
-     * @return A string containing the generated UUID v5 on success, empty string otherwise.
+     * @return A string containing the generated UUID v5 on success; empty string on any failure.
      */
     std::string generateUUIDv5FromSerialNumber(const std::string& serialNumber);
 
