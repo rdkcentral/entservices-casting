@@ -28,8 +28,15 @@
 #include "XCastCommon.h"
 #include <gdialservicecommon.h>
 #include <gdialservice.h>
+
 using namespace std;
 
+// Forward declaration
+namespace WPEFramework {
+    namespace PluginHost {
+        class IShell;
+    }
+}
 
 /**
  * This is the Manager class for interacting with gdial library.
@@ -37,7 +44,7 @@ using namespace std;
 class XCastManager : public GDialNotifier
 {
 protected:
-    XCastManager(){}
+    XCastManager() : _pluginService(nullptr) {}
 public:
     virtual ~XCastManager();
     /**
@@ -45,7 +52,7 @@ public:
      */
     bool initialize(const std::string& gdial_interface_name, bool networkStandbyMode );
     void deinitialize();
-    
+
     /** Shutdown gdialService connectivity */
     void shutdown();
     /**
@@ -90,17 +97,23 @@ public:
      *Call back function for rtConnection
      */
     int isGDialStarted();
-    
+
     void setService(XCastNotifier * service){
         m_observer = service;
+    }
+    void setPluginService(WPEFramework::PluginHost::IShell* service) {
+        _pluginService = service;
     }
 private:
     //Internal methods
     XCastNotifier * m_observer;
+    WPEFramework::PluginHost::IShell* _pluginService;
     void getWiFiInterface(std::string& WiFiInterfaceName);
     void getGDialInterfaceName(std::string& interfaceName);
     std::string getReceiverID(void);
     bool envGetValue(const char *key, std::string &value);
+    bool getSerialNumberFromDeviceInfo(std::string& serialNumber);
+    std::string generateUUIDv5FromSerialNumber(const std::string& serialNumber);
 
     // Class level contracts
     // Singleton instance

@@ -20,7 +20,11 @@
 #include "XCastManager.h"
 #include "UtilsJsonRpc.h"
 #include "rfcapi.h"
-#include<interfaces/IConfiguration.h>
+#include <interfaces/IConfiguration.h>
+#include <interfaces/IDeviceInfo.h>
+#include <cryptalgo/Hash.h>
+#include <sstream>
+#include <iomanip>
 
 using namespace std;
 using namespace WPEFramework;
@@ -195,6 +199,24 @@ bool XCastManager::initialize(const std::string& gdial_interface_name, bool netw
     if (m_uuid.empty())
     {
         m_uuid = getReceiverID();
+        if (m_uuid.empty())
+        {
+            LOGINFO("ReceiverID not found, attempting to generate UUID from serial number");
+            std::string serialNumber = "";
+
+            if (getSerialNumberFromDeviceInfo(serialNumber))
+            {
+                m_uuid = generateUUIDv5FromSerialNumber(serialNumber);
+                if (m_uuid.empty())
+                {
+                    LOGERR("Failed to generate UUID from serial number");
+                }
+            }
+            else
+            {
+                LOGERR("Failed to retrieve serial number from DeviceInfo plugin");
+            }
+        }
     }
 
     if (!m_uuid.empty())
@@ -556,3 +578,89 @@ XCastManager * XCastManager::getInstance()
     LOGINFO("Exiting ...");
     return XCastManager::_instance;
 }
+
+bool XCastManager::getSerialNumberFromDeviceInfo(std::string& serialNumber)
+{
+    LOGINFO("Retrieving serial number from DeviceInfo plugin...");
+
+    if (_pluginService == nullptr) {
+        LOGERR("Plugin service is not initialized");
+        return false;
+    }
+
+    auto deviceInfoPlugin = _pluginService->QueryInterfaceByCallsign<WPEFramework::Exchange::IDeviceInfo>("DeviceInfo");
+
+    if (deviceInfoPlugin != nullptr) {
+        if (deviceInfoPlugin->SerialNumber(serialNumber) == Core::ERROR_NONE) {
+            LOGINFO("Successfully retrieved serial number: %s", serialNumber.c_str());
+            deviceInfoPlugin->Release();
+            return !serialNumber.empty();
+        } else {
+            LOGERR("Failed to retrieve serial number from DeviceInfo");
+            deviceInfoPlugin->Release();
+        }
+    } else {
+        LOGERR("Failed to connect to DeviceInfo plugin");
+    }
+
+    return false;
+}
+
+std::string XCastManager::generateUUIDv5FromSerialNumber(const std::string& serialNumber)
+{
+    LOGINFO("Generating UUID v5 from serial number...");
+
+    if (serialNumber.empty()) {
+        LOGERR("Serial number is empty, cannot generate UUID");
+        return "";
+    }
+
+    // UUID v5 uses SHA-1 hashing
+    // DNS namespace UUID: 6ba7b810-9dad-11d1-80b4-00c04fd430c8
+    const uint8_t namespaceDNS[16] = {
+        0x6b, 0xa7, 0xb8, 0x10, 0x9d, 0xad, 0x11, 0xd1,
+        0x80, 0xb4, 0x00, 0xc0, 0x4f, 0xd4, 0x30, 0xc8
+    };
+
+    std::vector<uint8_t> data(namespaceDNS, namespaceDNS + 16);
+    data.insert(data.end(), serialNumber.begin(), serialNumber.end());
+
+    Crypto::SHA1 sha1;
+    sha1.Input(data.data(), data.size());
+    const uint8_t* hash = sha1.Result();
+    uint8_t uuidBytes[16];
+    memcpy(uuidBytes, hash, 16);
+
+    // Set version (5) and variant bits according to RFC 4122
+    uuidBytes[6] = (uuidBytes[6] & 0x0F) | 0x50;
+    uuidBytes[8] = (uuidBytes[8] & 0x3F) | 0x80;
+
+    // Format as UUID string: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+    std::ostringstream uuidStream;
+    uuidStream << std::hex << std::setfill('0');
+
+    for (int i = 0; i < 4; i++)
+        uuidStream << std::setw(2) << static_cast<int>(uuidBytes[i]);
+    uuidStream << "-";
+
+    for (int i = 4; i < 6; i++)
+        uuidStream << std::setw(2) << static_cast<int>(uuidBytes[i]);
+    uuidStream << "-";
+
+    for (int i = 6; i < 8; i++)
+        uuidStream << std::setw(2) << static_cast<int>(uuidBytes[i]);
+    uuidStream << "-";
+
+    for (int i = 8; i < 10; i++)
+        uuidStream << std::setw(2) << static_cast<int>(uuidBytes[i]);
+    uuidStream << "-";
+
+    for (int i = 10; i < 16; i++)
+        uuidStream << std::setw(2) << static_cast<int>(uuidBytes[i]);
+
+    std::string uuid = uuidStream.str();
+    LOGINFO("Generated UUID v5: %s", uuid.c_str());
+
+    return uuid;
+}
+

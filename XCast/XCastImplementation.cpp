@@ -157,6 +157,10 @@ namespace WPEFramework
                 if(nullptr != m_xcast_manager)
                 {
                     m_xcast_manager->setService(this);
+                    if (_service != nullptr)
+                    {
+                        m_xcast_manager->setPluginService(_service);\
+                    }
                     if( false == connectToGDialService())
                     {
                         startTimer(LOCATE_CAST_FIRST_TIMEOUT_IN_MILLIS);
