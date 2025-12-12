@@ -546,6 +546,11 @@ namespace WPEFramework
             std::string interface,ipaddress;
             bool status = false;
 
+            if (_service == nullptr) {
+                LOGERR("Service is not initialized");
+                return false;
+            }
+
             getDefaultNameAndIPAddress(interface,ipaddress);
             if (!interface.empty())
             {
