@@ -112,7 +112,17 @@ private:
     void getGDialInterfaceName(std::string& interfaceName);
     std::string getReceiverID(void);
     bool envGetValue(const char *key, std::string &value);
+    /**
+     * Retrieves the device serial number from the deviceInfo plugin.
+     * @param serialNumber [out] Contains serial number string on success.
+     * @return true if the serial number was successfully retrieved, false otherwise.
+     */
     bool getSerialNumberFromDeviceInfo(std::string& serialNumber);
+    /**
+     * Generates a UUID version 5 (namespace-based) from the provided string.
+     * @param serialNumber The serial number string to use as the basis for the UUID.
+     * @return A string containing the generated UUID v5 on success, empty string otherwise.
+     */
     std::string generateUUIDv5FromSerialNumber(const std::string& serialNumber);
 
     // Class level contracts

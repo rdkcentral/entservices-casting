@@ -645,7 +645,7 @@ std::string XCastManager::generateUUIDv5FromSerialNumber(const std::string& seri
 
     auto formatBytes = [](std::ostringstream& stream, const uint8_t* bytes, int start, int end) {
         for (int i = start; i < end; i++) {
-            stream << std::setw(2) << static_cast<int>(bytes[i]);
+            stream << std::setw(2) << static_cast<unsigned int>(bytes[i]);
         }
     };
 
