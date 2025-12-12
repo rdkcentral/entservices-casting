@@ -28,8 +28,15 @@
 #include "XCastCommon.h"
 #include <gdialservicecommon.h>
 #include <gdialservice.h>
+
 using namespace std;
 
+// Forward declaration
+namespace WPEFramework {
+    namespace PluginHost {
+        class IShell;
+    }
+}
 
 /**
  * This is the Manager class for interacting with gdial library.
@@ -37,7 +44,7 @@ using namespace std;
 class XCastManager : public GDialNotifier
 {
 protected:
-    XCastManager(){}
+    XCastManager() : m_pluginService(nullptr) {}
 public:
     virtual ~XCastManager();
     /**
@@ -45,7 +52,7 @@ public:
      */
     bool initialize(const std::string& gdial_interface_name, bool networkStandbyMode );
     void deinitialize();
-    
+
     /** Shutdown gdialService connectivity */
     void shutdown();
     /**
@@ -90,17 +97,33 @@ public:
      *Call back function for rtConnection
      */
     int isGDialStarted();
-    
+
     void setService(XCastNotifier * service){
         m_observer = service;
+    }
+    void setPluginService(WPEFramework::PluginHost::IShell* service) {
+        m_pluginService = service;
     }
 private:
     //Internal methods
     XCastNotifier * m_observer;
+    WPEFramework::PluginHost::IShell* m_pluginService;
     void getWiFiInterface(std::string& WiFiInterfaceName);
     void getGDialInterfaceName(std::string& interfaceName);
     std::string getReceiverID(void);
     bool envGetValue(const char *key, std::string &value);
+    /**
+     * Retrieves the device serial number from the deviceInfo plugin.
+     * @param serialNumber [out] Contains serial number string on success.
+     * @return true if the serial number was successfully retrieved, false otherwise.
+     */
+    bool getSerialNumberFromDeviceInfo(std::string& serialNumber);
+    /**
+     * Generates DNS namespace UUID aligning to RFC 4122 using the provided string input.
+     * @param serialNumber The serial number string to use as the basis for the UUID.
+     * @return A string containing the generated UUID v5 on success; empty string on any failure.
+     */
+    std::string generateUUIDv5FromSerialNumber(const std::string& serialNumber);
 
     // Class level contracts
     // Singleton instance

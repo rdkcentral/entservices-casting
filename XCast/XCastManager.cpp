@@ -20,7 +20,11 @@
 #include "XCastManager.h"
 #include "UtilsJsonRpc.h"
 #include "rfcapi.h"
-#include<interfaces/IConfiguration.h>
+#include <interfaces/IConfiguration.h>
+#include <interfaces/IDeviceInfo.h>
+#include <cryptalgo/Hash.h>
+#include <sstream>
+#include <iomanip>
 
 using namespace std;
 using namespace WPEFramework;
@@ -195,6 +199,24 @@ bool XCastManager::initialize(const std::string& gdial_interface_name, bool netw
     if (m_uuid.empty())
     {
         m_uuid = getReceiverID();
+        if (m_uuid.empty())
+        {
+            LOGINFO("ReceiverID not found, attempting to generate UUID from serial number");
+            std::string serialNumber = "";
+
+            if (getSerialNumberFromDeviceInfo(serialNumber))
+            {
+                m_uuid = generateUUIDv5FromSerialNumber(serialNumber);
+                if (m_uuid.empty())
+                {
+                    LOGERR("Failed to generate UUID from serial number");
+                }
+            }
+            else
+            {
+                LOGERR("Failed to retrieve serial number from DeviceInfo plugin");
+            }
+        }
     }
 
     if (!m_uuid.empty())
@@ -428,7 +450,7 @@ void XCastManager::enableCastService(string friendlyname,bool enableService)
         LOGINFO("XcastService send onActivationChanged");
     }
     else
-        LOGINFO(" gdialCastObj is NULL ");    
+        LOGINFO(" gdialCastObj is NULL ");
 }
 
 string XCastManager::getProtocolVersion(void)
@@ -505,7 +527,7 @@ void XCastManager::registerApplications(std::vector<DynamicAppConfig*>& appConfi
     for (DynamicAppConfig* pDynamicAppConfig : appConfigList)
     {
         RegisterAppEntry* appReq = new RegisterAppEntry;
-        
+
         appReq->Names = pDynamicAppConfig->appName;
         appReq->prefixes = pDynamicAppConfig->prefixes;
         appReq->cors = pDynamicAppConfig->cors;
@@ -555,4 +577,94 @@ XCastManager * XCastManager::getInstance()
     }
     LOGINFO("Exiting ...");
     return XCastManager::_instance;
+}
+
+bool XCastManager::getSerialNumberFromDeviceInfo(std::string& serialNumber)
+{
+
+    if (m_pluginService == nullptr) {
+        LOGERR("Plugin service is not initialized");
+        return false;
+    }
+
+    auto deviceInfoPlugin = m_pluginService->QueryInterfaceByCallsign<WPEFramework::Exchange::IDeviceInfo>("DeviceInfo");
+
+    if (deviceInfoPlugin == nullptr) {
+        LOGERR("DeviceInfo plugin is not available or not activated");
+        return false;
+    }
+
+    Core::hresult result = deviceInfoPlugin->SerialNumber(serialNumber);
+    deviceInfoPlugin->Release();
+
+    if (result == Core::ERROR_NONE && !serialNumber.empty()) {
+        return true;
+    }
+
+    LOGERR("get DeviceInfo.SerialNumber failed, error code: %u, length: %zu", result, serialNumber.length());
+    return false;
+}
+
+std::string XCastManager::generateUUIDv5FromSerialNumber(const std::string& serialNumber)
+{
+    LOGINFO("Generating UUID v5 from serial number...");
+
+    if (serialNumber.empty()) {
+        LOGERR("Serial number is empty, cannot generate UUID");
+        return "";
+    }
+
+    // UUID v5 uses SHA-1 hashing
+    // DNS namespace UUID: 6ba7b810-9dad-11d1-80b4-00c04fd430c8
+    const uint8_t namespaceDNS[16] = {
+        0x6b, 0xa7, 0xb8, 0x10, 0x9d, 0xad, 0x11, 0xd1,
+        0x80, 0xb4, 0x00, 0xc0, 0x4f, 0xd4, 0x30, 0xc8
+    };
+
+    // Concatenate namespace UUID and serial number for hashing
+    std::vector<uint8_t> data(namespaceDNS, namespaceDNS + 16);
+    data.insert(data.end(), serialNumber.begin(), serialNumber.end());
+
+    // Compute SHA-1 hash and copy immediately to ensure data is preserved
+    Crypto::SHA1 sha1;
+    sha1.Input(data.data(), data.size());
+    const uint8_t* hashResult = sha1.Result();
+
+    if (hashResult == nullptr) {
+        LOGERR("SHA-1 hash computation failed");
+        return "";
+    }
+
+    // Copy hash data before sha1 object goes out of scope
+    uint8_t uuidBytes[16];
+    memcpy(uuidBytes, hashResult, 16);
+
+    // Set version (5) and variant bits according to RFC 4122
+    uuidBytes[6] = (uuidBytes[6] & 0x0F) | 0x50;  // Version 5
+    uuidBytes[8] = (uuidBytes[8] & 0x3F) | 0x80;  // Variant bits
+
+    auto formatBytes = [](std::ostringstream& stream, const uint8_t* bytes, int start, int end) {
+        for (int i = start; i < end; i++) {
+            stream << std::setw(2) << static_cast<unsigned int>(bytes[i]);
+        }
+    };
+
+    // Format as UUID string: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+    std::ostringstream uuidStream;
+    uuidStream << std::hex << std::setfill('0');
+
+    formatBytes(uuidStream, uuidBytes, 0, 4);
+    uuidStream << "-";
+    formatBytes(uuidStream, uuidBytes, 4, 6);
+    uuidStream << "-";
+    formatBytes(uuidStream, uuidBytes, 6, 8);
+    uuidStream << "-";
+    formatBytes(uuidStream, uuidBytes, 8, 10);
+    uuidStream << "-";
+    formatBytes(uuidStream, uuidBytes, 10, 16);
+
+    std::string uuid = uuidStream.str();
+    LOGINFO("Generated UUID v5: %s", uuid.c_str());
+
+    return uuid;
 }
