@@ -159,7 +159,7 @@ namespace WPEFramework
                     m_xcast_manager->setService(this);
                     if (_service != nullptr)
                     {
-                        m_xcast_manager->setPluginService(_service);\
+                        m_xcast_manager->setPluginService(_service);
                     }
                     if( false == connectToGDialService())
                     {

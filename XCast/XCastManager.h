@@ -44,7 +44,7 @@ namespace WPEFramework {
 class XCastManager : public GDialNotifier
 {
 protected:
-    XCastManager() : _pluginService(nullptr) {}
+    XCastManager() : m_pluginService(nullptr) {}
 public:
     virtual ~XCastManager();
     /**
@@ -102,12 +102,12 @@ public:
         m_observer = service;
     }
     void setPluginService(WPEFramework::PluginHost::IShell* service) {
-        _pluginService = service;
+        m_pluginService = service;
     }
 private:
     //Internal methods
     XCastNotifier * m_observer;
-    WPEFramework::PluginHost::IShell* _pluginService;
+    WPEFramework::PluginHost::IShell* m_pluginService;
     void getWiFiInterface(std::string& WiFiInterfaceName);
     void getGDialInterfaceName(std::string& interfaceName);
     std::string getReceiverID(void);
