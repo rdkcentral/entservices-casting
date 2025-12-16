@@ -199,24 +199,6 @@ bool XCastManager::initialize(const std::string& gdial_interface_name, bool netw
     if (m_uuid.empty())
     {
         m_uuid = getReceiverID();
-        if (m_uuid.empty())
-        {
-            LOGINFO("ReceiverID not found, attempting to generate UUID from serial number");
-            std::string serialNumber = "";
-
-            if (getSerialNumberFromDeviceInfo(serialNumber))
-            {
-                m_uuid = generateUUIDv5FromSerialNumber(serialNumber);
-                if (m_uuid.empty())
-                {
-                    LOGERR("Failed to generate UUID from serial number");
-                }
-            }
-            else
-            {
-                LOGERR("Failed to retrieve serial number from DeviceInfo plugin");
-            }
-        }
     }
 
     if (!m_uuid.empty())
@@ -356,6 +338,25 @@ std::string XCastManager::getReceiverID(void)
         else if (whitebox_deviceId)
         {
             std::getline(whitebox_deviceId, receiverId);
+        }
+    }
+
+    if (receiverId.empty())
+    {
+        LOGINFO("ReceiverID not found, attempting to generate UUID from serial number");
+        std::string serialNumber = "";
+
+        if (getSerialNumberFromDeviceInfo(serialNumber))
+        {
+            receiverId = generateUUIDv5FromSerialNumber(serialNumber);
+            if (receiverId.empty())
+            {
+                LOGERR("Failed to generate UUID from serial number");
+            }
+        }
+        else
+        {
+            LOGERR("Failed to retrieve serial number from DeviceInfo plugin");
         }
     }
     return receiverId;
@@ -616,6 +617,7 @@ std::string XCastManager::generateUUIDv5FromSerialNumber(const std::string& seri
 
     // UUID v5 uses SHA-1 hashing
     // DNS namespace UUID: 6ba7b810-9dad-11d1-80b4-00c04fd430c8
+    // Ref: https://datatracker.ietf.org/doc/html/rfc4122
     const uint8_t namespaceDNS[16] = {
         0x6b, 0xa7, 0xb8, 0x10, 0x9d, 0xad, 0x11, 0xd1,
         0x80, 0xb4, 0x00, 0xc0, 0x4f, 0xd4, 0x30, 0xc8
