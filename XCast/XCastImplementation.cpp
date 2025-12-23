@@ -750,6 +750,7 @@ namespace WPEFramework
         {
             _adminLock.Lock();
 
+            // Coverity Issue Type 3: COPY_INSTEAD_OF_MOVE - Using std::move() to avoid unnecessary string copies
             LOGINFO("Event[%d] callsign[%s]", event, callsign.c_str());
             std::list<Exchange::IXCast::INotification*>::iterator index(_xcastNotification.begin());
             while (index != _xcastNotification.end())

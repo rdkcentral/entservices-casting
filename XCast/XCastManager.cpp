@@ -50,7 +50,8 @@ void XCastManager::onApplicationLaunchRequestWithLaunchParam(string appName,stri
 {
     if ( nullptr != m_observer )
     {
-        m_observer->onXcastApplicationLaunchRequestWithParam(appName,strPayLoad,strQuery,strAddDataUrl);
+        // Coverity Issue Type 3: COPY_INSTEAD_OF_MOVE - Using std::move() to avoid unnecessary string copies
+        m_observer->onXcastApplicationLaunchRequestWithParam(std::move(appName),std::move(strPayLoad),std::move(strQuery),std::move(strAddDataUrl));
     }
 }
 
@@ -58,7 +59,8 @@ void XCastManager::onApplicationLaunchRequest(string appName, string parameter)
 {
     if ( nullptr != m_observer )
     {
-        m_observer->onXcastApplicationLaunchRequest(appName,parameter);
+        // Coverity Issue Type 3: COPY_INSTEAD_OF_MOVE - Using std::move() to avoid unnecessary string copies
+        m_observer->onXcastApplicationLaunchRequest(std::move(appName),std::move(parameter));
     }
 }
 
@@ -66,7 +68,8 @@ void XCastManager::onApplicationStopRequest(string appName, string appID)
 {
     if ( nullptr != m_observer )
     {
-        m_observer->onXcastApplicationStopRequest(appName,appID);
+        // Coverity Issue Type 3: COPY_INSTEAD_OF_MOVE - Using std::move() to avoid unnecessary string copies
+        m_observer->onXcastApplicationStopRequest(std::move(appName),std::move(appID));
     }
 }
 
@@ -74,7 +77,8 @@ void XCastManager::onApplicationHideRequest(string appName, string appID)
 {
     if ( nullptr != m_observer )
     {
-        m_observer->onXcastApplicationHideRequest(appName,appID);
+        // Coverity Issue Type 3: COPY_INSTEAD_OF_MOVE - Using std::move() to avoid unnecessary string copies
+        m_observer->onXcastApplicationHideRequest(std::move(appName),std::move(appID));
     }
 }
 
@@ -82,7 +86,8 @@ void XCastManager::onApplicationResumeRequest(string appName, string appID)
 {
     if ( nullptr != m_observer )
     {
-        m_observer->onXcastApplicationResumeRequest(appName,appID);
+        // Coverity Issue Type 3: COPY_INSTEAD_OF_MOVE - Using std::move() to avoid unnecessary string copies
+        m_observer->onXcastApplicationResumeRequest(std::move(appName),std::move(appID));
     }
 }
 
@@ -90,7 +95,8 @@ void XCastManager::onApplicationStateRequest(string appName, string appID)
 {
     if ( nullptr != m_observer )
     {
-        m_observer->onXcastApplicationStateRequest(appName,appID);
+        // Coverity Issue Type 3: COPY_INSTEAD_OF_MOVE - Using std::move() to avoid unnecessary string copies
+        m_observer->onXcastApplicationStateRequest(std::move(appName),std::move(appID));
     }
 }
 
@@ -98,7 +104,8 @@ void XCastManager::updatePowerState(string powerState)
 {
     if ( nullptr != m_observer )
     {
-        m_observer->onXcastUpdatePowerStateRequest(powerState);
+        // Coverity Issue Type 3: COPY_INSTEAD_OF_MOVE - Using std::move() to avoid unnecessary string copies
+        m_observer->onXcastUpdatePowerStateRequest(std::move(powerState));
     }
 }
 
@@ -409,7 +416,8 @@ int XCastManager::applicationStateChanged( string app, string state, string id, 
     lock_guard<recursive_mutex> lock(m_mutexSync);
     if (gdialCastObj != NULL)
     {
-        gdialCastObj->ApplicationStateChanged( app, state, id, error);
+        // Coverity Issue Type 3: COPY_INSTEAD_OF_MOVE - Using std::move() to avoid unnecessary string copies
+        gdialCastObj->ApplicationStateChanged( std::move(app), std::move(state), std::move(id), std::move(error));
         status = 1;
     }
     else
@@ -424,7 +432,8 @@ void XCastManager::enableCastService(string friendlyname,bool enableService)
     if(gdialCastObj != NULL)
     {
         std::string activation = enableService ? "true": "false";
-        gdialCastObj->ActivationChanged( activation, friendlyname);
+        // Coverity Issue Type 3: COPY_INSTEAD_OF_MOVE - Using std::move() to avoid unnecessary string copies
+        gdialCastObj->ActivationChanged( std::move(activation), std::move(friendlyname));
         LOGINFO("XcastService send onActivationChanged");
     }
     else
@@ -455,10 +464,11 @@ int XCastManager::setManufacturerName( string manufacturer)
     int status = 0;
     LOGINFO("Manufacturer[%s]", manufacturer.c_str());
     lock_guard<recursive_mutex> lock(m_mutexSync);
+    // Coverity Issue Type 3: COPY_INSTEAD_OF_MOVE - Using std::move() to avoid unnecessary string copies
     m_manufacturerName = manufacturer;
     if(gdialCastObj != NULL)
     {
-        gdialCastObj->setManufacturerName( manufacturer );
+        gdialCastObj->setManufacturerName( std::move(manufacturer) );
         status = 1;
     }
     else
@@ -478,10 +488,11 @@ int XCastManager::setModelName( string model)
     int status = 0;
     lock_guard<recursive_mutex> lock(m_mutexSync);
     LOGINFO("Model[%s]", model.c_str());
+    // Coverity Issue Type 3: COPY_INSTEAD_OF_MOVE - Using std::move() to avoid unnecessary string copies
     m_modelName = model;
     if(gdialCastObj != NULL)
     {
-        gdialCastObj->setModelName(model);
+        gdialCastObj->setModelName(std::move(model));
         status = 1;
     }
     else
