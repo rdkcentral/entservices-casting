@@ -99,7 +99,6 @@ namespace WPEFramework
                             Exchange::JMiracastService::Register(*this, mMiracastServiceImpl);
                             mRegisterEvents = true;
                         }
-                        mConfigure->Release();
                     }
                     else
                     {
@@ -143,9 +142,22 @@ namespace WPEFramework
                     mRegisterEvents = false;
                 }
 
+                if (mConfigure)
+                {
+                    uint32_t result = mConfigure->Configure(NULL);
+                    if (result == Core::ERROR_NONE) {
+                        SYSLOG(Logging::Shutdown, (string(_T("MiracastServiceImpl deinitialized successfully"))));
+                    }
+                    else {
+                        SYSLOG(Logging::Shutdown, (string(_T("MiracastServiceImpl deinitialization failed"))));
+                    }
+                    mConfigure->Release();
+                    mConfigure = NULL;
+                }
+
                 /* Stop processing: */
                 RPC::IRemoteConnection* connection = nullptr;
-                if (service)
+                if (nullptr != service)
                 {
                     connection = service->RemoteConnection(mConnectionId);
                 }
@@ -168,14 +180,15 @@ namespace WPEFramework
                     connection->Terminate();
                     connection->Release();
                 }
-            }
-            if (nullptr != mCurrentService)
-            {
-                /* Make sure the Activated and Deactivated are no longer called before we start cleaning up.. */
-                mCurrentService->Unregister(&mMiracastServiceNotification);
-                mCurrentService->Release();
-                mCurrentService = nullptr;
-            }
+
+                if (nullptr != mCurrentService)
+                {
+                    /* Make sure the Activated and Deactivated are no longer called before we start cleaning up.. */
+                    mCurrentService->Unregister(&mMiracastServiceNotification);
+                    mCurrentService->Release();
+                    mCurrentService = nullptr;
+                }
+            } 
             mConnectionId = 0;
             SYSLOG(Logging::Shutdown, (string(_T("MiracastService de-initialised"))));
         }

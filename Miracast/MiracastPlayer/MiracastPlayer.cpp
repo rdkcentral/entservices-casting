@@ -98,7 +98,7 @@ namespace WPEFramework
                             /* Invoking Plugin API register to wpeframework */
                             Exchange::JMiracastPlayer::Register(*this, mMiracastPlayerImpl);
                         }
-                        mConfigure->Release();
+                       
                     }
                     else
                     {
@@ -132,11 +132,22 @@ namespace WPEFramework
 
             ASSERT(mCurrentService == service);
             ASSERT(0 == mConnectionId);
-
             if (nullptr != mMiracastPlayerImpl)
             {
                 mMiracastPlayerImpl->Unregister(&mMiracastPlayerNotification);
                 Exchange::JMiracastPlayer::Unregister(*this);
+                if (mConfigure)
+                {
+                    uint32_t result = mConfigure->Configure(NULL);
+                    if (result == Core::ERROR_NONE) {
+                        SYSLOG(Logging::Shutdown, (string(_T("MiracastPlayerImpl deinitialized successfully"))));
+                    }
+                    else {
+                        SYSLOG(Logging::Shutdown, (string(_T("MiracastPlayerImpl deinitialization failed"))));
+                    }
+                    mConfigure->Release();
+                    mConfigure = NULL;
+                }
 
                 /* Stop processing: */
                 RPC::IRemoteConnection* connection = nullptr;
@@ -164,16 +175,14 @@ namespace WPEFramework
                     connection->Terminate();
                     connection->Release();
                 }
+                if (nullptr != mCurrentService)
+                {
+                    /* Make sure the Activated and Deactivated are no longer called before we start cleaning up.. */
+                    mCurrentService->Unregister(&mMiracastPlayerNotification);
+                    mCurrentService->Release();
+                    mCurrentService = nullptr;
+                }
             }
-
-            if (nullptr != mCurrentService)
-            {
-                /* Make sure the Activated and Deactivated are no longer called before we start cleaning up.. */
-                mCurrentService->Unregister(&mMiracastPlayerNotification);
-                mCurrentService->Release();
-                mCurrentService = nullptr;
-            }
-
             mConnectionId = 0;
             SYSLOG(Logging::Shutdown, (string(_T("MiracastPlayer de-initialised"))));
         }

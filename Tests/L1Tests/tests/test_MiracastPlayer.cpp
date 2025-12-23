@@ -1,4 +1,3 @@
-#if 0
 /**
 * If not stated otherwise in this file or this component's LICENSE
 * file the following copyright and licenses apply:
@@ -121,7 +120,8 @@ namespace {
         struct tm *tm_info;
         tm_info = localtime(&tv.tv_sec);
 
-        sprintf(time_str, ": %02d:%02d:%02d:%06ld", tm_info->tm_hour, tm_info->tm_min, tm_info->tm_sec, microseconds);
+        /* FIX: Replace sprintf with snprintf to prevent buffer overflow - assuming time_str buffer is 24 bytes */
+        snprintf(time_str, 24, ": %02d:%02d:%02d:%06ld", tm_info->tm_hour, tm_info->tm_min, tm_info->tm_sec, microseconds);
     }
 
     void log( const char *func, const char *file, int line, int threadID,const char *format, ...)
@@ -132,6 +132,9 @@ namespace {
         va_list argptr;
 
         current_time(time);
+
+        /* FIX: Add null pointer check for format parameter */
+        if (!format) return;
 
         va_start(argptr, format);
         vsnprintf(formatted, kFormatMessageSize, format, argptr);
@@ -290,12 +293,17 @@ namespace {
     bool initialize_ServerSocket(void)
     {
         // Create socket file descriptor
-        if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
+        if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
             perror("socket failed");
             return false;
         }
 
-        fcntl(server_fd, F_SETFL, O_NONBLOCK);
+        if (fcntl(server_fd, F_SETFL, O_NONBLOCK) < 0) {
+            perror("fcntl failed");
+            close(server_fd);
+            server_fd = -1;
+            return false;
+        }
         TEST_LOG("#### NON_BLOCKING Socket Enabled ####");
 
         // Forcefully attaching socket to the port 7236
@@ -381,7 +389,7 @@ namespace {
             std::string msg_buffer = "";
 
             memset( buffer , 0x00 , sizeof(buffer));
-            TEST_LOG("Index[%d] RTSP Msg[%x]",current_msg,rtsp_msg_type);
+            TEST_LOG("Index[%zu] RTSP Msg[%x]",current_msg,rtsp_msg_type);
 
             if ( RTSP_SEND == rtsp_sendorreceive )
             {
@@ -498,7 +506,7 @@ namespace {
                     case RTSP_RECV_M7_REQUEST:
                         {
                             TEST_LOG("RTSP_RECV REQUEST Messages");
-                            receivedCSeqNum = parse_received_parser_field_value( msg_buffer , "CSeq: " );
+                            receivedCSeqNum = parse_received_parser_field_value( std::move(msg_buffer) , "CSeq: " );
                         }
                         break;
                     default:
@@ -1310,4 +1318,3 @@ TEST_F(MiracastPlayerTest, SetOrUnsetEnvArguments)
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setEnvArguments"), _T("{\"envArgs\":[{\"argName\":\"DISPLAY\",\"argValue\":\"display-testplayer-0\"},{\"argName\":\"XDG_RUNTIME_DIR\",\"argValue\":\"/tmp\"}],\"appName\":\"MiracastApp\"}"), response));
     EXPECT_EQ(response, string("{\"message\":\"Failed, Missing Wayland Display Name\",\"success\":false}"));
 }
-#endif
