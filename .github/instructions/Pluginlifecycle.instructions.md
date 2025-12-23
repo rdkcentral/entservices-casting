@@ -33,7 +33,7 @@ const string HdcpProfile::Initialize(PluginHost::IShell* service) {
 }
 ```
 
-- The plugin should register its listener object twice:
+- Plugin should register your listener object twice:
 
   - Framework Service (_service): Use _service->Register(listener) to receive general plugin state change notifications (like ACTIVATED/DEACTIVATED).
 
@@ -77,7 +77,7 @@ Core::hresult NativeJSImplementation::Initialize(string waylandDisplay)
 }
 ```
 
-- Before executing Initialize(), ensure all private member variables are in a reset state (either initialized by the constructor or cleared by a prior Deinitialize()). Validate this by asserting their default values.
+- Before executing Initialize, ensure all private member variables are in a reset state (either initialized by the constructor or cleared by a prior Deinitialize). Validate this by asserting their default values.
 
 **Example:**
 
@@ -252,7 +252,7 @@ void HdcpProfile::Deinitialize(PluginHost::IShell* service) {
 
 ### Deactivated
 
-Each plugin should implement the Deactivated method. In Deactivated, check if the remote connection ID matches your plugin's connection ID. If it matches, the plugin should submit a deactivation job to handle the out-of-process failure gracefully.
+Each plugin should implement the deactivated method. In Deactivated, it should be checked if remote connectionId matches your plugin's connectionId. If it matches your plugin's connectionId, the plugin should submit a deactivation job to handle the out-of-process failure gracefully.
 
 ### Example
 
