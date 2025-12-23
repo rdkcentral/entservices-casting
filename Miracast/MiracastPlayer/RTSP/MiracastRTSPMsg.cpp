@@ -256,7 +256,9 @@ MiracastRTSPMsg::MiracastRTSPMsg()
     set_WFDStreamingPortNumber(default_configuration);
 
     default_configuration = RTSP_DFLT_CLIENT_RTP_PORTS;
-    set_WFDClientRTPPorts(default_configuration);
+    // ISSUE: String parameter is copied instead of moved, causing unnecessary memory allocation
+    // FIX: Use std::move() to transfer ownership instead of copying
+    set_WFDClientRTPPorts(std::move(default_configuration));
 
 #ifndef MIRACAST_CERT_BUILD
     m_wfd_src_req_timeout += RTSP_REQ_RESP_RECV_TIMEOUT_OFFSET_MSEC;
@@ -461,67 +463,89 @@ bool MiracastRTSPMsg::set_WFDAudioCodecs( RTSP_WFD_AUDIO_FMT_STRUCT st_audio_fmt
 
 bool MiracastRTSPMsg::set_WFDClientRTPPorts(std::string client_rtp_ports)
 {
-    m_wfd_client_rtp_ports = client_rtp_ports;
+    // ISSUE: String parameter is copied instead of moved, causing unnecessary memory allocation
+    // FIX: Use std::move() to transfer ownership instead of copying
+    m_wfd_client_rtp_ports = std::move(client_rtp_ports);
     return true;
 }
 
 bool MiracastRTSPMsg::set_WFDUIBCCapability(std::string uibc_caps)
 {
-    m_wfd_uibc_capability = uibc_caps;
+    // ISSUE: String parameter is copied instead of moved, causing unnecessary memory allocation
+    // FIX: Use std::move() to transfer ownership instead of copying
+    m_wfd_uibc_capability = std::move(uibc_caps);
     return true;
 }
 
 bool MiracastRTSPMsg::set_WFDContentProtection(std::string content_protection)
 {
-    m_wfd_content_protection = content_protection;
+    // ISSUE: String parameter is copied instead of moved, causing unnecessary memory allocation
+    // FIX: Use std::move() to transfer ownership instead of copying
+    m_wfd_content_protection = std::move(content_protection);
     return true;
 }
 
 bool MiracastRTSPMsg::set_WFDSecScreenSharing(std::string screen_sharing)
 {
-    m_wfd_sec_screensharing = screen_sharing;
+    // ISSUE: String parameter is copied instead of moved, causing unnecessary memory allocation
+    // FIX: Use std::move() to transfer ownership instead of copying
+    m_wfd_sec_screensharing = std::move(screen_sharing);
     return true;
 }
 
 bool MiracastRTSPMsg::set_WFDPortraitDisplay(std::string portrait_display)
 {
-    m_wfd_sec_portrait_display = portrait_display;
+    // ISSUE: String parameter is copied instead of moved, causing unnecessary memory allocation
+    // FIX: Use std::move() to transfer ownership instead of copying
+    m_wfd_sec_portrait_display = std::move(portrait_display);
     return true;
 }
 
 bool MiracastRTSPMsg::set_WFDSecRotation(std::string rotation)
 {
-    m_wfd_sec_rotation = rotation;
+    // ISSUE: String parameter is copied instead of moved, causing unnecessary memory allocation
+    // FIX: Use std::move() to transfer ownership instead of copying
+    m_wfd_sec_rotation = std::move(rotation);
     return true;
 }
 
 bool MiracastRTSPMsg::set_WFDSecHWRotation(std::string hw_rotation)
 {
-    m_wfd_sec_hw_rotation = hw_rotation;
+    // ISSUE: String parameter is copied instead of moved, causing unnecessary memory allocation
+    // FIX: Use std::move() to transfer ownership instead of copying
+    m_wfd_sec_hw_rotation = std::move(hw_rotation);
     return true;
 }
 
 bool MiracastRTSPMsg::set_WFDSecFrameRate(std::string framerate)
 {
-    m_wfd_sec_framerate = framerate;
+    // ISSUE: String parameter is copied instead of moved, causing unnecessary memory allocation
+    // FIX: Use std::move() to transfer ownership instead of copying
+    m_wfd_sec_framerate = std::move(framerate);
     return true;
 }
 
 bool MiracastRTSPMsg::set_WFDPresentationURL(std::string URL)
 {
-    m_wfd_presentation_URL = URL;
+    // ISSUE: String parameter is copied instead of moved, causing unnecessary memory allocation
+    // FIX: Use std::move() to transfer ownership instead of copying
+    m_wfd_presentation_URL = std::move(URL);
     return true;
 }
 
 bool MiracastRTSPMsg::set_WFDTransportProfile(std::string profile)
 {
-    m_wfd_transport_profile = profile;
+    // ISSUE: String parameter is copied instead of moved, causing unnecessary memory allocation
+    // FIX: Use std::move() to transfer ownership instead of copying
+    m_wfd_transport_profile = std::move(profile);
     return true;
 }
 
 bool MiracastRTSPMsg::set_WFDStreamingPortNumber(std::string port_number)
 {
-    m_wfd_streaming_port = port_number;
+    // ISSUE: String parameter is copied instead of moved, causing unnecessary memory allocation
+    // FIX: Use std::move() to transfer ownership instead of copying
+    m_wfd_streaming_port = std::move(port_number);
     return true;
 }
 
@@ -533,19 +557,25 @@ bool MiracastRTSPMsg::set_WFDEnableDisableUnicast(bool enable_disable_unicast)
 
 bool MiracastRTSPMsg::set_WFDSessionNumber(std::string session)
 {
-    m_wfd_session_number = session;
+    // ISSUE: String parameter is copied instead of moved, causing unnecessary memory allocation
+    // FIX: Use std::move() to transfer ownership instead of copying
+    m_wfd_session_number = std::move(session);
     return true;
 }
 
 bool MiracastRTSPMsg::set_WFDDisplayEDID(std::string wfd_display_edid)
 {
-    m_wfd_display_edid = wfd_display_edid;
+    // ISSUE: String parameter is copied instead of moved, causing unnecessary memory allocation
+    // FIX: Use std::move() to transfer ownership instead of copying
+    m_wfd_display_edid = std::move(wfd_display_edid);
     return true;
 }
 
 bool MiracastRTSPMsg::set_WFDConnectorType(std::string wfd_connector_type)
 {
-    m_wfd_connector_type = wfd_connector_type;
+    // ISSUE: String parameter is copied instead of moved, causing unnecessary memory allocation
+    // FIX: Use std::move() to transfer ownership instead of copying
+    m_wfd_connector_type = std::move(wfd_connector_type);
     return true;
 }
 
@@ -829,10 +859,12 @@ void MiracastRTSPMsg::store_srcsink_info( std::string client_name,
                                           std::string sink_ip)
 {
     MIRACASTLOG_TRACE("Entering...");
-    m_connected_device_name = client_name;
-    m_connected_mac_addr = client_mac;
-    m_src_dev_ip = src_dev_ip;
-    m_sink_ip = sink_ip;
+    // ISSUE: String parameters are copied instead of moved, causing unnecessary memory allocation
+    // FIX: Use std::move() to transfer ownership instead of copying
+    m_connected_device_name = std::move(client_name);
+    m_connected_mac_addr = std::move(client_mac);
+    m_src_dev_ip = std::move(src_dev_ip);
+    m_sink_ip = std::move(sink_ip);
     MIRACASTLOG_TRACE("Exiting...");
 }
 
@@ -974,7 +1006,15 @@ MiracastError MiracastRTSPMsg::initiate_TCP(std::string goIP)
         event.data.fd = m_tcpSockfd;
         epoll_ctl(m_epollfd, EPOLL_CTL_ADD, m_tcpSockfd, &event);
 
-        fcntl(m_tcpSockfd, F_SETFL, O_NONBLOCK);
+        // ISSUE: fcntl() return value is not checked. If fcntl fails to set non-blocking mode, 
+        //        the socket remains blocking which can cause hangs.
+        // FIX: Check fcntl return value and handle error appropriately.
+        int fcntl_result = fcntl(m_tcpSockfd, F_SETFL, O_NONBLOCK);
+        if (fcntl_result < 0) {
+            MIRACASTLOG_ERROR("Failed to set non-blocking mode: %s", strerror(errno));
+            close(m_tcpSockfd);
+            continue;
+        }
         MIRACASTLOG_INFO("NON_BLOCKING Socket Enabled...");
 
         r = connect(m_tcpSockfd, (struct sockaddr *)&in_addr, addr_size);

@@ -1001,7 +1001,8 @@ bool MiracastGstPlayer::stop()
     {
         gst_bin_remove(GST_BIN(m_append_pipeline), m_rtpjitterbuffer);
         gst_object_unref(m_rtpjitterbuffer);
-        m_tsparse = nullptr;
+        // Coverity Issue Type 4: COPY_PASTE_ERROR - Fixed: was incorrectly setting m_tsparse to nullptr
+        m_rtpjitterbuffer = nullptr;
     }
     if (m_udpsrc)
     {

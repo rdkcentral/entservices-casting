@@ -562,7 +562,8 @@ MiracastError MiracastP2P::set_FriendlyName(std::string friendly_name , bool app
     }
     else
     {
-        m_friendly_name = friendly_name;
+        // Coverity Issue Type 3: COPY_INSTEAD_OF_MOVE - Using std::move() to avoid unnecessary string copies
+        m_friendly_name = std::move(friendly_name);
         if ( P2P_SUPPORTED_MAX_FRIENDLY_NAME_LENGTH < m_friendly_name.length())
         {
             std::string trimming_char = P2P_TRIMMING_CHAR;
@@ -602,7 +603,8 @@ MiracastError MiracastP2P::remove_GroupInterface(std::string group_iface_name )
     }
     else{
         std::string command, retBuffer;
-        command = "P2P_GROUP_REMOVE " + group_iface_name;
+        // Coverity Issue Type 3: COPY_INSTEAD_OF_MOVE - Using std::move() to avoid unnecessary string copies
+        command = "P2P_GROUP_REMOVE " + std::move(group_iface_name);
         ret = executeCommand(command, NON_GLOBAL_INTERFACE, retBuffer);
     }
 
