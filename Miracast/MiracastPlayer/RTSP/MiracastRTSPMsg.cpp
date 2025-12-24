@@ -1175,7 +1175,7 @@ RTSP_STATUS MiracastRTSPMsg::validate_rtsp_getparameter_request( std::string rts
 
 RTSP_STATUS MiracastRTSPMsg::validate_rtsp_options_request( std::string rtsp_msg_buffer )
 {
-    return validate_rtsp_m1_msg_m2_send_request(rtsp_msg_buffer);
+    return validate_rtsp_m1_msg_m2_send_request(std::move(rtsp_msg_buffer));
 }
 
 RTSP_STATUS MiracastRTSPMsg::validate_rtsp_generic_request_response( std::string rtsp_msg_buffer )
@@ -1821,7 +1821,7 @@ RTSP_STATUS MiracastRTSPMsg::send_rtsp_reply_sink2src( RTSP_MSG_FMT_SINK2SRC req
         case RTSP_MSG_FMT_TRIGGER_METHODS_RESPONSE:
         {
             std::string rtsp_request_buffer = "";
-            rtsp_request_buffer = generate_request_response_msg(req_fmt, received_seq_num , "" , error_code );
+            rtsp_request_buffer = generate_request_response_msg(req_fmt, std::move(received_seq_num) , "" , error_code );
 
             MIRACASTLOG_INFO("Sending the RTSP Msg for [%#04X] format\n",req_fmt);
             status_code = send_rstp_msg(m_tcpSockfd, rtsp_request_buffer);
