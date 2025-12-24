@@ -22,7 +22,8 @@
 MiracastThread::MiracastThread(std::string thread_name, size_t stack_size, size_t msg_size, size_t queue_depth, void (*callback)(void *), void *user_data)
 {
     MIRACASTLOG_TRACE("Entering...");
-    m_thread_name = thread_name;
+    // Coverity Issue Type 3: COPY_INSTEAD_OF_MOVE - Using std::move() to avoid unnecessary string copies
+    m_thread_name = std::move(thread_name);
 
     m_thread_stacksize = stack_size;
     m_thread_message_size = msg_size;
