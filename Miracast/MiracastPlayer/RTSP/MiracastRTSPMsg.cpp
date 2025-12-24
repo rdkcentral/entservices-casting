@@ -988,6 +988,8 @@ MiracastError MiracastRTSPMsg::initiate_TCP(std::string goIP)
         if (setsockopt(m_tcpSockfd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) == -1)
         {
             MIRACASTLOG_ERROR("Failed to set SO_REUSEADDR: %s", strerror(errno));
+            close(m_tcpSockfd);
+            m_tcpSockfd = -1; // Prevents double close
             continue;
         }
     #if 0
@@ -1013,6 +1015,7 @@ MiracastError MiracastRTSPMsg::initiate_TCP(std::string goIP)
         if (fcntl_result < 0) {
             MIRACASTLOG_ERROR("Failed to set non-blocking mode: %s", strerror(errno));
             close(m_tcpSockfd);
+            m_tcpSockfd = -1;
             continue;
         }
         MIRACASTLOG_INFO("NON_BLOCKING Socket Enabled...");
