@@ -428,26 +428,40 @@ eCONTROLLER_FW_STATES MiracastController::convertP2PtoSessionActions(P2P_EVENTS 
 void MiracastController::restart_session(bool start_discovering_enabled)
 {
     MIRACASTLOG_TRACE("Entering...");
+    MIRACASTLOG_INFO("==========adding logs- restart-session= entering=================");
+    MIRACASTLOG_INFO("[DEBUG] restart_session: start_discovering_enabled=%d, m_groupInfo=%p", start_discovering_enabled, m_groupInfo);
 
     if (nullptr == m_groupInfo)
     {
+        MIRACASTLOG_INFO("[DEBUG] restart_session: Calling cancel_negotiation as m_groupInfo is nullptr");
         cancel_negotiation();
     }
 
+    MIRACASTLOG_INFO("[DEBUG] restart_session: Resetting WFD Source MAC and Name");
     reset_WFDSourceMACAddress();
     reset_WFDSourceName();
+    MIRACASTLOG_INFO("[DEBUG] restart_session: Calling stop_session");
     stop_session();
     if (start_discovering_enabled){
+        MIRACASTLOG_INFO("[DEBUG] restart_session: Calling discover_devices");
         discover_devices();
     }
+    MIRACASTLOG_INFO("[DEBUG] restart_session: Completed");
+    MIRACASTLOG_INFO("==========adding logs- restart-session-complete ==================");
     MIRACASTLOG_TRACE("Exiting...");
 }
 
 void MiracastController::stop_session(bool stop_streaming_needed)
 {
     MIRACASTLOG_TRACE("Entering...");
+    MIRACASTLOG_INFO("==========adding logs==stop-session-entering================");
+    MIRACASTLOG_INFO("[DEBUG] stop_session: stop_streaming_needed=%d", stop_streaming_needed);
+    MIRACASTLOG_INFO("[DEBUG] stop_session: Calling stop_discover_devices");
     stop_discover_devices();
+    MIRACASTLOG_INFO("[DEBUG] stop_session: Calling remove_P2PGroupInstance");
     remove_P2PGroupInstance();
+    MIRACASTLOG_INFO("[DEBUG] stop_session: Completed");
+    MIRACASTLOG_INFO("==========adding logs==stop-session-exiting================");
     MIRACASTLOG_TRACE("Exiting...");
 }
 
@@ -790,6 +804,8 @@ void MiracastController::Controller_Thread(void *args)
             p2p_group_instance_alive = false;
 
     MIRACASTLOG_TRACE("Entering...");
+    MIRACASTLOG_INFO("==========adding logs==controller-thread-entering================");
+    MIRACASTLOG_INFO("[DEBUG] Controller_Thread: Thread started, m_controller_thread=%p", m_controller_thread);
 
     while (nullptr != m_controller_thread)
     {
@@ -797,11 +813,13 @@ void MiracastController::Controller_Thread(void *args)
         event_buffer.clear();
 
         MIRACASTLOG_TRACE("!!! Waiting for Event !!!\n");
+        MIRACASTLOG_INFO("[DEBUG] Controller_Thread: About to receive message");
         m_controller_thread->receive_message(&controller_msgq_data, CONTROLLER_MSGQ_SIZE, THREAD_RECV_MSG_INDEFINITE_WAIT);
 
         event_buffer = controller_msgq_data.msg_buffer;
 
         MIRACASTLOG_TRACE("!!! Received Action[%#08X]Data[%s] !!!\n", controller_msgq_data.state, event_buffer.c_str());
+        MIRACASTLOG_INFO("[DEBUG] Controller_Thread: Message received - msg_type=%d, state=%#08X", controller_msgq_data.msg_type, controller_msgq_data.state);
 
         if (CONTROLLER_SELF_ABORT == controller_msgq_data.state)
         {
@@ -814,6 +832,7 @@ void MiracastController::Controller_Thread(void *args)
             case P2P_MSG:
             {
                 MIRACASTLOG_TRACE("P2P_MSG type received");
+                MIRACASTLOG_INFO("==========adding logs==P2P msg type received================");
 
                 switch (controller_msgq_data.state)
                 {
@@ -1353,6 +1372,8 @@ void MiracastController::Controller_Thread(void *args)
         }        
     }
     MIRACASTLOG_TRACE("Exiting...");
+    MIRACASTLOG_INFO("==========adding logs==exiting-Controller_Thread ================");
+
 }
 
 void MiracastController::send_thundermsg_to_controller_thread(CONTROLLER_MSGQ_STRUCT controller_msgq_data)
@@ -1619,10 +1640,20 @@ void ControllerThreadCallback(void *args)
 {
     MiracastController *miracast_ctrler_obj = (MiracastController *)args;
     MIRACASTLOG_TRACE("Entering...");
+    MIRACASTLOG_INFO("==========adding logs==ControllerThreadCallback-entering=================");
+    MIRACASTLOG_INFO("[DEBUG] ControllerThreadCallback: Starting with args=%p, miracast_ctrler_obj=%p", args, miracast_ctrler_obj);
     sleep(1);
+    MIRACASTLOG_INFO("[DEBUG] ControllerThreadCallback: After sleep(1)");
     if ( nullptr != miracast_ctrler_obj )
     {
+        MIRACASTLOG_INFO("[DEBUG] ControllerThreadCallback: Calling Controller_Thread");
         miracast_ctrler_obj->Controller_Thread(nullptr);
+        MIRACASTLOG_INFO("[DEBUG] ControllerThreadCallback: Controller_Thread returned");
+    }
+    else
+    {
+        MIRACASTLOG_ERROR("[DEBUG] ControllerThreadCallback: miracast_ctrler_obj is nullptr!");
     }
     MIRACASTLOG_TRACE("Exiting...");
+    MIRACASTLOG_INFO("==========adding logs==ControllerThreadCallback-exiting=================");
 }

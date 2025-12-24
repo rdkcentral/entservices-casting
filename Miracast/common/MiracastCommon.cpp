@@ -70,12 +70,18 @@ MiracastError MiracastThread::start(void)
 {
     MiracastError ret_code = MIRACAST_OK;
     MIRACASTLOG_TRACE("Entering...");
+    MIRACASTLOG_INFO("[DEBUG] MiracastThread::start: thread_name=%s, callback=%p, user_data=%p", m_thread_name.c_str(), m_thread_callback, m_thread_user_data);
     if ( 0 != pthread_create(   &m_pthread_id,
                                 &m_pthread_attr,
                                 reinterpret_cast<void *(*)(void *)>(m_thread_callback),
                                 m_thread_user_data))
     {
+        MIRACASTLOG_ERROR("[DEBUG] MiracastThread::start: pthread_create failed for thread %s", m_thread_name.c_str());
         ret_code = MIRACAST_FAIL;
+    }
+    else
+    {
+        MIRACASTLOG_INFO("[DEBUG] MiracastThread::start: pthread_create succeeded, thread_id=%lu", (unsigned long)m_pthread_id);
     }
     MIRACASTLOG_TRACE("Exiting...");
     return ret_code;
