@@ -439,7 +439,7 @@ MiracastError MiracastP2P::set_WFDParameters(void)
 
         /* Set p2p_go_intent to 14 */
         command = "SET p2p_go_intent 14";
-        executeCommand(command, NON_GLOBAL_INTERFACE, retBuffer);
+        executeCommand(std::move(command), NON_GLOBAL_INTERFACE, retBuffer);
 
         m_isWiFiDisplayParamsEnabled = true;
     }
