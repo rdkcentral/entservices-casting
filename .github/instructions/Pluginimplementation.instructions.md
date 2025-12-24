@@ -3,8 +3,8 @@ applyTo: "**/**Implementation.cpp,**/**Implementation.h,**/**.cpp,**/**.h"
 ---
 
 # Instruction Summary
-  1. [Inter-Plugin Communication](https://github.com/rdkcentral/entservices-casting/blob/develop/.github/instructions/Pluginimplementation.instructions.md#inter-plugin-communication)
-  2. [On-Demand Plugin Interface Acquisition](https://github.com/rdkcentral/entservices-casting/blob/develop/.github/instructions/Pluginimplementation.instructions.md#on-demand-plugin-interface-acquisition)
+  1. [Inter-Plugin Communication](#inter-plugin-communication)
+  2. [On-Demand Plugin Interface Acquisition](#on-demand-plugin-interface-acquisition)
 
 ### Inter-Plugin Communication
 
@@ -26,7 +26,7 @@ QueryInterface:
 _userSettingsPlugin = _service->QueryInterface<WPEFramework::Exchange::IUserSettings>();
 ```
 
-SHOULD not use JSON-RPC or LinkType for inter-plugin communication, as they introduce unnecessary overhead.
+Should NOT use JSON-RPC or LinkType for inter-plugin communication, as they introduce unnecessary overhead.
 
 ### Incorrect Example
 
@@ -35,7 +35,7 @@ LinkType:
 _telemetry = Core::ProxyType<JSONRPCLink>::Create(_T("org.rdk.telemetry"), _T(""), "token=" + token);
 ```
 
-Json-RPC:
+JSON-RPC:
 ```cpp
 uint32_t ret = m_SystemPluginObj->Invoke<JsonObject, JsonObject>(THUNDER_RPC_TIMEOUT, _T("getFriendlyName"), params, Result);
 ```
@@ -59,9 +59,10 @@ void Initialize(PluginHost::IShell* service) override {
     _service = service;
     _service->AddRef();
     
-    // 1. Tell the Framework to send ALL state changes to *this* object
-    // This enables the StateChange() method to work for ALL plugins.
-    _service->Register(this); 
+    // 1. Tell the Framework to send ALL state changes to *this* object.
+    // NOTE: The containing class must implement PluginHost::IShell::INotification
+    //       so that StateChange(PluginHost::IShell* plugin) is invoked by the framework.
+    _service->Register(static_cast<PluginHost::IShell::INotification*>(this));
 
     // 2. Check if the target plugins are ALREADY running (First-Time check)
     for (const std::string& callsign : MonitoredCallsigns) {
@@ -118,6 +119,7 @@ void StateChange(PluginHost::IShell* plugin) override {
         
         // Use a list/set of monitored callsigns (e.g., {"Audio", "Network", "Input"})
         // Assuming 'isMonitoredPlugin(callsign)' is a method that checks your watchlist
+        // Helper Method to check if this callsign is one we care about
         if (isMonitoredPlugin(callsign)) {
             
             // Check if we are already connected (not found in the map)

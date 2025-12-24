@@ -1,13 +1,13 @@
 ---
-description: Guidelines for C++ files and header files that share the same name as their parent folder.
+description: Guidelines for all C++ source and header files, with a focus on Plugin class implementations (interface implementation, service registration, JSON-RPC registration, etc.).
 applyTo: "**/*.cpp,**/*.h"
 ---
 
 # Instructions summary
-  1. [Interface Implementation](https://github.com/rdkcentral/entservices-casting/blob/develop/.github/instructions/Plugin.instructions.md#interface-implementation)
-  2. [Service Registration](https://github.com/rdkcentral/entservices-casting/blob/develop/.github/instructions/Plugin.instructions.md#service-registration)
-  3. [JSON-RPC Stub Registration](https://github.com/rdkcentral/entservices-casting/blob/develop/.github/instructions/Plugin.instructions.md#json-rpc-stub-registration)
-  4. [Handling Out-of-Process Plugin Failures](https://github.com/rdkcentral/entservices-casting/blob/develop/.github/instructions/Plugin.instructions.md#handling-out-of-process-plugin-failures)
+  1. [Interface Implementation](#interface-implementation)
+  2. [Service Registration](#service-registration)
+  3. [JSON-RPC Stub Registration](#json-rpc-stub-registration)
+  4. [Handling Out-of-Process Plugin Failures](#handling-out-of-process-plugin-failures)
 
 ### Interface Implementation
 
@@ -113,7 +113,7 @@ RDKShell::RDKShell()
 
 ### Requirement
 
-- If the plugin runs as out-of-process, then it should implement RPC::IRemoteConnection::"INotification interface inside your plugin.
+- If the plugin runs as out-of-process, then it should implement `RPC::IRemoteConnection::INotification` interface inside your plugin.
 
 ### Example
 

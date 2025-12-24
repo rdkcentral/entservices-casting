@@ -1,7 +1,10 @@
 ---
-description: Guidelines for C++ files and header files that share the same name as their parent folder.
+description: Guidelines for C++ plugin main implementation and header files (typically where plugin lifecycle methods Initialize, Deinitialize, and Deactivated are defined). While the pattern matches all .cpp/.h files, the guidance only applies when the file implements a plugin class.
 applyTo: "**/*.cpp,**/*.h"
 ---
+ 
+> **Note:** This instruction file is only applicable to C++ files that implement a plugin class with lifecycle methods such as `Initialize`, `Deinitialize`, and `Deactivated`. If a matched `.cpp` or `.h` file does not define such a plugin, these guidelines do not apply to that file.
+ 
 
 
 ### Mandatory Lifecycle Methods
@@ -33,7 +36,7 @@ const string HdcpProfile::Initialize(PluginHost::IShell* service) {
 }
 ```
 
-- Plugin should register your listener object twice:
+- The plugin should register its listener object twice:
 
   - Framework Service (_service): Use _service->Register(listener) to receive general plugin state change notifications (like ACTIVATED/DEACTIVATED).
 
@@ -43,7 +46,7 @@ const string HdcpProfile::Initialize(PluginHost::IShell* service) {
 
     Example: _hdcpProfile->Register(&_hdcpProfileNotification);
 
-- It must return a non-empty string on failure with a clear error message.
+- It must return an empty string on success, and a non-empty string with a clear error message on failure.
 
 **Example:**
 
@@ -252,7 +255,7 @@ void HdcpProfile::Deinitialize(PluginHost::IShell* service) {
 
 ### Deactivated
 
-Each plugin should implement the deactivated method. In Deactivated, it should be checked if remote connectionId matches your plugin's connectionId. If it matches your plugin's connectionId, the plugin should submit a deactivation job to handle the out-of-process failure gracefully.
+Each plugin should implement the Deactivated method. In Deactivated, it should be checked if remote connectionId matches your plugin's connectionId. If it matches your plugin's connectionId, the plugin should submit a deactivation job to handle the out-of-process failure gracefully.
 
 ### Example
 
