@@ -72,7 +72,7 @@ MiracastP2P *MiracastP2P::getInstance(MiracastError &error_code,std::string p2p_
     {
         m_miracast_p2p_obj = new MiracastP2P();
         if (nullptr != m_miracast_p2p_obj){
-            ret_code = m_miracast_p2p_obj->Init(p2p_ctrl_iface);
+            ret_code = m_miracast_p2p_obj->Init(std::move(p2p_ctrl_iface));
             if ( MIRACAST_OK != ret_code){
                 destroyInstance();
             }
@@ -381,7 +381,7 @@ MiracastError MiracastP2P::Init( std::string p2p_ctrl_iface )
     MIRACASTLOG_TRACE("Entering..");
 
     {
-        ret_code = p2pInit(p2p_ctrl_iface);
+        ret_code = p2pInit(std::move(p2p_ctrl_iface));
         if (MIRACAST_OK != ret_code)
         {
             MIRACASTLOG_ERROR("P2P Init failed");
@@ -463,7 +463,7 @@ MiracastError MiracastP2P::discover_devices(void)
 
     /*Start Passive Scanning*/
     command = "P2P_EXT_LISTEN 0 0";
-    ret = executeCommand(command, NON_GLOBAL_INTERFACE, retBuffer);
+    ret = executeCommand(std::move(command), NON_GLOBAL_INTERFACE, retBuffer);
 
     if (!opt_flag_buffer.empty())
     {
@@ -474,7 +474,7 @@ MiracastError MiracastP2P::discover_devices(void)
 	    command = "P2P_EXT_LISTEN 200 1000";
     }
 
-    ret = executeCommand(command, NON_GLOBAL_INTERFACE, retBuffer);
+    ret = executeCommand(std::move(command), NON_GLOBAL_INTERFACE, retBuffer);
     if (ret != MIRACAST_OK)
     {
         MIRACASTLOG_ERROR("Failed to discovering devices");
@@ -491,14 +491,14 @@ MiracastError MiracastP2P::stop_discover_devices(void)
 
     /*Stop Passive Scanning*/
     command = "P2P_EXT_LISTEN 0 0";
-    ret = executeCommand(command, NON_GLOBAL_INTERFACE, retBuffer);
+    ret = executeCommand(std::move(command), NON_GLOBAL_INTERFACE, retBuffer);
     if (ret != MIRACAST_OK)
     {
         MIRACASTLOG_ERROR("Failed to stop discovering devices");
     }
 
     command = "P2P_STOP_FIND";
-    ret = executeCommand(command, NON_GLOBAL_INTERFACE, retBuffer);
+    ret = executeCommand(std::move(command), NON_GLOBAL_INTERFACE, retBuffer);
     if (ret != MIRACAST_OK)
     {
         MIRACASTLOG_ERROR("Failed to Stop discovering devices");
@@ -540,7 +540,7 @@ MiracastError MiracastP2P::cancel_negotiation(void)
 
     /*Stop P2P Negotiation*/
     command = "P2P_CANCEL";
-    ret = executeCommand(command, NON_GLOBAL_INTERFACE, retBuffer);
+    ret = executeCommand(std::move(command), NON_GLOBAL_INTERFACE, retBuffer);
     if (ret != MIRACAST_OK)
     {
         MIRACASTLOG_ERROR("Failed to cancel P2P Negotiation");
