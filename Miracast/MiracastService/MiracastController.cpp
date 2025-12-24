@@ -32,7 +32,7 @@ MiracastController *MiracastController::getInstance(MiracastError &error_code, M
         if (nullptr != m_miracast_ctrl_obj)
         {
             m_miracast_ctrl_obj->m_notify_handler = notifier;
-            error_code = m_miracast_ctrl_obj->create_ControllerFramework(p2p_ctrl_iface);
+            error_code = m_miracast_ctrl_obj->create_ControllerFramework(std::move(p2p_ctrl_iface));
             if ( MIRACAST_OK != error_code )
             {
                 delete m_miracast_ctrl_obj;
@@ -106,7 +106,7 @@ MiracastError MiracastController::create_ControllerFramework(std::string p2p_ctr
         ret_code = MIRACAST_CONTROLLER_INIT_FAILED;
     }
     else{
-        m_p2p_ctrl_obj = MiracastP2P::getInstance(ret_code,p2p_ctrl_iface);
+        m_p2p_ctrl_obj = MiracastP2P::getInstance(ret_code,std::move(p2p_ctrl_iface));
     }
     if ( MIRACAST_OK != ret_code ){
         destroy_ControllerFramework();
@@ -879,7 +879,7 @@ void MiracastController::Controller_Thread(void *args)
                                 }
                             }
 
-                            create_DeviceCacheData(deviceMAC,authType,modelName,deviceType,true);
+                            create_DeviceCacheData(std::move(deviceMAC),std::move(authType),std::move(modelName),std::move(deviceType),true);
                             wfdSubElements = parse_p2p_event_data(event_buffer.c_str(), "wfd_dev_info");
                             #if 0
                                 device->isCPSupported = ((strtol(wfdSubElements.c_str(), nullptr, 16) >> 32) && 256);
@@ -1077,7 +1077,7 @@ void MiracastController::Controller_Thread(void *args)
                                 }
                             }
 
-                            create_DeviceCacheData(m_groupInfo->goDevAddr,authType,modelName,deviceType,false);
+                            create_DeviceCacheData(m_groupInfo->goDevAddr,std::move(authType),std::move(modelName),std::move(deviceType),false);
 
                             if (!remote_address.empty())
                             {
@@ -1174,7 +1174,7 @@ void MiracastController::Controller_Thread(void *args)
                                                     device_name.c_str(),
                                                     mac_address.c_str());
                                 sleep(5);
-                                connect_device(mac_address,device_name);
+                                connect_device(std::move(mac_address),std::move(device_name));
                                 reset_NewSourceName();
                                 reset_NewSourceMACAddress();
                             }
@@ -1199,7 +1199,7 @@ void MiracastController::Controller_Thread(void *args)
                         std::string current_device_mac = get_WFDSourceMACAddress();
                         std::string peer_iface_mac = parse_p2p_event_data(event_buffer.c_str(), "peer_iface");
                         MIRACASTLOG_INFO("[CONTROLLER_GO_NEG_SUCCESS] Received");
-                        set_SourcePeerIface(current_device_mac,peer_iface_mac);
+                        set_SourcePeerIface(current_device_mac,std::move(peer_iface_mac));
                     }
                     break;
                     case CONTROLLER_GO_GROUP_FORMATION_SUCCESS:
@@ -1287,8 +1287,8 @@ void MiracastController::Controller_Thread(void *args)
                             if ( get_NewSourceMACAddress().empty())
                             {
                                 MIRACASTLOG_INFO("!!! Caching New Connection until P2P Group remove properly !!!");
-                                set_NewSourceMACAddress(mac_address);
-                                set_NewSourceName(device_name);
+                                set_NewSourceMACAddress(std::move(mac_address));
+                                set_NewSourceName(std::move(device_name));
                             }
                             else
                             {

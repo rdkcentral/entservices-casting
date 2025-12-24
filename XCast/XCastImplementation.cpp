@@ -743,7 +743,7 @@ namespace WPEFramework
         
         void XCastImplementation::dispatchEvent(Event event, string callsign, const JsonObject &params)
         {
-            Core::IWorkerPool::Instance().Submit(Job::Create(this, event, callsign, params));
+            Core::IWorkerPool::Instance().Submit(Job::Create(this, event, std::move(callsign), params));
         }
 
         void XCastImplementation::Dispatch(Event event, string callsign, const JsonObject params)

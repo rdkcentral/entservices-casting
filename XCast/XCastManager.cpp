@@ -327,7 +327,7 @@ std::string XCastManager::getReceiverID(void)
         }
         // Convert to lowercase
         std::transform(gpidValue.begin(), gpidValue.end(), gpidValue.begin(), ::tolower);
-        receiverId = gpidValue;
+        receiverId = std::move(gpidValue);
     }
 
     if (receiverId.empty())
