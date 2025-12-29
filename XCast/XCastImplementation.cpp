@@ -82,7 +82,10 @@ namespace WPEFramework
         _registeredNMEventHandlers(false),
         _networkManagerPlugin(nullptr),
         _adminLock(),
-        _networkManagerNotification(*this)
+        _networkManagerNotification(*this),
+        // COVERITY FIX: Initialize m_networkStandbyMode to prevent undefined behavior
+        // Uninitialized bool can have random value causing unpredictable standby behavior
+        m_networkStandbyMode(false)
         {
             LOGINFO("Call constructor");
             m_locateCastTimer.connect( bind( &XCastImplementation::onLocateCastTimer, this ));

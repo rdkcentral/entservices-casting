@@ -40,11 +40,15 @@ MiracastP2P *MiracastP2P::m_miracast_p2p_obj{nullptr};
 MiracastP2P::MiracastP2P(void)
 {
     MIRACASTLOG_TRACE("Entering..");
+    // COVERITY FIX: Initialize all members to prevent undefined behavior
+    // Uninitialized members can cause crashes or unpredictable behavior
+    m_ctrler_evt_hdlr = nullptr;
     m_p2p_ctrl_monitor_thread_id = 0;
     m_wpa_p2p_cmd_ctrl_iface = nullptr;
     m_wpa_p2p_ctrl_monitor = nullptr;
     m_stop_p2p_monitor = false;
     m_isWiFiDisplayParamsEnabled = false;
+    m_event_buffer_len = 0;
 
     m_authType = MIRACAST_DFLT_CFG_METHOD;
     m_friendly_name = "";

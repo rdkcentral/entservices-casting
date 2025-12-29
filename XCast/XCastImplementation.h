@@ -82,10 +82,12 @@ namespace WPEFramework
         public:
              class EXTERNAL Job : public Core::IDispatch {
                 protected:
+                    // Coverity Fix: Issue ID 110 - COPY_INSTEAD_OF_MOVE
+                    // Use std::move() to avoid unnecessary copy of string parameter
                     Job(XCastImplementation *tts, Event event,string callsign,JsonObject &params)
                         : _xcast(tts)
                         , _event(event)
-                        , _callsign(callsign)
+                        , _callsign(std::move(callsign))
                         , _params(params) {
                         if (_xcast != nullptr) {
                             _xcast->AddRef();

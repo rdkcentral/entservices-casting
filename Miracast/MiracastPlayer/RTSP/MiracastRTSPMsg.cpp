@@ -190,6 +190,10 @@ MiracastRTSPMsg::MiracastRTSPMsg()
     std::string default_configuration;
 
     MIRACASTLOG_TRACE("Entering...");
+    // COVERITY FIX: Initialize pointer members to prevent undefined behavior
+    // Uninitialized pointers can cause crashes if accessed before being set
+    m_rtsp_msg_handler_thread = nullptr;
+    m_controller_thread = nullptr;
     m_tcpSockfd = -1;
     m_epollfd = -1;
     m_streaming_started = false;
@@ -2401,7 +2405,9 @@ void MiracastRTSPMsg::RTSPMessageHandler_Thread(void *args)
     MIRACASTLOG_TRACE("Exiting...");
 }
 
-void MiracastRTSPMsg::send_msgto_rtsp_msg_hdler_thread(RTSP_HLDR_MSGQ_STRUCT rtsp_hldr_msgq_data)
+// COVERITY FIX: Changed to pass by const reference to avoid copying large structure
+// Passing by value causes unnecessary copy overhead for RTSP_HLDR_MSGQ_STRUCT
+void MiracastRTSPMsg::send_msgto_rtsp_msg_hdler_thread(const RTSP_HLDR_MSGQ_STRUCT& rtsp_hldr_msgq_data)
 {
     MIRACASTLOG_TRACE("Entering...");
     if (nullptr != m_rtsp_msg_handler_thread)

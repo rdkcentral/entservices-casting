@@ -48,6 +48,9 @@ namespace WPEFramework
                 , mCurrentService(nullptr)
                 , mConnectionId(0)
                 , mMiracastPlayerImpl(nullptr)
+                // COVERITY FIX: Uninitialized pointer field mConfigure detected in constructor
+                // Initialize mConfigure to nullptr to prevent undefined behavior when accessed
+                , mConfigure(nullptr)
                 , mMiracastPlayerNotification(this)
         {
             SYSLOG(Logging::Startup, (_T("MiracastPlayer Constructor")));

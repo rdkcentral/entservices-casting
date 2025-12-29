@@ -60,6 +60,9 @@ MiracastController::MiracastController(void)
 {
     MIRACASTLOG_TRACE("Entering...");
 
+    // COVERITY FIX: Initialize all pointer members to prevent undefined behavior
+    // Uninitialized pointers can cause crashes if accessed before being set
+    m_notify_handler = nullptr;
     m_groupInfo = nullptr;
     m_p2p_ctrl_obj = nullptr;
     m_controller_thread = nullptr;
@@ -152,6 +155,14 @@ std::string MiracastController::parse_p2p_event_data(const char *tmpBuff, const 
         if (0 == strncmp(ret, lookup_data, strlen(lookup_data)))
         {
             ret_equal = strstr(ret, "=");
+            // COVERITY FIX: Check if ret_equal is NULL before dereferencing
+            // strstr can return NULL if '=' is not found in the string
+            if (!ret_equal)
+            {
+                MIRACASTLOG_ERROR("Failed to find '=' in parsed data");
+                return "";
+            }
+            
             ret_space = strstr(ret_equal, " ");
 
             if (0 == strncmp("name", lookup_data, strlen(lookup_data)))
@@ -313,6 +324,8 @@ std::string MiracastController::start_DHCPClient(std::string interface, std::str
             popen_file_ptr = nullptr;
 
             free(current_line_buffer);
+            // COVERITY FIX: Setting to nullptr after free is defensive programming
+            // Prevents potential double-free or use-after-free bugs if code is modified later
             current_line_buffer = nullptr;
 
             if (!local_addr.empty()){
@@ -1292,11 +1305,13 @@ void MiracastController::Controller_Thread(void *args)
                             }
                             else
                             {
+                                // COVERITY FIX: Added .c_str() for std::string arguments to match %s format specifier
+                                // get_NewSourceName() and get_NewSourceMACAddress() return std::string, need const char*
                                 MIRACASTLOG_ERROR("!!! Unable to Cache Connection[%s - %s] as [%s - %s] was already cached !!!",
-                                                    device_name,
-                                                    mac_address,
-                                                    get_NewSourceName(),
-                                                    get_NewSourceMACAddress());
+                                                    device_name.c_str(),
+                                                    mac_address.c_str(),
+                                                    get_NewSourceName().c_str(),
+                                                    get_NewSourceMACAddress().c_str());
                             }
                         }
                     }
@@ -1358,7 +1373,9 @@ void MiracastController::Controller_Thread(void *args)
     MIRACASTLOG_TRACE("Exiting...");
 }
 
-void MiracastController::send_thundermsg_to_controller_thread(CONTROLLER_MSGQ_STRUCT controller_msgq_data)
+// COVERITY FIX: Changed to pass by const reference to avoid copying large structure
+// Passing by value causes unnecessary copy overhead for CONTROLLER_MSGQ_STRUCT
+void MiracastController::send_thundermsg_to_controller_thread(const CONTROLLER_MSGQ_STRUCT& controller_msgq_data)
 {
     MIRACASTLOG_TRACE("Entering...");
     if (nullptr != m_controller_thread)
