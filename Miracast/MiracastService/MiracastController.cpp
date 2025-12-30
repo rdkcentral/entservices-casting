@@ -1373,9 +1373,8 @@ void MiracastController::Controller_Thread(void *args)
     MIRACASTLOG_TRACE("Exiting...");
 }
 
-// COVERITY FIX: Changed to pass by const reference to avoid copying large structure
-// Passing by value causes unnecessary copy overhead for CONTROLLER_MSGQ_STRUCT
-void MiracastController::send_thundermsg_to_controller_thread(const CONTROLLER_MSGQ_STRUCT& controller_msgq_data)
+// NOTE: Pass by value required - function modifies msg_type field internally
+void MiracastController::send_thundermsg_to_controller_thread(CONTROLLER_MSGQ_STRUCT controller_msgq_data)
 {
     MIRACASTLOG_TRACE("Entering...");
     if (nullptr != m_controller_thread)

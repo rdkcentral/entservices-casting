@@ -441,9 +441,8 @@ class MiracastRTSPMsg
 
         static MiracastRTSPMsg *getInstance(MiracastError &error_code , MiracastPlayerNotifier *player_notifier = nullptr , MiracastThread *controller_thread_id = nullptr);
         static void destroyInstance();
-        // COVERITY FIX: Changed to pass by const reference to avoid copying large structure
-        // Passing by value causes unnecessary copy overhead for RTSP_HLDR_MSGQ_STRUCT
-        void send_msgto_rtsp_msg_hdler_thread(const RTSP_HLDR_MSGQ_STRUCT& rtsp_hldr_msgq_data);
+        // NOTE: Pass by value required - threading API send_message() expects non-const void*
+        void send_msgto_rtsp_msg_hdler_thread(RTSP_HLDR_MSGQ_STRUCT rtsp_hldr_msgq_data);
         void RTSPMessageHandler_Thread(void *args);
 
     private:

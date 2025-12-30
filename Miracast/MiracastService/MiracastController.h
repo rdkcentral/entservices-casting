@@ -80,9 +80,8 @@ public:
     bool get_connection_status();
     DeviceInfo *get_device_details(std::string mac);
 
-    // COVERITY FIX: Changed to pass by const reference to avoid copying large structure
-    // Passing by value causes unnecessary copy overhead for CONTROLLER_MSGQ_STRUCT
-    void send_thundermsg_to_controller_thread(const CONTROLLER_MSGQ_STRUCT& controller_msgq_data);
+    // NOTE: Pass by value required - function modifies msg_type field internally
+    void send_thundermsg_to_controller_thread(CONTROLLER_MSGQ_STRUCT controller_msgq_data);
 
     void Controller_Thread(void *args);
     void notify_ConnectionRequest(std::string device_name,std::string device_mac);
