@@ -22,7 +22,7 @@
 MiracastThread::MiracastThread(std::string thread_name, size_t stack_size, size_t msg_size, size_t queue_depth, void (*callback)(void *), void *user_data)
 {
     MIRACASTLOG_TRACE("Entering...");
-    // Coverity Issue Type 3: COPY_INSTEAD_OF_MOVE - Using std::move() to avoid unnecessary string copies
+    // Coverity Fix: Issue ID 108 - COPY_INSTEAD_OF_MOVE - Using std::move() to avoid unnecessary string copies
     m_thread_name = std::move(thread_name);
 
     m_thread_stacksize = stack_size;
@@ -261,7 +261,7 @@ bool MiracastCommon::execute_PopenCommand( const char* popen_command, const char
         if (current_line_buffer != nullptr)
 		{
 			free(current_line_buffer);
-			// COVERITY FIX: Setting to nullptr after free is defensive programming
+			// Coverity Fix: Issue ID 445 - Setting to nullptr after free is defensive programming
 			// Prevents potential double-free or use-after-free bugs if code is modified later
 			current_line_buffer = nullptr;
 		}
@@ -319,7 +319,7 @@ MessageQueue::~MessageQueue(void)
         userParam = m_internalQueue.front();
         if (nullptr != m_free_resource_cb)
         {
-            // COVERITY FIX: Changed %x to %p for void* pointer type
+            // Coverity Fix: Issue ID 251 - Changed %x to %p for void* pointer type
             // Using %p ensures correct portable format for printing pointer addresses
             MIRACASTLOG_TRACE("dtor asked to free [%p]", userParam);
             m_free_resource_cb(userParam);
@@ -389,7 +389,7 @@ void MessageQueue::ReceiveData(void*& value,int wait_time_ms)
     value = m_internalQueue.front();
     m_internalQueue.pop();
     m_currentMsgCount--;
-    // COVERITY FIX: Changed %x to %p for void* pointer type
+    // Coverity Fix: Issue ID 252 - Changed %x to %p for void* pointer type
     // Using %p ensures correct portable format for printing pointer addresses
     MIRACASTLOG_TRACE("[ReceiveData] data at address: %p", value);
     // Notify producer that space is available

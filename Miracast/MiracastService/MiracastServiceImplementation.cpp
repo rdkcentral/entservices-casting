@@ -168,7 +168,7 @@ namespace WPEFramework
         void MiracastServiceImplementation::getThunderPlugins(void)
         {
             MIRACASTLOG_TRACE("Entering ...");
-            // COVERITY FIX: Potential null field m_CurrentService dereference detected
+            // Coverity Fix: Issue ID 217 - Potential null field m_CurrentService dereference detected
             // Add null check before accessing m_CurrentService to prevent crash
             if (nullptr == m_CurrentService)
             {

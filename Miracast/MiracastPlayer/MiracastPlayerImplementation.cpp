@@ -39,7 +39,7 @@ namespace WPEFramework
         MiracastPlayerImplementation::MiracastPlayerImplementation()
         : _adminLock()
         , mService(nullptr)
-        // COVERITY FIX: Uninitialized pointer field _service detected in constructor
+        // Coverity Fix: Issue ID 430 - Uninitialized pointer field _service detected in constructor
         // Initialize _service to nullptr to prevent undefined behavior when accessed
         , _service(nullptr)
         , m_isPluginInitialized(false)

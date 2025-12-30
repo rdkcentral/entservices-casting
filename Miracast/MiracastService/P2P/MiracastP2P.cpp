@@ -76,6 +76,7 @@ MiracastP2P *MiracastP2P::getInstance(MiracastError &error_code,std::string p2p_
     {
         m_miracast_p2p_obj = new MiracastP2P();
         if (nullptr != m_miracast_p2p_obj){
+            // Coverity Fix: Issue ID 100 - COPY_INSTEAD_OF_MOVE
             ret_code = m_miracast_p2p_obj->Init(std::move(p2p_ctrl_iface));
             if ( MIRACAST_OK != ret_code){
                 destroyInstance();

@@ -78,7 +78,7 @@ namespace WPEFramework
         XCastImplementation::XCastImplementation()
         : _service(nullptr),
         _pwrMgrNotification(*this),
-        // COVERITY FIX: Initialize m_networkStandbyMode to prevent undefined behavior
+        // Coverity Fix: Issue ID 434 - Initialize m_networkStandbyMode to prevent undefined behavior
         // Uninitialized bool can have random value causing unpredictable standby behavior
         m_networkStandbyMode(false),
         _registeredPowerEventHandlers(false),
@@ -744,6 +744,7 @@ namespace WPEFramework
             return (m_locateCastTimer.isActive());
         }
         
+        // Coverity Fix: Issue ID 109 - COPY_INSTEAD_OF_MOVE
         void XCastImplementation::dispatchEvent(Event event, string callsign, const JsonObject &params)
         {
             Core::IWorkerPool::Instance().Submit(Job::Create(this, event, std::move(callsign), params));
