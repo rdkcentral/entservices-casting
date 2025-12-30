@@ -58,7 +58,7 @@ void MiracastController::destroyInstance()
 
 MiracastController::MiracastController(void)
 {
-    MIRACASTLOG_TRACE("Entering...");
+    MIRACASTLOG_INFO("Entering...");
 
     m_groupInfo = nullptr;
     m_p2p_ctrl_obj = nullptr;
@@ -67,7 +67,7 @@ MiracastController::MiracastController(void)
     m_connectionStatus = false;
     setP2PBackendDiscovery(false);
 
-    MIRACASTLOG_TRACE("Exiting...");
+    MIRACASTLOG_INFO("Exiting...");
 }
 
 MiracastController::~MiracastController()
@@ -366,9 +366,9 @@ eCONTROLLER_FW_STATES MiracastController::convertP2PtoSessionActions(P2P_EVENTS 
         state = CONTROLLER_GO_DEVICE_PROVISION;
     }
     break;
-    case EVENT_STOP:
+    case EVENT_:
     {
-        state = CONTROLLER_GO_STOP_FIND;
+        state = CONTROLLER_GO__FIND;
     }
     break;
     case EVENT_GO_NEG_REQ:
@@ -427,7 +427,7 @@ eCONTROLLER_FW_STATES MiracastController::convertP2PtoSessionActions(P2P_EVENTS 
 
 void MiracastController::restart_session(bool start_discovering_enabled)
 {
-    MIRACASTLOG_TRACE("Entering...");
+    MIRACASTLOG_INFO("Entering...");
 
     if (nullptr == m_groupInfo)
     {
@@ -440,15 +440,15 @@ void MiracastController::restart_session(bool start_discovering_enabled)
     if (start_discovering_enabled){
         discover_devices();
     }
-    MIRACASTLOG_TRACE("Exiting...");
+    MIRACASTLOG_INFO("Exiting...");
 }
 
 void MiracastController::stop_session(bool stop_streaming_needed)
 {
-    MIRACASTLOG_TRACE("Entering...");
+    MIRACASTLOG_INFO("preeja Entering...");
     stop_discover_devices();
     remove_P2PGroupInstance();
-    MIRACASTLOG_TRACE("Exiting...");
+    MIRACASTLOG_INFO("Exiting...");
 }
 
 void MiracastController::remove_P2PGroupInstance(void)
