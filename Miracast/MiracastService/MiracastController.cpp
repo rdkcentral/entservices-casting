@@ -368,7 +368,7 @@ eCONTROLLER_FW_STATES MiracastController::convertP2PtoSessionActions(P2P_EVENTS 
     break;
     case EVENT_STOP:
     {
-        state = CONTROLLER_GO__FIND;
+        state = CONTROLLER_GO_STOP_FIND;
     }
     break;
     case EVENT_GO_NEG_REQ:
