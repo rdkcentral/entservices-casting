@@ -427,7 +427,7 @@ eCONTROLLER_FW_STATES MiracastController::convertP2PtoSessionActions(P2P_EVENTS 
 
 void MiracastController::restart_session(bool start_discovering_enabled)
 {
-    MIRACASTLOG_TRACE("Entering...");
+    MIRACASTLOG_INFO("Entering...");
 
     if (nullptr == m_groupInfo)
     {
@@ -440,20 +440,20 @@ void MiracastController::restart_session(bool start_discovering_enabled)
     if (start_discovering_enabled){
         discover_devices();
     }
-    MIRACASTLOG_TRACE("Exiting...");
+    MIRACASTLOG_INFO("Exiting...");
 }
 
 void MiracastController::stop_session(bool stop_streaming_needed)
 {
-    MIRACASTLOG_TRACE("Entering...");
+    MIRACASTLOG_INFO("Entering...");
     stop_discover_devices();
     remove_P2PGroupInstance();
-    MIRACASTLOG_TRACE("Exiting...");
+    MIRACASTLOG_INFO("Exiting...");
 }
 
 void MiracastController::remove_P2PGroupInstance(void)
 {
-    MIRACASTLOG_TRACE("Entering...");
+    MIRACASTLOG_INFO("Entering...");
     if (m_groupInfo)
     {
         char commandBuffer[200] = {0};
@@ -481,10 +481,12 @@ void MiracastController::remove_P2PGroupInstance(void)
             MIRACASTLOG_INFO("Terminate old udhcpc p2p instance : [%s]", commandBuffer);
             MiracastCommon::execute_SystemCommand(commandBuffer);
         }
+        MIRACASTLOG_INFO("deleting");
         delete m_groupInfo;
         m_groupInfo = nullptr;
+         MIRACASTLOG_INFO("deleted");
     }
-    MIRACASTLOG_TRACE("Exiting...");
+    MIRACASTLOG_INFO("Exiting...");
 }
 
 void MiracastController::checkAndInitiateP2PBackendDiscovery(void)
