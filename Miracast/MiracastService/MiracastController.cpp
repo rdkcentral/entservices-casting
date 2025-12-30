@@ -485,7 +485,7 @@ void MiracastController::remove_P2PGroupInstance(void)
         delete m_groupInfo;
         m_groupInfo = nullptr;
     }
-     MIRACASTLOG_TRACE("Exiting...");
+    MIRACASTLOG_TRACE("Exiting...");
 }
 
 void MiracastController::checkAndInitiateP2PBackendDiscovery(void)
