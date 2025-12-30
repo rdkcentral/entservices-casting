@@ -78,13 +78,13 @@ namespace WPEFramework
         XCastImplementation::XCastImplementation()
         : _service(nullptr),
         _pwrMgrNotification(*this),
+        // COVERITY FIX: Initialize m_networkStandbyMode to prevent undefined behavior
+        // Uninitialized bool can have random value causing unpredictable standby behavior
+        m_networkStandbyMode(false),
         _registeredPowerEventHandlers(false),
         _registeredNMEventHandlers(false),
         _networkManagerPlugin(nullptr),
         _adminLock(),
-        // COVERITY FIX: Initialize m_networkStandbyMode to prevent undefined behavior
-        // Uninitialized bool can have random value causing unpredictable standby behavior
-        m_networkStandbyMode(false),
         _networkManagerNotification(*this)
         {
             LOGINFO("Call constructor");
