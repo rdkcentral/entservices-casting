@@ -453,7 +453,8 @@ void MiracastController::stop_session(bool stop_streaming_needed)
 
 void MiracastController::remove_P2PGroupInstance(void)
 {
-    MIRACASTLOG_TRACE("Entering...");
+    MIRACASTLOG_INFO("Entering...");
+    std::lock_guard<std::mutex> lock(m_groupInfo_mutex);
     if (m_groupInfo)
     {
         char commandBuffer[200] = {0};
@@ -481,10 +482,12 @@ void MiracastController::remove_P2PGroupInstance(void)
             MIRACASTLOG_INFO("Terminate old udhcpc p2p instance : [%s]", commandBuffer);
             MiracastCommon::execute_SystemCommand(commandBuffer);
         }
+        MIRACASTLOG_INFO(" deleting groupinfo");
         delete m_groupInfo;
         m_groupInfo = nullptr;
+        MIRACASTLOG_INFO(" deleted groupinfo");
     }
-    MIRACASTLOG_TRACE("Exiting...");
+     MIRACASTLOG_INFO("Exiting...");
 }
 
 void MiracastController::checkAndInitiateP2PBackendDiscovery(void)
