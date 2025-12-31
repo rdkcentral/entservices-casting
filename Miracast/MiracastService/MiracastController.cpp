@@ -447,14 +447,13 @@ void MiracastController::stop_session(bool stop_streaming_needed)
 {
     MIRACASTLOG_TRACE("Entering...");
     stop_discover_devices();
-    remove_P2PGroupInstance();
+    flush_current_session();
     MIRACASTLOG_TRACE("Exiting...");
 }
 
 void MiracastController::remove_P2PGroupInstance(void)
 {
     MIRACASTLOG_TRACE("Entering...");
-    std::lock_guard<std::mutex> lock(m_groupInfo_mutex);
     if (m_groupInfo)
     {
         char commandBuffer[200] = {0};
