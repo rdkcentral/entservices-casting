@@ -599,12 +599,12 @@ bool XCastManager::getSerialNumberFromDeviceInfo(std::string& serialNumber)
     Core::hresult result = deviceInfoPlugin->SerialNumber(deviceSerialNo);
     deviceInfoPlugin->Release();
 
-    if (result == Core::ERROR_NONE && !deviceSerialNo.Value().empty()) {
-        serialNumber = deviceSerialNo.Value();
+    if (result == Core::ERROR_NONE && !deviceSerialNo.serialnumber.empty()) {
+        serialNumber = deviceSerialNo.serialnumber;
         return true;
     }
 
-    LOGERR("get DeviceInfo.SerialNumber failed, error code: %u, length: %zu", result, deviceSerialNo.Value().length());
+    LOGERR("get DeviceInfo.SerialNumber failed, error code: %u, length: %zu", result, deviceSerialNo.serialnumber.length());
     return false;
 }
 
