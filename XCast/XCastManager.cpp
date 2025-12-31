@@ -595,14 +595,16 @@ bool XCastManager::getSerialNumberFromDeviceInfo(std::string& serialNumber)
         return false;
     }
 
-    Core::hresult result = deviceInfoPlugin->SerialNumber(serialNumber);
+    WPEFramework::Exchange::IDeviceInfo::DeviceSerialNo deviceSerialNo;
+    Core::hresult result = deviceInfoPlugin->SerialNumber(deviceSerialNo);
     deviceInfoPlugin->Release();
 
-    if (result == Core::ERROR_NONE && !serialNumber.empty()) {
+    if (result == Core::ERROR_NONE && !deviceSerialNo.Value().empty()) {
+        serialNumber = deviceSerialNo.Value();
         return true;
     }
 
-    LOGERR("get DeviceInfo.SerialNumber failed, error code: %u, length: %zu", result, serialNumber.length());
+    LOGERR("get DeviceInfo.SerialNumber failed, error code: %u, length: %zu", result, deviceSerialNo.Value().length());
     return false;
 }
 
