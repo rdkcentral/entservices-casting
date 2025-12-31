@@ -79,7 +79,7 @@ MiracastController::~MiracastController()
         delete m_deviceInfoList.back();
         m_deviceInfoList.pop_back();
     }
-   
+
     if (nullptr != m_groupInfo)
     {
         delete m_groupInfo;
