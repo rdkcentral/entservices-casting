@@ -79,7 +79,7 @@ MiracastController::~MiracastController()
         delete m_deviceInfoList.back();
         m_deviceInfoList.pop_back();
     }
-    std::lock_guard<std::mutex> lock(m_groupInfo_mutex);
+   
     if (nullptr != m_groupInfo)
     {
         delete m_groupInfo;
