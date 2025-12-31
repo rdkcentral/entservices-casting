@@ -25,7 +25,6 @@
 #include <fcntl.h>
 #include <algorithm>
 #include <vector>
-#include <mutex>
 #include <glib.h>
 #include <semaphore.h>
 #include "libIBus.h"
@@ -149,7 +148,6 @@ private:
     std::string m_localIp;
     vector<DeviceInfo *> m_deviceInfoList;
     GroupInfo *m_groupInfo;
-    std::mutex m_groupInfo_mutex;
     bool m_connectionStatus;
     bool m_p2p_backend_discovery{false};
     bool m_start_discovering_enabled{false};
