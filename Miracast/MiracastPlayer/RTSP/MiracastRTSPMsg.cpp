@@ -1181,9 +1181,6 @@ RTSP_STATUS MiracastRTSPMsg::validate_rtsp_getparameter_request( std::string rts
             }
         }
         // COVERITY FIX (Issue 28): Variable copied when it could be moved
-        // seq_str is not used after this call, so use std::move()
-        // send_rtsp_reply_sink2src takes std::string by value, causing an unnecessary copy
-        // std::move() transfers ownership efficiently as this is the last usage
         status_code = send_rtsp_reply_sink2src( RTSP_MSG_FMT_M16_RESPONSE , std::move(seq_str) );
         if ( RTSP_MSG_SUCCESS == status_code )
         {
@@ -1218,17 +1215,11 @@ RTSP_STATUS MiracastRTSPMsg::validate_rtsp_generic_request_response( std::string
     }
     else if (rtsp_msg_buffer.find(transport_tag) != std::string::npos){
         // COVERITY FIX (Issue 31): Variable copied when it could be moved
-        // rtsp_msg_buffer is not used after this call in this else-if branch, so use std::move()
-        // validate_rtsp_m6_ack_m7_send_request takes std::string by value, causing an unnecessary copy
-        // std::move() transfers ownership efficiently as this is the last usage in this branch
         status_code = validate_rtsp_m6_ack_m7_send_request(std::move(rtsp_msg_buffer));
     }
     else if (rtsp_msg_buffer.find(get_errorcode_string(RTSP_ERRORCODE_OK)) != std::string::npos)
     {
         // COVERITY FIX (Issue 32 & 33): Variables copied when they could be moved
-        // Both rtsp_msg_buffer and received_seq_num are not used after this call in this else-if branch
-        // validate_rtsp_trigger_request_ack takes both std::string parameters by value, causing unnecessary copies
-        // std::move() transfers ownership efficiently as this is the last usage of both variables in this branch
         status_code = validate_rtsp_trigger_request_ack(std::move(rtsp_msg_buffer) , std::move(received_seq_num) );
     }
     else
@@ -1307,9 +1298,6 @@ RTSP_STATUS MiracastRTSPMsg::validate_rtsp_m1_msg_m2_send_request(std::string rt
 
         MIRACASTLOG_INFO("Sending the M2 request [%s]",m2_msg_req_sink2src.c_str());
         // COVERITY FIX (Issue 38): Variable copied when it could be moved
-        // m2_msg_req_sink2src is not used after this call, so use std::move()
-        // send_rstp_msg takes std::string by value, causing an unnecessary copy
-        // std::move() transfers ownership efficiently as this is the last usage
         status_code = send_rstp_msg(m_tcpSockfd, std::move(m2_msg_req_sink2src));
         if (RTSP_MSG_SUCCESS == status_code)
         {
@@ -1426,9 +1414,6 @@ RTSP_STATUS MiracastRTSPMsg::validate_rtsp_m2_request_ack(std::string rtsp_m2_re
         std::string m3_request_buffer = rtsp_m2_resp_ack_buffer.substr(processedBytes, totalLen - processedBytes);
         MIRACASTLOG_INFO("#### [M2-ack + M3 Req] Received M3[%s]  ####", m3_request_buffer.c_str());
         // COVERITY FIX (Issue 40): Variable copied when it could be moved
-        // m3_request_buffer is not used after this call, so use std::move()
-        // validate_rtsp_receive_buffer_handling takes std::string by value, causing an unnecessary copy
-        // std::move() transfers ownership efficiently as this is the last usage
         status_code = validate_rtsp_receive_buffer_handling(std::move(m3_request_buffer));
         MIRACASTLOG_INFO("#### Response[%#04X] ####", status_code);
     }
@@ -1480,17 +1465,11 @@ RTSP_STATUS MiracastRTSPMsg::validate_rtsp_m3_response_back(std::string rtsp_m3_
     }
 
     // COVERITY FIX (Issue 42 & 41): Variables copied when they could be moved
-    // seq_str and content_buffer are not used after this call, so use std::move()
-    // generate_request_response_msg takes std::string parameters by value, causing unnecessary copies
-    // std::move() transfers ownership efficiently as this is the last usage of both variables
     m3_msg_resp_sink2src = generate_request_response_msg(RTSP_MSG_FMT_M3_RESPONSE, std::move(seq_str), std::move(content_buffer));
 
     MIRACASTLOG_VERBOSE("%s", m3_msg_resp_sink2src.c_str());
 
     // COVERITY FIX (Issue 43): Variable copied when it could be moved
-    // m3_msg_resp_sink2src is not used after this call, so use std::move()
-    // send_rstp_msg takes std::string by value, causing an unnecessary copy
-    // std::move() transfers ownership efficiently as this is the last usage
     status_code = send_rstp_msg(m_tcpSockfd, std::move(m3_msg_resp_sink2src));
 
     if (RTSP_MSG_SUCCESS == status_code)
@@ -1542,9 +1521,6 @@ RTSP_STATUS MiracastRTSPMsg::validate_rtsp_m4_response_back(std::string rtsp_m4_
 
     MIRACASTLOG_INFO("Sending the M4 response");
     // COVERITY FIX (Issue 45): Variable copied when it could be moved
-    // m4_msg_resp_sink2src is not used after this call, so use std::move()
-    // send_rstp_msg takes std::string by value, causing an unnecessary copy
-    // std::move() transfers ownership efficiently as this is the last usage
     status_code = send_rstp_msg(m_tcpSockfd, std::move(m4_msg_resp_sink2src));
     if (RTSP_MSG_SUCCESS == status_code)
     {
@@ -1587,9 +1563,6 @@ RTSP_STATUS MiracastRTSPMsg::validate_rtsp_m5_msg_m6_send_request(std::string rt
 
     MIRACASTLOG_INFO("Sending the M5 response");
     // COVERITY FIX (Issue 46 & 47): Variable copied when it could be moved
-    // m5_msg_resp_sink2src is not used after this call, so use std::move()
-    // send_rstp_msg takes std::string by value, causing an unnecessary copy
-    // std::move() transfers ownership efficiently as this is the last usage
     status_code = send_rstp_msg(m_tcpSockfd, std::move(m5_msg_resp_sink2src));
     if (RTSP_MSG_SUCCESS == status_code)
     {
@@ -1690,9 +1663,6 @@ RTSP_STATUS MiracastRTSPMsg::validate_rtsp_trigger_request_ack(std::string rtsp_
     if ( false == IsValidSequenceNumber(received_seq_num))
     {
         // COVERITY FIX (Issue 49): Variable copied when it could be moved
-        // received_seq_num is not used after this call in this if branch, so use std::move()
-        // send_rtsp_reply_sink2src takes std::string by value, causing an unnecessary copy
-        // std::move() transfers ownership efficiently as this is the last usage in this branch
         send_rtsp_reply_sink2src( RTSP_MSG_FMT_REPORT_ERROR , std::move(received_seq_num), RTSP_ERRORCODE_BAD_REQUEST );
         MIRACASTLOG_ERROR("Invalid Sequence Number in trigger[%s]",rtsp_trigger_req_ack_buffer.c_str());
     }
@@ -1817,9 +1787,6 @@ RTSP_STATUS MiracastRTSPMsg::validate_rtsp_receive_buffer_handling(std::string r
                     if ( false == m_getparameter_response_sent )
                     {
                         // COVERITY FIX (Issue 52): Variable copied when it could be moved
-                        // common_get_parameter_buffer is not used after this call, so use std::move()
-                        // validate_rtsp_getparameter_request takes std::string by value, causing an unnecessary copy
-                        // std::move() transfers ownership efficiently as this is the last usage
                         status_code = validate_rtsp_getparameter_request(std::move(common_get_parameter_buffer));
                     }
                     else
@@ -1861,17 +1828,11 @@ RTSP_STATUS MiracastRTSPMsg::validate_rtsp_receive_buffer_handling(std::string r
         else if (first_line.find(set_parameter_tag) != std::string::npos)
         {
             // COVERITY FIX (Issue 54): Variable copied when it could be moved
-            // rtsp_msg_buffer is not used after this call in this else-if branch, so use std::move()
-            // validate_rtsp_setparameter_request takes std::string by value, causing an unnecessary copy
-            // std::move() transfers ownership efficiently as this is the last usage in this branch
             status_code = validate_rtsp_setparameter_request(std::move(rtsp_msg_buffer));
         }
         else
         {
             // COVERITY FIX (Issue 55): Variable copied when it could be moved
-            // rtsp_msg_buffer is not used after this call in this else branch, so use std::move()
-            // validate_rtsp_generic_request_response takes std::string by value, causing an unnecessary copy
-            // std::move() transfers ownership efficiently as this is the last usage in this branch
             status_code = validate_rtsp_generic_request_response(std::move(rtsp_msg_buffer));
         }
     }
