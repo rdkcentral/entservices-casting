@@ -37,13 +37,20 @@ namespace Plugin {
         PluginHost::IShell* _service;
 
     public:
+        // COVERITY FIX (Issue 437): Initialize all pointer members to prevent undefined behavior
+        // _service pointer was left uninitialized, which could cause crashes if accessed before being set
         PluginInterfaceRef()
             : _interface(nullptr)
+            , _service(nullptr)
         {
         }
 
+        // COVERITY FIX (Issue 438): Initialize _service pointer from controller parameter
+        // The controller parameter was passed but never used, leaving _service uninitialized
+        // This was likely a bug - the parameter should initialize the _service member
         PluginInterfaceRef(INTERFACE* interface, PluginHost::IShell* controller)
             : _interface(interface)
+            , _service(controller)
         {
         }
 
@@ -56,18 +63,25 @@ namespace Plugin {
         PluginInterfaceRef(const PluginInterfaceRef&) = delete;
         PluginInterfaceRef& operator=(const PluginInterfaceRef&) = delete;
 
+        // COVERITY FIX (Issue 439): Move all members in move constructor
+        // _service was not being moved, leaving it uninitialized in the new object
+        // Proper move semantics require moving all members and nullifying them in the source
         // use move
         PluginInterfaceRef(PluginInterfaceRef&& other)
             : _interface(other._interface)
+            , _service(other._service)
         {
             other._interface = nullptr;
+            other._service = nullptr;
         }
 
         PluginInterfaceRef& operator=(PluginInterfaceRef&& other)
         {
             if (this != &other) {
                 _interface = other._interface;
+                _service = other._service;
                 other._interface = nullptr;
+                other._service = nullptr;
             }
             return *this;
         }
@@ -199,12 +213,17 @@ namespace Plugin {
             return std::move(PluginInterfaceRef<INTERFACE>(interface, _service));
         }
 
-        const uint32_t retryInterval() const
+        // COVERITY FIX (Issue 381): Removed useless const qualifier on primitive return type
+        // The const qualifier on return type for primitives returned by value has no effect
+        // Caller receives a copy, so const doesn't prevent modification
+        uint32_t retryInterval() const
         {
             return _retry_interval;
         }
 
-        const int retryCount() const
+        // COVERITY FIX (Issue 382): Removed useless const qualifier on primitive return type
+        // Same as Issue 381 - const on return value type is meaningless for primitives
+        int retryCount() const
         {
             return _retry_count;
         }

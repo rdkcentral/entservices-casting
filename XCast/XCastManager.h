@@ -37,7 +37,10 @@ using namespace std;
 class XCastManager : public GDialNotifier
 {
 protected:
-    XCastManager(){}
+    // COVERITY FIX (Issue 440): Initialize pointer member m_observer to prevent undefined behavior
+    // Constructor was empty, leaving m_observer pointer uninitialized
+    // If accessed before setService() is called, it could cause crashes
+    XCastManager() : m_observer(nullptr) {}
 public:
     virtual ~XCastManager();
     /**

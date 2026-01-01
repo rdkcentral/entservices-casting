@@ -330,7 +330,10 @@ std::string MiracastController::start_DHCPClient(std::string interface, std::str
 
             if (!local_addr.empty()){
                 MIRACASTLOG_INFO("%s is success\n", command);
-                default_gw_ip_addr = gw_ip_addr;
+                // COVERITY FIX: Issue ID 61 - Variable copied when it could be moved
+                // ISSUE: gw_ip_addr string is copied to default_gw_ip_addr, causing unnecessary allocation
+                // FIX: Use std::move() since gw_ip_addr is not used after this point (loop breaks immediately)
+                default_gw_ip_addr = std::move(gw_ip_addr);
                 break;
             }
         }
@@ -922,7 +925,11 @@ void MiracastController::Controller_Thread(void *args)
                             if ( false == new_thunder_req_client_connection_sent )
                             {
                                 new_thunder_req_client_connection_sent = true;
-                                notify_ConnectionRequest(device_name,received_mac_address);
+                                // COVERITY FIX: Issues ID 71, 72 - Variables copied when they could be moved
+                                // ISSUE: device_name and received_mac_address are copied when passed to notify_ConnectionRequest
+                                // FIX: Use std::move() since variables are not used after this call in this branch
+                                // After this call, execution continues but these variables are not accessed again in this path
+                                notify_ConnectionRequest(std::move(device_name),std::move(received_mac_address));
                                 MIRACASTLOG_INFO("!!! Connection Request reported waiting for user action !!!\n");
                             }
                             else
@@ -1080,7 +1087,11 @@ void MiracastController::Controller_Thread(void *args)
                                 MiracastCommon::execute_PopenCommand( command , nullptr , 15 , popen_buffer , 1000000 );
                                 if (!popen_buffer.empty())
                                 {
-                                    remote_address = popen_buffer;
+                                    // COVERITY FIX: Issue ID 75 - Variable copied when it could be moved
+                                    // ISSUE: popen_buffer string is copied to remote_address, causing unnecessary allocation
+                                    // FIX: Use std::move() since popen_buffer is not used after this assignment
+                                    // popen_buffer is a local variable and this is its last usage in this scope
+                                    remote_address = std::move(popen_buffer);
                                     if ( false == getConnectionStatusByARPING(remote_address.c_str(),m_groupInfo->interface.c_str()))
                                     {
                                         remove_ARPEntry(remote_address);
@@ -1095,7 +1106,11 @@ void MiracastController::Controller_Thread(void *args)
                             if (!remote_address.empty())
                             {
                                 m_groupInfo->srcDevIPAddr = remote_address;
-                                src_dev_ip = remote_address;
+                                // COVERITY FIX: Issue ID 79 - Variable copied when it could be moved
+                                // ISSUE: remote_address is copied to src_dev_ip, causing unnecessary allocation
+                                // FIX: Use std::move() since remote_address is not used after this point
+                                // This is the last usage of remote_address in this scope before it goes out of scope
+                                src_dev_ip = std::move(remote_address);
                                 sink_dev_ip = local_address;
                                 src_dev_mac = get_WFDSourceMACAddress();;
                                 src_dev_name = get_WFDSourceName();
