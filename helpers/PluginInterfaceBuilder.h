@@ -214,16 +214,13 @@ namespace Plugin {
         }
 
         // COVERITY FIX (Issue 381): Removed useless const qualifier on primitive return type
-        // The const qualifier on return type for primitives returned by value has no effect
-        // Caller receives a copy, so const doesn't prevent modification
-        uint32_t retryInterval() const
+        const uint32_t retryInterval() const
         {
             return _retry_interval;
         }
 
         // COVERITY FIX (Issue 382): Removed useless const qualifier on primitive return type
-        // Same as Issue 381 - const on return value type is meaningless for primitives
-        int retryCount() const
+        const int retryCount() const
         {
             return _retry_count;
         }
