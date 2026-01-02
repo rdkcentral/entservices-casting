@@ -168,8 +168,6 @@ namespace WPEFramework
         void MiracastServiceImplementation::getThunderPlugins(void)
         {
             MIRACASTLOG_TRACE("Entering ...");
-            // Coverity Fix: Issue ID 217 - Potential null field m_CurrentService dereference detected
-            // Add null check before accessing m_CurrentService to prevent crash
             if (nullptr == m_CurrentService)
             {
                 MIRACASTLOG_ERROR("m_CurrentService is nullptr, cannot get Thunder plugins");
