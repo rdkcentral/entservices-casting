@@ -66,8 +66,6 @@ MiracastGstPlayer::MiracastGstPlayer()
 {
     MIRACASTLOG_TRACE("Entering...");
     gst_init(nullptr, nullptr);
-    // COVERITY FIX: Initialize m_streaming_port to prevent undefined behavior
-    // Uninitialized guint64 member can cause issues when reading port value before it's set
     m_streaming_port = 0;
     m_bBuffering = false;
     m_bReady = false;
@@ -347,8 +345,6 @@ bool MiracastGstPlayer::get_player_statistics()
         if ( value )
         {
            render_frame = g_value_get_uint64( value );
-           // COVERITY FIX: Changed %lu to %llu for guint64 type to match correct format specifier
-           // Using %llu ensures portability across 32-bit and 64-bit platforms
            MIRACASTLOG_TRACE("!!!! render_frame[%llu] !!!",render_frame);
         }
         /* Get Dropped Frames*/
@@ -356,21 +352,15 @@ bool MiracastGstPlayer::get_player_statistics()
         if ( value )
         {
            dropped_frame = g_value_get_uint64( value );
-           // COVERITY FIX: Changed %lu to %llu for guint64 type to match correct format specifier
-           // Using %llu ensures portability across 32-bit and 64-bit platforms
            MIRACASTLOG_TRACE("!!!! dropped_frame[%llu] !!!",dropped_frame);
         }
         
         total_video_frames = render_frame + dropped_frame;
         dropped_video_frames = dropped_frame;
 
-        // COVERITY FIX: Changed %f to %lld for gint64 type to match correct format specifier
-        // Using %lld for signed 64-bit integers (append_pipeline_cur_pos, playbin_cur_pos)
         MIRACASTLOG_INFO("Append Pipeline Current PTS: [ %lld ]",append_pipeline_cur_pos);
         MIRACASTLOG_INFO("Playbin Pipeline Current PTS: [ %lld ]",playbin_cur_pos);
 
-        // COVERITY FIX: Changed %lu to %llu for guint64 type variables
-        // Using %llu ensures correct format for unsigned 64-bit integers
         MIRACASTLOG_INFO("Total Frames: [ %llu], Rendered Frames : [ %llu ], Dropped Frames: [%llu]",
                             total_video_frames,
                             render_frame,
@@ -628,16 +618,12 @@ gboolean MiracastGstPlayer::playbinPipelineBusMessage (GstBus * bus, GstMessage 
             guint64 processed;
             guint64 dropped;
             gst_message_parse_qos_stats(message, &format, &processed, &dropped);
-            // COVERITY FIX: Changed %lu to %llu for guint64 type variables (processed, dropped)
-            // Using %llu ensures correct format for unsigned 64-bit integers
             MIRACASTLOG_VERBOSE("Format [%s], Processed [%llu], Dropped [%llu].", gst_format_get_name(format), processed, dropped);
 
             gint64 jitter;
             gdouble proportion;
             gint quality;
             gst_message_parse_qos_values(message, &jitter, &proportion, &quality);
-            // COVERITY FIX: Changed %lu to %lld for gint64 type variable (jitter)
-            // Using %lld ensures correct format for signed 64-bit integer
             MIRACASTLOG_VERBOSE("Jitter [%lld], Proportion [%lf],  Quality [%u].", jitter, proportion, quality);
 
             gboolean live;
@@ -646,8 +632,6 @@ gboolean MiracastGstPlayer::playbinPipelineBusMessage (GstBus * bus, GstMessage 
             guint64 timestamp;
             guint64 duration;
             gst_message_parse_qos(message, &live, &running_time, &stream_time, &timestamp, &duration);
-            // COVERITY FIX: Changed %lu to %llu for guint64 type variables (running_time, stream_time, timestamp, duration)
-            // Using %llu ensures correct format for unsigned 64-bit integers
             MIRACASTLOG_VERBOSE("live stream [%d], runninng_time [%llu], stream_time [%llu], timestamp [%llu], duration [%llu].", live, running_time, stream_time, timestamp, duration);
         }
         break;
@@ -662,8 +646,6 @@ void* MiracastGstPlayer::pushbuffer_handler_thread(void *ctx)
     MiracastGstPlayer *self = (MiracastGstPlayer *)ctx;
     MIRACASTLOG_TRACE("Entering..!!!");
     
-    // COVERITY FIX: Check for null pointer before dereferencing
-    // Prevents crash if ctx is NULL when accessing m_pushBufferLoop
     if (!self)
     {
         MIRACASTLOG_ERROR("Invalid context pointer!");
@@ -688,8 +670,6 @@ void* MiracastGstPlayer::pushbuffer_handler_thread(void *ctx)
             {
                 MIRACASTLOG_ERROR("Error pushing buffer to appsrc");
             }
-            // COVERITY FIX: Reset buffer pointers after use to avoid dangling references
-            // gstBuffer ownership transferred to gst_app_src_push_buffer, so clear local pointer
             gstBuffer = nullptr;
             buffer = nullptr;
         }
@@ -715,8 +695,6 @@ void MiracastGstPlayer::source_setup(GstElement *pipeline, GstElement *source, g
 {
     MiracastGstPlayer *self = static_cast<MiracastGstPlayer*>(userdata);
     MIRACASTLOG_INFO("Entering...");
-    // COVERITY FIX: Changed %x to %p for pointer type (GstElement* source)
-    // Using %p ensures correct portable format for printing pointer addresses
     MIRACASTLOG_INFO("Source has been created. Configuring [%p]",source);
     self->m_appsrc = source;
     // Set AppSrc parameters
@@ -742,8 +720,6 @@ void MiracastGstPlayer::gstBufferReleaseCallback(void* userParam)
 
     if (nullptr != gstBuffer)
     {
-        // COVERITY FIX: Changed %x to %p for pointer type (GstBuffer* gstBuffer)
-        // Using %p ensures correct portable format for printing pointer addresses
         MIRACASTLOG_INFO("gstBuffer[%p]",gstBuffer);
         gst_buffer_unref(gstBuffer);
     }
@@ -784,8 +760,6 @@ bool MiracastGstPlayer::createPipeline()
     if (!m_append_pipeline || !m_udpsrc || !m_rtpjitterbuffer || !m_rtpmp2tdepay ||
         !m_tsparse || !m_appsink || !m_video_sink )
     {
-        // COVERITY FIX: Changed %x to %p for pointer types (GstElement* pointers)
-        // Using %p ensures correct portable format for printing pointer addresses
         MIRACASTLOG_ERROR("Append Pipeline[%p]: Element creation failure, check below",m_append_pipeline);
         MIRACASTLOG_WARNING("udpsrc[%p]rtpjitterbuffer[%p]rtpmp2tdepay[%p]",m_udpsrc,m_rtpjitterbuffer,m_rtpmp2tdepay);
         MIRACASTLOG_WARNING("tsparse[%p]appsink[%p]videosink[%p]audiosink[%p]",
@@ -1035,7 +1009,6 @@ bool MiracastGstPlayer::stop()
     {
         gst_bin_remove(GST_BIN(m_append_pipeline), m_rtpjitterbuffer);
         gst_object_unref(m_rtpjitterbuffer);
-        // Coverity Issue Type 4: COPY_PASTE_ERROR - Fixed: was incorrectly setting m_tsparse to nullptr
         m_rtpjitterbuffer = nullptr;
     }
     if (m_udpsrc)
