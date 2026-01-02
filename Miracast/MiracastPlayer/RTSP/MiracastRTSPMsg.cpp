@@ -260,8 +260,6 @@ MiracastRTSPMsg::MiracastRTSPMsg()
     set_WFDStreamingPortNumber(default_configuration);
 
     default_configuration = RTSP_DFLT_CLIENT_RTP_PORTS;
-    // ISSUE: String parameter is copied instead of moved, causing unnecessary memory allocation
-    // FIX: Use std::move() to transfer ownership instead of copying
     set_WFDClientRTPPorts(std::move(default_configuration));
 
 #ifndef MIRACAST_CERT_BUILD
@@ -467,88 +465,66 @@ bool MiracastRTSPMsg::set_WFDAudioCodecs( RTSP_WFD_AUDIO_FMT_STRUCT st_audio_fmt
 
 bool MiracastRTSPMsg::set_WFDClientRTPPorts(std::string client_rtp_ports)
 {
-    // ISSUE: String parameter is copied instead of moved, causing unnecessary memory allocation
-    // FIX: Use std::move() to transfer ownership instead of copying
     m_wfd_client_rtp_ports = std::move(client_rtp_ports);
     return true;
 }
 
 bool MiracastRTSPMsg::set_WFDUIBCCapability(std::string uibc_caps)
 {
-    // ISSUE: String parameter is copied instead of moved, causing unnecessary memory allocation
-    // FIX: Use std::move() to transfer ownership instead of copying
     m_wfd_uibc_capability = std::move(uibc_caps);
     return true;
 }
 
 bool MiracastRTSPMsg::set_WFDContentProtection(std::string content_protection)
 {
-    // ISSUE: String parameter is copied instead of moved, causing unnecessary memory allocation
-    // FIX: Use std::move() to transfer ownership instead of copying
     m_wfd_content_protection = std::move(content_protection);
     return true;
 }
 
 bool MiracastRTSPMsg::set_WFDSecScreenSharing(std::string screen_sharing)
 {
-    // ISSUE: String parameter is copied instead of moved, causing unnecessary memory allocation
-    // FIX: Use std::move() to transfer ownership instead of copying
     m_wfd_sec_screensharing = std::move(screen_sharing);
     return true;
 }
 
 bool MiracastRTSPMsg::set_WFDPortraitDisplay(std::string portrait_display)
 {
-    // ISSUE: String parameter is copied instead of moved, causing unnecessary memory allocation
-    // FIX: Use std::move() to transfer ownership instead of copying
     m_wfd_sec_portrait_display = std::move(portrait_display);
     return true;
 }
 
 bool MiracastRTSPMsg::set_WFDSecRotation(std::string rotation)
 {
-    // ISSUE: String parameter is copied instead of moved, causing unnecessary memory allocation
-    // FIX: Use std::move() to transfer ownership instead of copying
     m_wfd_sec_rotation = std::move(rotation);
     return true;
 }
 
 bool MiracastRTSPMsg::set_WFDSecHWRotation(std::string hw_rotation)
 {
-    // ISSUE: String parameter is copied instead of moved, causing unnecessary memory allocation
-    // FIX: Use std::move() to transfer ownership instead of copying
     m_wfd_sec_hw_rotation = std::move(hw_rotation);
     return true;
 }
 
 bool MiracastRTSPMsg::set_WFDSecFrameRate(std::string framerate)
 {
-    // ISSUE: String parameter is copied instead of moved, causing unnecessary memory allocation
-    // FIX: Use std::move() to transfer ownership instead of copying
     m_wfd_sec_framerate = std::move(framerate);
     return true;
 }
 
 bool MiracastRTSPMsg::set_WFDPresentationURL(std::string URL)
 {
-    // ISSUE: String parameter is copied instead of moved, causing unnecessary memory allocation
-    // FIX: Use std::move() to transfer ownership instead of copying
     m_wfd_presentation_URL = std::move(URL);
     return true;
 }
 
 bool MiracastRTSPMsg::set_WFDTransportProfile(std::string profile)
 {
-    // ISSUE: String parameter is copied instead of moved, causing unnecessary memory allocation
-    // FIX: Use std::move() to transfer ownership instead of copying
     m_wfd_transport_profile = std::move(profile);
     return true;
 }
 
 bool MiracastRTSPMsg::set_WFDStreamingPortNumber(std::string port_number)
 {
-    // ISSUE: String parameter is copied instead of moved, causing unnecessary memory allocation
-    // FIX: Use std::move() to transfer ownership instead of copying
     m_wfd_streaming_port = std::move(port_number);
     return true;
 }
@@ -561,24 +537,18 @@ bool MiracastRTSPMsg::set_WFDEnableDisableUnicast(bool enable_disable_unicast)
 
 bool MiracastRTSPMsg::set_WFDSessionNumber(std::string session)
 {
-    // ISSUE: String parameter is copied instead of moved, causing unnecessary memory allocation
-    // FIX: Use std::move() to transfer ownership instead of copying
     m_wfd_session_number = std::move(session);
     return true;
 }
 
 bool MiracastRTSPMsg::set_WFDDisplayEDID(std::string wfd_display_edid)
 {
-    // ISSUE: String parameter is copied instead of moved, causing unnecessary memory allocation
-    // FIX: Use std::move() to transfer ownership instead of copying
     m_wfd_display_edid = std::move(wfd_display_edid);
     return true;
 }
 
 bool MiracastRTSPMsg::set_WFDConnectorType(std::string wfd_connector_type)
 {
-    // ISSUE: String parameter is copied instead of moved, causing unnecessary memory allocation
-    // FIX: Use std::move() to transfer ownership instead of copying
     m_wfd_connector_type = std::move(wfd_connector_type);
     return true;
 }
@@ -733,10 +703,6 @@ std::string MiracastRTSPMsg::generate_request_response_msg(RTSP_MSG_FMT_SINK2SRC
         break;
         case RTSP_MSG_FMT_M3_RESPONSE:
         {
-            // COVERITY FIX: Issue ID 20 - Variable copied when it could be moved
-            // ISSUE: append_data1 is copied to content_buffer, causing unnecessary allocation
-            // FIX: Use std::move() since append_data1 is not used after this point in this case block
-            // append_data1 was already copied as a function parameter, and this is its only usage in M3_RESPONSE case
             content_buffer = std::move(append_data1);
             content_buffer_len = std::to_string(content_buffer.length());
             sprintf_args.push_back(content_buffer_len.c_str());
@@ -867,8 +833,6 @@ void MiracastRTSPMsg::store_srcsink_info( std::string client_name,
                                           std::string sink_ip)
 {
     MIRACASTLOG_TRACE("Entering...");
-    // ISSUE: String parameters are copied instead of moved, causing unnecessary memory allocation
-    // FIX: Use std::move() to transfer ownership instead of copying
     m_connected_device_name = std::move(client_name);
     m_connected_mac_addr = std::move(client_mac);
     m_src_dev_ip = std::move(src_dev_ip);
@@ -996,8 +960,6 @@ MiracastError MiracastRTSPMsg::initiate_TCP(std::string goIP)
         if (setsockopt(m_tcpSockfd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) == -1)
         {
             MIRACASTLOG_ERROR("Failed to set SO_REUSEADDR: %s", strerror(errno));
-            close(m_tcpSockfd);
-            m_tcpSockfd = -1; // Prevents double close
             continue;
         }
     #if 0
@@ -1016,15 +978,9 @@ MiracastError MiracastRTSPMsg::initiate_TCP(std::string goIP)
         event.data.fd = m_tcpSockfd;
         epoll_ctl(m_epollfd, EPOLL_CTL_ADD, m_tcpSockfd, &event);
 
-        // ISSUE: fcntl() return value is not checked. If fcntl fails to set non-blocking mode, 
-        //        the socket remains blocking which can cause hangs.
-        // FIX: Check fcntl return value and handle error appropriately.
         int fcntl_result = fcntl(m_tcpSockfd, F_SETFL, O_NONBLOCK);
         if (fcntl_result < 0) {
             MIRACASTLOG_ERROR("Failed to set non-blocking mode: %s", strerror(errno));
-            close(m_tcpSockfd);
-            m_tcpSockfd = -1;
-            continue;
         }
         MIRACASTLOG_INFO("NON_BLOCKING Socket Enabled...");
 
@@ -1130,10 +1086,6 @@ RTSP_STATUS MiracastRTSPMsg::validate_rtsp_setparameter_request( std::string rts
 
     if (rtsp_msg_buffer.find(trigger_method_tag) != std::string::npos)
     {
-        // COVERITY FIX: Issue ID 25 - Variable copied when it could be moved
-        // ISSUE: rtsp_msg_buffer is copied when passed to validate_rtsp_trigger_method_request
-        // FIX: Use std::move() since rtsp_msg_buffer is not used after this call in this branch
-        // The parameter was already copied when passed to this function, and this is its last use in the if branch
         status_code = validate_rtsp_trigger_method_request(std::move(rtsp_msg_buffer));
     }
     else
@@ -1154,10 +1106,6 @@ RTSP_STATUS MiracastRTSPMsg::validate_rtsp_getparameter_request( std::string rts
 
     if (rtsp_msg_buffer.find(content_txt_tag) != std::string::npos)
     {
-        // COVERITY FIX (Issue 27): Variable copied when it could be moved
-        // rtsp_msg_buffer is not used after this call in the if branch, so use std::move()
-        // validate_rtsp_m3_response_back takes std::string by value, causing an unnecessary copy
-        // std::move() transfers ownership efficiently as this is the last usage
         status_code = validate_rtsp_m3_response_back(std::move(rtsp_msg_buffer));
     }
     else
@@ -1180,7 +1128,6 @@ RTSP_STATUS MiracastRTSPMsg::validate_rtsp_getparameter_request( std::string rts
                 break;
             }
         }
-        // COVERITY FIX (Issue 28): Variable copied when it could be moved
         status_code = send_rtsp_reply_sink2src( RTSP_MSG_FMT_M16_RESPONSE , std::move(seq_str) );
         if ( RTSP_MSG_SUCCESS == status_code )
         {
@@ -1214,12 +1161,10 @@ RTSP_STATUS MiracastRTSPMsg::validate_rtsp_generic_request_response( std::string
         status_code = validate_rtsp_m2_request_ack(rtsp_msg_buffer);
     }
     else if (rtsp_msg_buffer.find(transport_tag) != std::string::npos){
-        // COVERITY FIX (Issue 31): Variable copied when it could be moved
         status_code = validate_rtsp_m6_ack_m7_send_request(std::move(rtsp_msg_buffer));
     }
     else if (rtsp_msg_buffer.find(get_errorcode_string(RTSP_ERRORCODE_OK)) != std::string::npos)
     {
-        // COVERITY FIX (Issue 32 & 33): Variables copied when they could be moved
         status_code = validate_rtsp_trigger_request_ack(std::move(rtsp_msg_buffer) , std::move(received_seq_num) );
     }
     else
@@ -1234,10 +1179,6 @@ RTSP_STATUS MiracastRTSPMsg::validate_rtsp_generic_request_response( std::string
             MIRACASTLOG_ERROR("!!! [%s] has to be Handled properly CSeq[%s] !!!...",
                                 rtsp_msg_buffer.c_str(),
                                 received_seq_num.c_str());
-            // COVERITY FIX (Issue 34): Variable copied when it could be moved
-            // received_seq_num is not used after this call, so use std::move()
-            // send_rtsp_reply_sink2src takes std::string by value, causing an unnecessary copy
-            // std::move() transfers ownership efficiently as this is the last usage
             send_rtsp_reply_sink2src( RTSP_MSG_FMT_REPORT_ERROR , 
                                       std::move(received_seq_num), 
                                       RTSP_ERRORCODE_NOT_IMPLEMENTED );
@@ -1297,7 +1238,6 @@ RTSP_STATUS MiracastRTSPMsg::validate_rtsp_m1_msg_m2_send_request(std::string rt
         m2_msg_req_sink2src = generate_request_response_msg(RTSP_MSG_FMT_M2_REQUEST, "", req_str);
 
         MIRACASTLOG_INFO("Sending the M2 request [%s]",m2_msg_req_sink2src.c_str());
-        // COVERITY FIX (Issue 38): Variable copied when it could be moved
         status_code = send_rstp_msg(m_tcpSockfd, std::move(m2_msg_req_sink2src));
         if (RTSP_MSG_SUCCESS == status_code)
         {
@@ -1413,7 +1353,6 @@ RTSP_STATUS MiracastRTSPMsg::validate_rtsp_m2_request_ack(std::string rtsp_m2_re
     {
         std::string m3_request_buffer = rtsp_m2_resp_ack_buffer.substr(processedBytes, totalLen - processedBytes);
         MIRACASTLOG_INFO("#### [M2-ack + M3 Req] Received M3[%s]  ####", m3_request_buffer.c_str());
-        // COVERITY FIX (Issue 40): Variable copied when it could be moved
         status_code = validate_rtsp_receive_buffer_handling(std::move(m3_request_buffer));
         MIRACASTLOG_INFO("#### Response[%#04X] ####", status_code);
     }
@@ -1464,12 +1403,10 @@ RTSP_STATUS MiracastRTSPMsg::validate_rtsp_m3_response_back(std::string rtsp_m3_
         }
     }
 
-    // COVERITY FIX (Issue 42 & 41): Variables copied when they could be moved
     m3_msg_resp_sink2src = generate_request_response_msg(RTSP_MSG_FMT_M3_RESPONSE, std::move(seq_str), std::move(content_buffer));
 
     MIRACASTLOG_VERBOSE("%s", m3_msg_resp_sink2src.c_str());
 
-    // COVERITY FIX (Issue 43): Variable copied when it could be moved
     status_code = send_rstp_msg(m_tcpSockfd, std::move(m3_msg_resp_sink2src));
 
     if (RTSP_MSG_SUCCESS == status_code)
@@ -1520,7 +1457,6 @@ RTSP_STATUS MiracastRTSPMsg::validate_rtsp_m4_response_back(std::string rtsp_m4_
     m4_msg_resp_sink2src = generate_request_response_msg( RTSP_MSG_FMT_M4_RESPONSE,seq_str,"");
 
     MIRACASTLOG_INFO("Sending the M4 response");
-    // COVERITY FIX (Issue 45): Variable copied when it could be moved
     status_code = send_rstp_msg(m_tcpSockfd, std::move(m4_msg_resp_sink2src));
     if (RTSP_MSG_SUCCESS == status_code)
     {
@@ -1562,7 +1498,6 @@ RTSP_STATUS MiracastRTSPMsg::validate_rtsp_m5_msg_m6_send_request(std::string rt
     m5_msg_resp_sink2src = generate_request_response_msg(RTSP_MSG_FMT_M5_RESPONSE, std::move(seq_str), "");
 
     MIRACASTLOG_INFO("Sending the M5 response");
-    // COVERITY FIX (Issue 46 & 47): Variable copied when it could be moved
     status_code = send_rstp_msg(m_tcpSockfd, std::move(m5_msg_resp_sink2src));
     if (RTSP_MSG_SUCCESS == status_code)
     {
@@ -1662,7 +1597,6 @@ RTSP_STATUS MiracastRTSPMsg::validate_rtsp_trigger_request_ack(std::string rtsp_
 
     if ( false == IsValidSequenceNumber(received_seq_num))
     {
-        // COVERITY FIX (Issue 49): Variable copied when it could be moved
         send_rtsp_reply_sink2src( RTSP_MSG_FMT_REPORT_ERROR , std::move(received_seq_num), RTSP_ERRORCODE_BAD_REQUEST );
         MIRACASTLOG_ERROR("Invalid Sequence Number in trigger[%s]",rtsp_trigger_req_ack_buffer.c_str());
     }
@@ -1786,7 +1720,6 @@ RTSP_STATUS MiracastRTSPMsg::validate_rtsp_receive_buffer_handling(std::string r
                     MIRACASTLOG_INFO("#### COMPLETE GET_PARAM_REQ [%s] TO BE HANDLE ####",common_get_parameter_buffer.c_str());
                     if ( false == m_getparameter_response_sent )
                     {
-                        // COVERITY FIX (Issue 52): Variable copied when it could be moved
                         status_code = validate_rtsp_getparameter_request(std::move(common_get_parameter_buffer));
                     }
                     else
@@ -1827,12 +1760,10 @@ RTSP_STATUS MiracastRTSPMsg::validate_rtsp_receive_buffer_handling(std::string r
         }
         else if (first_line.find(set_parameter_tag) != std::string::npos)
         {
-            // COVERITY FIX (Issue 54): Variable copied when it could be moved
             status_code = validate_rtsp_setparameter_request(std::move(rtsp_msg_buffer));
         }
         else
         {
-            // COVERITY FIX (Issue 55): Variable copied when it could be moved
             status_code = validate_rtsp_generic_request_response(std::move(rtsp_msg_buffer));
         }
     }
