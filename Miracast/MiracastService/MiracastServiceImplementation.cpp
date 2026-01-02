@@ -168,6 +168,12 @@ namespace WPEFramework
         void MiracastServiceImplementation::getThunderPlugins(void)
         {
             MIRACASTLOG_TRACE("Entering ...");
+            if (nullptr == m_CurrentService)
+            {
+                MIRACASTLOG_ERROR("m_CurrentService is nullptr, cannot get Thunder plugins");
+                return;
+            }
+            
             if (nullptr == m_SystemPluginObj)
             {
                 string token;
