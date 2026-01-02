@@ -569,11 +569,7 @@ MiracastError MiracastP2P::set_FriendlyName(std::string friendly_name , bool app
         {
             std::string trimming_char = P2P_TRIMMING_CHAR;
             size_t trimmed_length = P2P_SUPPORTED_MAX_FRIENDLY_NAME_LENGTH - trimming_char.length();
-            // ISSUE: USE_AFTER_MOVE - After std::move(), friendly_name should not be accessed
-            //        as its state is undefined. Using friendly_name.c_str() or .length() 
-            //        after the move is undefined behavior (CWE-457).
-            // FIX: Store the original length from m_friendly_name (which now holds the moved data)
-            //      before trimming, and use m_friendly_name instead of friendly_name in logging.
+			
             size_t original_length = m_friendly_name.length();
             
             m_friendly_name = m_friendly_name.substr(0, trimmed_length) + trimming_char;
