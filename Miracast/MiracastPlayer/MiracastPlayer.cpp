@@ -48,8 +48,6 @@ namespace WPEFramework
                 , mCurrentService(nullptr)
                 , mConnectionId(0)
                 , mMiracastPlayerImpl(nullptr)
-                // Coverity Fix: Issue ID 435 - Uninitialized pointer field mConfigure detected in constructor
-                // Initialize mConfigure to nullptr to prevent undefined behavior when accessed
                 , mConfigure(nullptr)
                 , mMiracastPlayerNotification(this)
         {
