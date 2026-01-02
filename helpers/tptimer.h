@@ -105,8 +105,6 @@ namespace Plugin {
             m_intervalInMs = msec;
         }
 
-        // Coverity Fix: Issue ID 136 - COPY_INSTEAD_OF_MOVE
-        // Use std::move() to avoid unnecessary copy of std::function object
         void connect(std::function<void()> callback)
         {
             onTimeoutCallback = std::move(callback);
