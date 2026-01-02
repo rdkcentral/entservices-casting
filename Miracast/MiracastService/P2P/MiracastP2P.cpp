@@ -571,7 +571,6 @@ MiracastError MiracastP2P::set_FriendlyName(std::string friendly_name , bool app
             size_t trimmed_length = P2P_SUPPORTED_MAX_FRIENDLY_NAME_LENGTH - trimming_char.length();
 			
             size_t original_length = m_friendly_name.length();
-            
             m_friendly_name = m_friendly_name.substr(0, trimmed_length) + trimming_char;
             MIRACASTLOG_WARNING("!!! Max Friendly name Length[%zu] passed. So trimming it[%s]TrimLen[%zu] !!!",
                                 original_length,
