@@ -91,7 +91,7 @@ public:
     void flush_current_session(void);
     void remove_P2PGroupInstance(void);
     void restart_session(bool start_discovering_enabled);
-    void stop_session(bool stop_streaming_needed = false);
+    void stop_session(bool remove_p2p_group_async= false);
     std::string get_device_name(std::string mac);
     MiracastError set_FriendlyName(std::string friendly_name , bool apply = false);
     std::string get_FriendlyName(void);
