@@ -44,7 +44,7 @@ namespace WPEFramework {
 class XCastManager : public GDialNotifier
 {
 protected:
-    XCastManager() : m_pluginService(nullptr) {}
+    XCastManager() : m_pluginService(nullptr), m_cachedGeneratedUUID("") {}
 public:
     virtual ~XCastManager();
     /**
@@ -101,25 +101,33 @@ public:
     void setService(XCastNotifier * service){
         m_observer = service;
     }
-    void setPluginService(WPEFramework::PluginHost::IShell* service) {
-        m_pluginService = service;
-    }
+    /**
+     * Set plugin service with proper lifecycle management.
+     * Calls AddRef() to increment reference count and stores the service.
+     * Must be paired with proper cleanup in deinitialize().
+     */
+    void setPluginService(WPEFramework::PluginHost::IShell* service);
 private:
     //Internal methods
     XCastNotifier * m_observer;
     WPEFramework::PluginHost::IShell* m_pluginService;
+
+    std::string m_cachedGeneratedUUID;
     void getWiFiInterface(std::string& WiFiInterfaceName);
     void getGDialInterfaceName(std::string& interfaceName);
     std::string getReceiverID(void);
     bool envGetValue(const char *key, std::string &value);
     /**
-     * Retrieves the device serial number from the deviceInfo plugin.
+     * Retrieves the device serial number from the deviceInfo plugin using on-demand acquisition.
+     * @param pluginService The IShell service to query DeviceInfo plugin from
      * @param serialNumber [out] Contains serial number string on success.
      * @return true if the serial number was successfully retrieved, false otherwise.
      */
-    bool getSerialNumberFromDeviceInfo(std::string& serialNumber);
+    bool getSerialNumberFromDeviceInfo(WPEFramework::PluginHost::IShell* pluginService, std::string& serialNumber);
+
     /**
-     * Generates DNS namespace UUID aligning to RFC 4122 using the provided string input.
+     * Generates a UUID version 5 using the DNS namespace and SHA-1 hashing according to RFC 4122,
+     * based on the provided serial number string.
      * @param serialNumber The serial number string to use as the basis for the UUID.
      * @return A string containing the generated UUID v5 on success; empty string on any failure.
      */

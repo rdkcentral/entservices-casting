@@ -112,6 +112,19 @@ XCastManager::~XCastManager()
     m_observer = nullptr;
 }
 
+void XCastManager::setPluginService(WPEFramework::PluginHost::IShell* service)
+{
+    lock_guard<recursive_mutex> lock(m_mutexSync);
+
+    if (service != nullptr) {
+        service->AddRef();
+        m_pluginService = service;
+    } else {
+        m_pluginService = nullptr;
+        LOGINFO("Plugin service set to nullptr");
+    }
+}
+
 bool XCastManager::initialize(const std::string& gdial_interface_name, bool networkStandbyMode )
 {
     std::vector<std::string> gdial_args;
@@ -282,6 +295,15 @@ void XCastManager::deinitialize()
         gdialService::destroyInstance();
         gdialCastObj = nullptr;
     }
+
+    if (m_pluginService != nullptr) {
+        m_pluginService->Release();
+        m_pluginService = nullptr;
+        LOGINFO("Plugin service reference cleaned up");
+    }
+
+    // Clear cached value
+    m_cachedGeneratedUUID.clear();
 }
 
 void XCastManager::shutdown()
@@ -344,19 +366,25 @@ std::string XCastManager::getReceiverID(void)
     if (receiverId.empty())
     {
         LOGINFO("ReceiverID not found, attempting to generate UUID from serial number");
-        std::string serialNumber = "";
 
-        if (getSerialNumberFromDeviceInfo(serialNumber))
-        {
-            receiverId = generateUUIDv5FromSerialNumber(serialNumber);
-            if (receiverId.empty())
-            {
-                LOGERR("Failed to generate UUID from serial number");
+        if (m_cachedGeneratedUUID != "") {
+            LOGINFO("Using cached generated UUID: %s", m_cachedGeneratedUUID.c_str());
+            receiverId = m_cachedGeneratedUUID;
+        } else {
+            // Generate UUID from serial number
+            std::string serialNumber;
+            if (getSerialNumberFromDeviceInfo(m_pluginService, serialNumber)) {
+                receiverId = generateUUIDv5FromSerialNumber(serialNumber);
+                if (!receiverId.empty()) {
+                    // Cache the generated UUID since serial number is constant
+                    m_cachedGeneratedUUID = receiverId;
+                    LOGINFO("Generated and cached UUID from serial number : %s", m_cachedGeneratedUUID.c_str());
+                } else {
+                    LOGERR("Failed to generate UUID from serial number");
+                }
+            } else {
+                LOGERR("Failed to retrieve serial number from DeviceInfo plugin");
             }
-        }
-        else
-        {
-            LOGERR("Failed to retrieve serial number from DeviceInfo plugin");
         }
     }
     return receiverId;
@@ -580,31 +608,29 @@ XCastManager * XCastManager::getInstance()
     return XCastManager::_instance;
 }
 
-bool XCastManager::getSerialNumberFromDeviceInfo(std::string& serialNumber)
+bool XCastManager::getSerialNumberFromDeviceInfo(WPEFramework::PluginHost::IShell* pluginService, std::string& serialNumber)
 {
-
-    if (m_pluginService == nullptr) {
-        LOGERR("Plugin service is not initialized");
+    if (pluginService == nullptr) {
+        LOGERR("Plugin service is null; cannot progress to call DeviceInfo.");
         return false;
     }
 
-    auto deviceInfoPlugin = m_pluginService->QueryInterfaceByCallsign<WPEFramework::Exchange::IDeviceInfo>("DeviceInfo");
-
+    auto deviceInfoPlugin = pluginService->QueryInterfaceByCallsign<WPEFramework::Exchange::IDeviceInfo>("DeviceInfo");
     if (deviceInfoPlugin == nullptr) {
         LOGERR("DeviceInfo plugin is not available or not activated");
         return false;
     }
 
-    WPEFramework::Exchange::IDeviceInfo::DeviceSerialNo deviceSerialNo;
-    Core::hresult result = deviceInfoPlugin->SerialNumber(deviceSerialNo);
+    WPEFramework::Exchange::IDeviceInfo::DeviceSerialNo deviceSerialNumber;
+    Core::hresult result = deviceInfoPlugin->SerialNumber(deviceSerialNumber);
     deviceInfoPlugin->Release();
 
-    if (result == Core::ERROR_NONE && !deviceSerialNo.serialnumber.empty()) {
-        serialNumber = deviceSerialNo.serialnumber;
+    if (result == Core::ERROR_NONE && !deviceSerialNumber.serialnumber.empty()) {
+        serialNumber = deviceSerialNumber.serialnumber;
         return true;
     }
+    LOGERR("get DeviceInfo.SerialNumber failed, error code: %u, length: %zu", result, deviceSerialNumber.length());
 
-    LOGERR("get DeviceInfo.SerialNumber failed, error code: %u, length: %zu", result, deviceSerialNo.serialnumber.length());
     return false;
 }
 
@@ -647,6 +673,20 @@ std::string XCastManager::generateUUIDv5FromSerialNumber(const std::string& seri
     uuidBytes[6] = (uuidBytes[6] & 0x0F) | 0x50;  // Version 5
     uuidBytes[8] = (uuidBytes[8] & 0x3F) | 0x80;  // Variant bits
 
+    /**
+     * @brief Helper lambda to format a range of bytes as hexadecimal into an output stream.
+     * It formats each byte in the specified range [start, end) as a 2-digit hexadecimal value
+     * and appends it to the provided ostringstream.
+     *
+     * @param stream The output string stream to write formatted bytes to (passed by reference)
+     * @param bytes Pointer to the byte array to be formatted
+     * @param start Starting index (inclusive) of the byte range to format
+     * @param end Ending index (exclusive) of the byte range to format
+     *
+     * @note Defined as a lambda rather than a separate function to keep the formatting logic
+     *       close to its single use case and to avoid polluting the namespace with a small
+     *       utility function that is not needed elsewhere.
+     */
     auto formatBytes = [](std::ostringstream& stream, const uint8_t* bytes, int start, int end) {
         for (int i = start; i < end; i++) {
             stream << std::setw(2) << static_cast<unsigned int>(bytes[i]);
