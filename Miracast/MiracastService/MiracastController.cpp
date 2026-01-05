@@ -445,7 +445,7 @@ void MiracastController::restart_session(bool start_discovering_enabled)
 
 void MiracastController::stop_session(bool remove_p2p_group_async)
 {
-    MIRACASTLOG_TRACE("preeja1 Entering...");
+    MIRACASTLOG_TRACE("Entering...");
     stop_discover_devices();
 
     if (remove_p2p_group_async) {
@@ -453,7 +453,7 @@ void MiracastController::stop_session(bool remove_p2p_group_async)
     } else {
         remove_P2PGroupInstance();
     }
-    MIRACASTLOG_TRACE("preeja1 Exiting...");
+    MIRACASTLOG_TRACE("Exiting...");
 }
 
 void MiracastController::remove_P2PGroupInstance(void)
