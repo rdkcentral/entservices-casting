@@ -367,7 +367,7 @@ std::string XCastManager::getReceiverID(void)
     {
         LOGINFO("ReceiverID not found, attempting to generate UUID from serial number");
 
-        if (m_cachedGeneratedUUID != "") {
+        if (!m_cachedGeneratedUUID.empty()) {
             LOGINFO("Using cached generated UUID: %s", m_cachedGeneratedUUID.c_str());
             receiverId = m_cachedGeneratedUUID;
         } else {
@@ -378,7 +378,7 @@ std::string XCastManager::getReceiverID(void)
                 if (!receiverId.empty()) {
                     // Cache the generated UUID since serial number is constant
                     m_cachedGeneratedUUID = receiverId;
-                    LOGINFO("Generated and cached UUID from serial number : %s", m_cachedGeneratedUUID.c_str());
+                    LOGINFO("Generated and cached UUID from serial number: %s", m_cachedGeneratedUUID.c_str());
                 } else {
                     LOGERR("Failed to generate UUID from serial number");
                 }
@@ -611,7 +611,7 @@ XCastManager * XCastManager::getInstance()
 bool XCastManager::getSerialNumberFromDeviceInfo(WPEFramework::PluginHost::IShell* pluginService, std::string& serialNumber)
 {
     if (pluginService == nullptr) {
-        LOGERR("Plugin service is null; cannot progress to call DeviceInfo.");
+        LOGERR("Plugin service is null; cannot call DeviceInfo.");
         return false;
     }
 
@@ -629,7 +629,7 @@ bool XCastManager::getSerialNumberFromDeviceInfo(WPEFramework::PluginHost::IShel
         serialNumber = deviceSerialNumber.serialnumber;
         return true;
     }
-    LOGERR("get DeviceInfo.SerialNumber failed, error code: %u, length: %zu", result, deviceSerialNumber.length());
+    LOGERR("get DeviceInfo.SerialNumber failed, error code: %u, length: %zu", result, deviceSerialNumber.serialnumber.length());
 
     return false;
 }

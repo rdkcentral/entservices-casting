@@ -38,6 +38,7 @@
 #include "PowerManagerMock.h"
 #include "WorkerPoolImplementation.h"
 #include "XCastImplementation.h"
+#include "XCastManager.h"
 #include <sys/time.h>
 #include <future>
 #include <thread>
@@ -50,6 +51,37 @@ using namespace WPEFramework;
 using ::testing::NiceMock;
 
 #define TEST_LOG(x, ...) fprintf(stderr, "\033[1;32m[%s:%d](%s)<PID:%d><TID:%d>" x "\n\033[0m", __FILE__, __LINE__, __FUNCTION__, getpid(), gettid(), ##__VA_ARGS__); fflush(stderr);
+
+// Mock class for IDeviceInfo interface
+class MockIDeviceInfo : public WPEFramework::Exchange::IDeviceInfo {
+public:
+    MockIDeviceInfo() = default;
+    virtual ~MockIDeviceInfo() = default;
+
+    // Only mock the methods we actually use
+    MOCK_METHOD(Core::hresult, SerialNumber, (DeviceSerialNo& serialNumber), (const, override));
+
+    // IUnknown interface methods that are required
+    MOCK_METHOD(void, AddRef, (), (const, override));
+    MOCK_METHOD(uint32_t, Release, (), (override));
+    MOCK_METHOD(void*, QueryInterface, (const uint32_t interfaceNumber), (override));
+};
+
+// Test wrapper class to access private methods of XCastManager
+class XCastManagerTestWrapper : public XCastManager {
+public:
+    XCastManagerTestWrapper() : XCastManager() {}
+    virtual ~XCastManagerTestWrapper() = default;
+
+    // Public wrappers for private methods
+    bool testGetSerialNumberFromDeviceInfo(WPEFramework::PluginHost::IShell* pluginService, std::string& serialNumber) {
+        return getSerialNumberFromDeviceInfo(pluginService, serialNumber);
+    }
+
+    std::string testGenerateUUIDv5FromSerialNumber(const std::string& serialNumber) {
+        return generateUUIDv5FromSerialNumber(serialNumber);
+    }
+};
 
 class XCastTest : public ::testing::Test {
 protected:
@@ -964,4 +996,256 @@ TEST_F(XCastTest, onNetworkManagerEvents)
     {
         releaseResources();
     }
+}
+
+// Test fixture for XCastManager private methods
+class XCastManagerTest : public ::testing::Test {
+protected:
+    XCastManagerTestWrapper testWrapper;
+    NiceMock<ServiceMock> mockService;
+    NiceMock<MockIDeviceInfo> mockDeviceInfo;
+
+    void SetUp() override {
+        // Setup common test environment
+    }
+
+    void TearDown() override {
+        // Cleanup
+    }
+};
+
+// Tests for getSerialNumberFromDeviceInfo function
+TEST_F(XCastManagerTest, getSerialNumberFromDeviceInfo_NullPluginService)
+{
+    std::string serialNumber;
+    bool result = testWrapper.testGetSerialNumberFromDeviceInfo(nullptr, serialNumber);
+
+    EXPECT_FALSE(result);
+    EXPECT_TRUE(serialNumber.empty());
+}
+
+TEST_F(XCastManagerTest, getSerialNumberFromDeviceInfo_DeviceInfoPluginNotAvailable)
+{
+    std::string serialNumber;
+
+    // Mock service that returns null for DeviceInfo plugin query
+    EXPECT_CALL(mockService, QueryInterfaceByCallsign(::testing::StrEq("DeviceInfo")))
+        .WillOnce(::testing::Return(nullptr));
+
+    bool result = testWrapper.testGetSerialNumberFromDeviceInfo(&mockService, serialNumber);
+
+    EXPECT_FALSE(result);
+    EXPECT_TRUE(serialNumber.empty());
+}
+
+TEST_F(XCastManagerTest, getSerialNumberFromDeviceInfo_SerialNumberRetrievalFailed)
+{
+    std::string serialNumber;
+
+    // Mock service that returns valid DeviceInfo plugin
+    EXPECT_CALL(mockService, QueryInterfaceByCallsign(::testing::StrEq("DeviceInfo")))
+        .WillOnce(::testing::Return(&mockDeviceInfo));
+
+    // Mock DeviceInfo that returns error
+    WPEFramework::Exchange::IDeviceInfo::DeviceSerialNo deviceSerialNumber;
+    EXPECT_CALL(mockDeviceInfo, SerialNumber(::testing::_))
+        .WillOnce(::testing::DoAll(
+            ::testing::SetArgReferee<0>(deviceSerialNumber),
+            ::testing::Return(Core::ERROR_GENERAL)
+        ));
+
+    EXPECT_CALL(mockDeviceInfo, Release())
+        .Times(1);
+
+    bool result = testWrapper.testGetSerialNumberFromDeviceInfo(&mockService, serialNumber);
+
+    EXPECT_FALSE(result);
+    EXPECT_TRUE(serialNumber.empty());
+}
+
+TEST_F(XCastManagerTest, getSerialNumberFromDeviceInfo_EmptySerialNumber)
+{
+    std::string serialNumber;
+
+    // Mock service that returns valid DeviceInfo plugin
+    EXPECT_CALL(mockService, QueryInterfaceByCallsign(::testing::StrEq("DeviceInfo")))
+        .WillOnce(::testing::Return(&mockDeviceInfo));
+
+    // Mock DeviceInfo that returns success but empty serial number
+    WPEFramework::Exchange::IDeviceInfo::DeviceSerialNo deviceSerialNumber;
+    deviceSerialNumber.serialnumber = "";
+    EXPECT_CALL(mockDeviceInfo, SerialNumber(::testing::_))
+        .WillOnce(::testing::DoAll(
+            ::testing::SetArgReferee<0>(deviceSerialNumber),
+            ::testing::Return(Core::ERROR_NONE)
+        ));
+
+    EXPECT_CALL(mockDeviceInfo, Release())
+        .Times(1);
+
+    bool result = testWrapper.testGetSerialNumberFromDeviceInfo(&mockService, serialNumber);
+
+    EXPECT_FALSE(result);
+    EXPECT_TRUE(serialNumber.empty());
+}
+
+TEST_F(XCastManagerTest, getSerialNumberFromDeviceInfo_Success)
+{
+    std::string serialNumber;
+    const std::string expectedSerial = "TEST123456789";
+
+    // Mock service that returns valid DeviceInfo plugin
+    EXPECT_CALL(mockService, QueryInterfaceByCallsign(::testing::StrEq("DeviceInfo")))
+        .WillOnce(::testing::Return(&mockDeviceInfo));
+
+    // Mock DeviceInfo that returns success with valid serial number
+    WPEFramework::Exchange::IDeviceInfo::DeviceSerialNo deviceSerialNumber;
+    deviceSerialNumber.serialnumber = expectedSerial;
+    EXPECT_CALL(mockDeviceInfo, SerialNumber(::testing::_))
+        .WillOnce(::testing::DoAll(
+            ::testing::SetArgReferee<0>(deviceSerialNumber),
+            ::testing::Return(Core::ERROR_NONE)
+        ));
+
+    EXPECT_CALL(mockDeviceInfo, Release())
+        .Times(1);
+
+    bool result = testWrapper.testGetSerialNumberFromDeviceInfo(&mockService, serialNumber);
+
+    EXPECT_TRUE(result);
+    EXPECT_EQ(serialNumber, expectedSerial);
+}
+
+// Tests for generateUUIDv5FromSerialNumber function
+TEST_F(XCastManagerTest, generateUUIDv5FromSerialNumber_EmptySerialNumber)
+{
+    std::string result = testWrapper.testGenerateUUIDv5FromSerialNumber("");
+    EXPECT_TRUE(result.empty());
+}
+
+TEST_F(XCastManagerTest, generateUUIDv5FromSerialNumber_ValidSerialNumber)
+{
+    const std::string serialNumber = "TEST123456789";
+    std::string result = testWrapper.testGenerateUUIDv5FromSerialNumber(serialNumber);
+
+    // Verify UUID format (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
+    EXPECT_EQ(result.length(), 36);
+    EXPECT_EQ(result[8], '-');
+    EXPECT_EQ(result[13], '-');
+    EXPECT_EQ(result[18], '-');
+    EXPECT_EQ(result[23], '-');
+
+    // Verify UUID version (should be 5)
+    EXPECT_EQ(result[14], '5');
+
+    // Verify UUID variant (first bit of 19th character should be 8, 9, A, or B)
+    char variantChar = result[19];
+    EXPECT_TRUE(variantChar == '8' || variantChar == '9' ||
+                variantChar == 'a' || variantChar == 'b' ||
+                variantChar == 'A' || variantChar == 'B');
+}
+
+TEST_F(XCastManagerTest, generateUUIDv5FromSerialNumber_Consistency)
+{
+    const std::string serialNumber = "TEST123456789";
+
+    // Generate UUID twice with same input
+    std::string result1 = testWrapper.testGenerateUUIDv5FromSerialNumber(serialNumber);
+    std::string result2 = testWrapper.testGenerateUUIDv5FromSerialNumber(serialNumber);
+
+    // Should be identical (UUIDs are deterministic)
+    EXPECT_EQ(result1, result2);
+    EXPECT_FALSE(result1.empty());
+    EXPECT_FALSE(result2.empty());
+}
+
+TEST_F(XCastManagerTest, generateUUIDv5FromSerialNumber_DifferentInputs)
+{
+    const std::string serialNumber1 = "TEST123456789";
+    const std::string serialNumber2 = "DIFFERENT987654321";
+
+    std::string result1 = testWrapper.testGenerateUUIDv5FromSerialNumber(serialNumber1);
+    std::string result2 = testWrapper.testGenerateUUIDv5FromSerialNumber(serialNumber2);
+
+    // Should be different
+    EXPECT_NE(result1, result2);
+    EXPECT_FALSE(result1.empty());
+    EXPECT_FALSE(result2.empty());
+
+    // Both should be valid UUID format
+    EXPECT_EQ(result1.length(), 36);
+    EXPECT_EQ(result2.length(), 36);
+}
+
+TEST_F(XCastManagerTest, generateUUIDv5FromSerialNumber_SpecialCharacters)
+{
+    const std::string serialNumber = "TEST-123_456@789#ABC";
+    std::string result = testWrapper.testGenerateUUIDv5FromSerialNumber(serialNumber);
+
+    // Should handle special characters and produce valid UUID
+    EXPECT_EQ(result.length(), 36);
+    EXPECT_FALSE(result.empty());
+
+    // Verify UUID format
+    EXPECT_EQ(result[8], '-');
+    EXPECT_EQ(result[13], '-');
+    EXPECT_EQ(result[18], '-');
+    EXPECT_EQ(result[23], '-');
+    EXPECT_EQ(result[14], '5'); // Version 5
+}
+
+TEST_F(XCastManagerTest, generateUUIDv5FromSerialNumber_LongSerialNumber)
+{
+    // Test with a very long serial number
+    const std::string serialNumber = "VERYLONGTEST123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789MORECHARS";
+    std::string result = testWrapper.testGenerateUUIDv5FromSerialNumber(serialNumber);
+
+    // Should handle long input and produce valid UUID
+    EXPECT_EQ(result.length(), 36);
+    EXPECT_FALSE(result.empty());
+
+    // Verify UUID format
+    EXPECT_EQ(result[8], '-');
+    EXPECT_EQ(result[13], '-');
+    EXPECT_EQ(result[18], '-');
+    EXPECT_EQ(result[23], '-');
+    EXPECT_EQ(result[14], '5'); // Version 5
+}
+
+// Integration test for both functions working together
+TEST_F(XCastManagerTest, Integration_GetSerialAndGenerateUUID)
+{
+    const std::string expectedSerial = "INTEGRATION_TEST_SERIAL123";
+    std::string retrievedSerial;
+
+    // Setup mock for successful serial retrieval
+    EXPECT_CALL(mockService, QueryInterfaceByCallsign(::testing::StrEq("DeviceInfo")))
+        .WillOnce(::testing::Return(&mockDeviceInfo));
+
+    WPEFramework::Exchange::IDeviceInfo::DeviceSerialNo deviceSerialNumber;
+    deviceSerialNumber.serialnumber = expectedSerial;
+    EXPECT_CALL(mockDeviceInfo, SerialNumber(::testing::_))
+        .WillOnce(::testing::DoAll(
+            ::testing::SetArgReferee<0>(deviceSerialNumber),
+            ::testing::Return(Core::ERROR_NONE)
+        ));
+
+    EXPECT_CALL(mockDeviceInfo, Release())
+        .Times(1);
+
+    // Test the flow: getSerialNumber -> generateUUID
+    bool serialResult = testWrapper.testGetSerialNumberFromDeviceInfo(&mockService, retrievedSerial);
+    ASSERT_TRUE(serialResult);
+    ASSERT_EQ(retrievedSerial, expectedSerial);
+
+    std::string generatedUUID = testWrapper.testGenerateUUIDv5FromSerialNumber(retrievedSerial);
+
+    // Verify UUID was generated correctly
+    EXPECT_FALSE(generatedUUID.empty());
+    EXPECT_EQ(generatedUUID.length(), 36);
+    EXPECT_EQ(generatedUUID[14], '5'); // UUID version 5
+
+    // Test consistency: same serial should produce same UUID
+    std::string generatedUUID2 = testWrapper.testGenerateUUIDv5FromSerialNumber(retrievedSerial);
+    EXPECT_EQ(generatedUUID, generatedUUID2);
 }
