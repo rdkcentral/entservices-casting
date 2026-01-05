@@ -42,7 +42,7 @@ enum LogLevel {FATAL_LEVEL = 0, ERROR_LEVEL, WARNING_LEVEL, INFO_LEVEL, VERBOSE_
 /**
  * @brief Init logging
  * Should be called once per program run before calling log-functions
-*/
+ */
 void logger_init(const char* module_name);
 
 /**
