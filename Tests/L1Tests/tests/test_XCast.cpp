@@ -61,16 +61,23 @@ public:
     // Only mock the methods we actually use
     MOCK_METHOD(Core::hresult, SerialNumber, (WPEFramework::Exchange::IDeviceInfo::DeviceSerialNo& serialNumber), (const, override));
 
-    // Stub implementations for other pure virtual methods - use fully qualified names
-    Core::hresult Sku(WPEFramework::Exchange::IDeviceInfo::DeviceSku& sku) const override { return Core::ERROR_NONE; }
-    Core::hresult Make(WPEFramework::Exchange::IDeviceInfo::DeviceMake& make) const override { return Core::ERROR_NONE; }
-    Core::hresult Model(WPEFramework::Exchange::IDeviceInfo::DeviceModel& model) const override { return Core::ERROR_NONE; }
-    Core::hresult DeviceType(WPEFramework::Exchange::IDeviceInfo::DeviceTypeInfo& deviceType) const override { return Core::ERROR_NONE; }
-    Core::hresult DistributorId(WPEFramework::Exchange::IDeviceInfo::DeviceDistributorId& distributorId) const override { return Core::ERROR_NONE; }
-    Core::hresult PlatformId(WPEFramework::Exchange::IDeviceInfo::DevicePlatformId& platformId) const override { return Core::ERROR_NONE; }
-    Core::hresult Architecture(WPEFramework::Exchange::IDeviceInfo::DeviceArchitecture& architecture) const override { return Core::ERROR_NONE; }
-    Core::hresult ChipsetId(WPEFramework::Exchange::IDeviceInfo::DeviceChipsetId& chipsetId) const override { return Core::ERROR_NONE; }
-    Core::hresult FirmwareVersion(WPEFramework::Exchange::IDeviceInfo::DeviceFirmwareVersion& firmwareVersion) const override { return Core::ERROR_NONE; }
+    // Stub implementations for other pure virtual methods from IDeviceInfo
+    Core::hresult Sku(WPEFramework::Exchange::IDeviceInfo::DeviceModelNo& deviceModelNo) const override { return Core::ERROR_NONE; }
+    Core::hresult Make(WPEFramework::Exchange::IDeviceInfo::DeviceMake& deviceMake) const override { return Core::ERROR_NONE; }
+    Core::hresult Model(WPEFramework::Exchange::IDeviceInfo::DeviceModel& deviceModel) const override { return Core::ERROR_NONE; }
+    Core::hresult DeviceType(WPEFramework::Exchange::IDeviceInfo::DeviceTypeInfos& deviceTypeInfos) const override { return Core::ERROR_NONE; }
+    Core::hresult SocName(WPEFramework::Exchange::IDeviceInfo::DeviceSoc& deviceSoc) const override { return Core::ERROR_NONE; }
+    Core::hresult DistributorId(WPEFramework::Exchange::IDeviceInfo::DeviceDistId& deviceDistId) const override { return Core::ERROR_NONE; }
+    Core::hresult Brand(WPEFramework::Exchange::IDeviceInfo::DeviceBrand& deviceBrand) const override { return Core::ERROR_NONE; }
+    Core::hresult ReleaseVersion(WPEFramework::Exchange::IDeviceInfo::DeviceReleaseVer& deviceReleaseVer) const override { return Core::ERROR_NONE; }
+    Core::hresult ChipSet(WPEFramework::Exchange::IDeviceInfo::DeviceChip& deviceChip) const override { return Core::ERROR_NONE; }
+    Core::hresult FirmwareVersion(WPEFramework::Exchange::IDeviceInfo::FirmwareversionInfo& firmwareVersionInfo) const override { return Core::ERROR_NONE; }
+    Core::hresult SystemInfo(WPEFramework::Exchange::IDeviceInfo::SystemInfos& systemInfo) const override { return Core::ERROR_NONE; }
+    Core::hresult Addresses(WPEFramework::Exchange::IDeviceInfo::IAddressesInfoIterator*& addressesInfo) const override { return Core::ERROR_NONE; }
+    Core::hresult EthMac(WPEFramework::Exchange::IDeviceInfo::EthernetMac& ethernetMac) const override { return Core::ERROR_NONE; }
+    Core::hresult EstbMac(WPEFramework::Exchange::IDeviceInfo::StbMac& stbMac) const override { return Core::ERROR_NONE; }
+    Core::hresult WifiMac(WPEFramework::Exchange::IDeviceInfo::WiFiMac& wiFiMac) const override { return Core::ERROR_NONE; }
+    Core::hresult EstbIp(WPEFramework::Exchange::IDeviceInfo::StbIp& stbIp) const override { return Core::ERROR_NONE; }
 
     // IUnknown interface methods - simple implementations
     void AddRef() const override {
