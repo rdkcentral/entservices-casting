@@ -78,6 +78,7 @@ public:
     Core::hresult EstbMac(WPEFramework::Exchange::IDeviceInfo::StbMac& stbMac) const override { return Core::ERROR_NONE; }
     Core::hresult WifiMac(WPEFramework::Exchange::IDeviceInfo::WiFiMac& wiFiMac) const override { return Core::ERROR_NONE; }
     Core::hresult EstbIp(WPEFramework::Exchange::IDeviceInfo::StbIp& stbIp) const override { return Core::ERROR_NONE; }
+    Core::hresult SupportedAudioPorts(WPEFramework::Exchange::IDeviceInfo::IStringIterator*& supportedAudioPorts, bool& success) const override { return Core::ERROR_NONE; }
 
     // IUnknown interface methods - simple implementations
     void AddRef() const override {
@@ -1091,10 +1092,8 @@ TEST_F(XCastManagerTest, getSerialNumberFromDeviceInfo_DeviceInfoPluginNotAvaila
     std::string serialNumber;
 
     // Mock service that returns null for DeviceInfo plugin query
-    EXPECT_CALL(mockService, QueryInterfaceByCallsign(::testing::StrEq("DeviceInfo")))
-        .WillOnce(::testing::Return(nullptr));
-
-    bool result = testWrapper.testGetSerialNumberFromDeviceInfo(&mockService, serialNumber);
+    EXPECT_CALL(mockService, QueryInterfaceByCallsign(::testing::_, ::testing::StrEq("DeviceInfo")))
+        .WillOnce(::testing::Return(nullptr));    bool result = testWrapper.testGetSerialNumberFromDeviceInfo(&mockService, serialNumber);
 
     EXPECT_FALSE(result);
     EXPECT_TRUE(serialNumber.empty());
@@ -1105,7 +1104,7 @@ TEST_F(XCastManagerTest, getSerialNumberFromDeviceInfo_SerialNumberRetrievalFail
     std::string serialNumber;
 
     // Mock service that returns valid DeviceInfo plugin
-    EXPECT_CALL(mockService, QueryInterfaceByCallsign(::testing::StrEq("DeviceInfo")))
+    EXPECT_CALL(mockService, QueryInterfaceByCallsign(::testing::_, ::testing::StrEq("DeviceInfo")))
         .WillOnce(::testing::Return(&mockDeviceInfo));
 
     // Mock DeviceInfo that returns error
@@ -1127,7 +1126,7 @@ TEST_F(XCastManagerTest, getSerialNumberFromDeviceInfo_EmptySerialNumber)
     std::string serialNumber;
 
     // Mock service that returns valid DeviceInfo plugin
-    EXPECT_CALL(mockService, QueryInterfaceByCallsign(::testing::StrEq("DeviceInfo")))
+    EXPECT_CALL(mockService, QueryInterfaceByCallsign(::testing::_, ::testing::StrEq("DeviceInfo")))
         .WillOnce(::testing::Return(&mockDeviceInfo));
 
     // Mock DeviceInfo that returns success but empty serial number
@@ -1151,10 +1150,8 @@ TEST_F(XCastManagerTest, getSerialNumberFromDeviceInfo_Success)
     const std::string expectedSerial = "TEST123456789";
 
     // Mock service that returns valid DeviceInfo plugin
-    EXPECT_CALL(mockService, QueryInterfaceByCallsign(::testing::StrEq("DeviceInfo")))
-        .WillOnce(::testing::Return(&mockDeviceInfo));
-
-    // Mock DeviceInfo that returns success with valid serial number
+    EXPECT_CALL(mockService, QueryInterfaceByCallsign(::testing::_, ::testing::StrEq("DeviceInfo")))
+        .WillOnce(::testing::Return(&mockDeviceInfo));    // Mock DeviceInfo that returns success with valid serial number
     WPEFramework::Exchange::IDeviceInfo::DeviceSerialNo deviceSerialNumber;
     deviceSerialNumber.serialnumber = expectedSerial;
     EXPECT_CALL(mockDeviceInfo, SerialNumber(::testing::_))
@@ -1268,10 +1265,8 @@ TEST_F(XCastManagerTest, Integration_GetSerialAndGenerateUUID)
     std::string retrievedSerial;
 
     // Setup mock for successful serial retrieval
-    EXPECT_CALL(mockService, QueryInterfaceByCallsign(::testing::StrEq("DeviceInfo")))
-        .WillOnce(::testing::Return(&mockDeviceInfo));
-
-    WPEFramework::Exchange::IDeviceInfo::DeviceSerialNo deviceSerialNumber;
+    EXPECT_CALL(mockService, QueryInterfaceByCallsign(::testing::_, ::testing::StrEq("DeviceInfo")))
+        .WillOnce(::testing::Return(&mockDeviceInfo));    WPEFramework::Exchange::IDeviceInfo::DeviceSerialNo deviceSerialNumber;
     deviceSerialNumber.serialnumber = expectedSerial;
     EXPECT_CALL(mockDeviceInfo, SerialNumber(::testing::_))
         .WillOnce(::testing::DoAll(
