@@ -69,7 +69,6 @@ namespace Plugin {
         PluginInterfaceRef& operator=(PluginInterfaceRef&& other)
         {
             if (this != &other) {
-                Reset();
                 _interface = other._interface;
                 other._interface = nullptr;
             }
