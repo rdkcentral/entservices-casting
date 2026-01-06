@@ -61,16 +61,16 @@ public:
     // Only mock the methods we actually use
     MOCK_METHOD(Core::hresult, SerialNumber, (WPEFramework::Exchange::IDeviceInfo::DeviceSerialNo& serialNumber), (const, override));
 
-    // Stub implementations for other pure virtual methods
-    Core::hresult Sku(DeviceSku& sku) const override { return Core::ERROR_NONE; }
-    Core::hresult Make(DeviceMake& make) const override { return Core::ERROR_NONE; }
-    Core::hresult Model(DeviceModel& model) const override { return Core::ERROR_NONE; }
-    Core::hresult DeviceType(DeviceTypeInfo& deviceType) const override { return Core::ERROR_NONE; }
-    Core::hresult DistributorId(DeviceDistributorId& distributorId) const override { return Core::ERROR_NONE; }
-    Core::hresult PlatformId(DevicePlatformId& platformId) const override { return Core::ERROR_NONE; }
-    Core::hresult Architecture(DeviceArchitecture& architecture) const override { return Core::ERROR_NONE; }
-    Core::hresult ChipsetId(DeviceChipsetId& chipsetId) const override { return Core::ERROR_NONE; }
-    Core::hresult FirmwareVersion(DeviceFirmwareVersion& firmwareVersion) const override { return Core::ERROR_NONE; }
+    // Stub implementations for other pure virtual methods - use fully qualified names
+    Core::hresult Sku(WPEFramework::Exchange::IDeviceInfo::DeviceSku& sku) const override { return Core::ERROR_NONE; }
+    Core::hresult Make(WPEFramework::Exchange::IDeviceInfo::DeviceMake& make) const override { return Core::ERROR_NONE; }
+    Core::hresult Model(WPEFramework::Exchange::IDeviceInfo::DeviceModel& model) const override { return Core::ERROR_NONE; }
+    Core::hresult DeviceType(WPEFramework::Exchange::IDeviceInfo::DeviceTypeInfo& deviceType) const override { return Core::ERROR_NONE; }
+    Core::hresult DistributorId(WPEFramework::Exchange::IDeviceInfo::DeviceDistributorId& distributorId) const override { return Core::ERROR_NONE; }
+    Core::hresult PlatformId(WPEFramework::Exchange::IDeviceInfo::DevicePlatformId& platformId) const override { return Core::ERROR_NONE; }
+    Core::hresult Architecture(WPEFramework::Exchange::IDeviceInfo::DeviceArchitecture& architecture) const override { return Core::ERROR_NONE; }
+    Core::hresult ChipsetId(WPEFramework::Exchange::IDeviceInfo::DeviceChipsetId& chipsetId) const override { return Core::ERROR_NONE; }
+    Core::hresult FirmwareVersion(WPEFramework::Exchange::IDeviceInfo::DeviceFirmwareVersion& firmwareVersion) const override { return Core::ERROR_NONE; }
 
     // IUnknown interface methods - simple implementations
     void AddRef() const override {
