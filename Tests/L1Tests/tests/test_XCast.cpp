@@ -38,7 +38,7 @@
 #include "PowerManagerMock.h"
 #include "WorkerPoolImplementation.h"
 #include "XCastImplementation.h"
-#include "XCastManager.h"
+#include <interfaces/IDeviceInfo.h>
 #include <sys/time.h>
 #include <future>
 #include <thread>
@@ -59,7 +59,7 @@ public:
     virtual ~MockIDeviceInfo() = default;
 
     // Only mock the methods we actually use
-    MOCK_METHOD(Core::hresult, SerialNumber, (DeviceSerialNo& serialNumber), (const, override));
+    MOCK_METHOD(Core::hresult, SerialNumber, (WPEFramework::Exchange::IDeviceInfo::DeviceSerialNo& serialNumber), (const, override));
 
     // IUnknown interface methods that are required
     MOCK_METHOD(void, AddRef, (), (const, override));
@@ -1173,8 +1173,8 @@ TEST_F(XCastManagerTest, generateUUIDv5FromSerialNumber_DifferentInputs)
     EXPECT_FALSE(result2.empty());
 
     // Both should be valid UUID format
-    EXPECT_EQ(result1.length(), 36);
-    EXPECT_EQ(result2.length(), 36);
+    EXPECT_EQ(result1.length(), 36u);
+    EXPECT_EQ(result2.length(), 36u);
 }
 
 TEST_F(XCastManagerTest, generateUUIDv5FromSerialNumber_SpecialCharacters)
@@ -1183,10 +1183,8 @@ TEST_F(XCastManagerTest, generateUUIDv5FromSerialNumber_SpecialCharacters)
     std::string result = testWrapper.testGenerateUUIDv5FromSerialNumber(serialNumber);
 
     // Should handle special characters and produce valid UUID
-    EXPECT_EQ(result.length(), 36);
-    EXPECT_FALSE(result.empty());
-
-    // Verify UUID format
+    EXPECT_EQ(result.length(), 36u);
+    EXPECT_FALSE(result.empty());    // Verify UUID format
     EXPECT_EQ(result[8], '-');
     EXPECT_EQ(result[13], '-');
     EXPECT_EQ(result[18], '-');
@@ -1201,10 +1199,8 @@ TEST_F(XCastManagerTest, generateUUIDv5FromSerialNumber_LongSerialNumber)
     std::string result = testWrapper.testGenerateUUIDv5FromSerialNumber(serialNumber);
 
     // Should handle long input and produce valid UUID
-    EXPECT_EQ(result.length(), 36);
-    EXPECT_FALSE(result.empty());
-
-    // Verify UUID format
+    EXPECT_EQ(result.length(), 36u);
+    EXPECT_FALSE(result.empty());    // Verify UUID format
     EXPECT_EQ(result[8], '-');
     EXPECT_EQ(result[13], '-');
     EXPECT_EQ(result[18], '-');
@@ -1242,7 +1238,7 @@ TEST_F(XCastManagerTest, Integration_GetSerialAndGenerateUUID)
 
     // Verify UUID was generated correctly
     EXPECT_FALSE(generatedUUID.empty());
-    EXPECT_EQ(generatedUUID.length(), 36);
+    EXPECT_EQ(generatedUUID.length(), 36u);
     EXPECT_EQ(generatedUUID[14], '5'); // UUID version 5
 
     // Test consistency: same serial should produce same UUID
