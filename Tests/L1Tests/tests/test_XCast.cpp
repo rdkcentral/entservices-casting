@@ -37,14 +37,6 @@
 #include "NetworkManagerMock.h"
 #include "PowerManagerMock.h"
 #include "WorkerPoolImplementation.h"
-
-// Allow access to private members for testing
-#define private public
-#define protected public
-#include "XCastManager.h"
-#undef private
-#undef protected
-
 #include "XCastImplementation.h"
 #include <interfaces/IDeviceInfo.h>
 #include <sys/time.h>
@@ -69,6 +61,17 @@ public:
     // Only mock the methods we actually use
     MOCK_METHOD(Core::hresult, SerialNumber, (WPEFramework::Exchange::IDeviceInfo::DeviceSerialNo& serialNumber), (const, override));
 
+    // Stub implementations for other pure virtual methods
+    Core::hresult Sku(DeviceSku& sku) const override { return Core::ERROR_NONE; }
+    Core::hresult Make(DeviceMake& make) const override { return Core::ERROR_NONE; }
+    Core::hresult Model(DeviceModel& model) const override { return Core::ERROR_NONE; }
+    Core::hresult DeviceType(DeviceTypeInfo& deviceType) const override { return Core::ERROR_NONE; }
+    Core::hresult DistributorId(DeviceDistributorId& distributorId) const override { return Core::ERROR_NONE; }
+    Core::hresult PlatformId(DevicePlatformId& platformId) const override { return Core::ERROR_NONE; }
+    Core::hresult Architecture(DeviceArchitecture& architecture) const override { return Core::ERROR_NONE; }
+    Core::hresult ChipsetId(DeviceChipsetId& chipsetId) const override { return Core::ERROR_NONE; }
+    Core::hresult FirmwareVersion(DeviceFirmwareVersion& firmwareVersion) const override { return Core::ERROR_NONE; }
+
     // IUnknown interface methods - simple implementations
     void AddRef() const override {
         // Mock implementation - do nothing in tests
@@ -88,19 +91,50 @@ private:
     mutable uint32_t _refCount;
 };
 
-// Test wrapper class to access private methods of XCastManager
-class XCastManagerTestWrapper : public XCastManager {
+// Template-based approach to access private methods for testing
+// This uses explicit template instantiation to access private members
+template<typename Tag, typename Tag::type M>
+struct PrivateMethodAccessor {
+    friend typename Tag::type get(Tag) {
+        return M;
+    }
+};
+
+// Define tags for the private methods
+struct GetSerialNumberFromDeviceInfoTag {
+    typedef bool (XCastManager::*type)(WPEFramework::PluginHost::IShell*, std::string&);
+    friend type get(GetSerialNumberFromDeviceInfoTag);
+};
+
+struct GenerateUUIDv5FromSerialNumberTag {
+    typedef std::string (XCastManager::*type)(const std::string&);
+    friend type get(GenerateUUIDv5FromSerialNumberTag);
+};
+
+// Explicit instantiation to create the accessor
+template struct PrivateMethodAccessor<GetSerialNumberFromDeviceInfoTag, &XCastManager::getSerialNumberFromDeviceInfo>;
+template struct PrivateMethodAccessor<GenerateUUIDv5FromSerialNumberTag, &XCastManager::generateUUIDv5FromSerialNumber>;
+
+// Test wrapper class that uses the accessor
+class XCastManagerTestWrapper {
+private:
+    XCastManager* m_instance;
+
 public:
-    XCastManagerTestWrapper() : XCastManager() {}
+    XCastManagerTestWrapper() {
+        m_instance = XCastManager::getInstance();
+    }
+
     virtual ~XCastManagerTestWrapper() = default;
 
-    // Public wrappers for private methods (now accessible due to #define private public)
     bool testGetSerialNumberFromDeviceInfo(WPEFramework::PluginHost::IShell* pluginService, std::string& serialNumber) {
-        return getSerialNumberFromDeviceInfo(pluginService, serialNumber);
+        auto methodPtr = get(GetSerialNumberFromDeviceInfoTag{});
+        return (m_instance->*methodPtr)(pluginService, serialNumber);
     }
 
     std::string testGenerateUUIDv5FromSerialNumber(const std::string& serialNumber) {
-        return generateUUIDv5FromSerialNumber(serialNumber);
+        auto methodPtr = get(GenerateUUIDv5FromSerialNumberTag{});
+        return (m_instance->*methodPtr)(serialNumber);
     }
 };
 
