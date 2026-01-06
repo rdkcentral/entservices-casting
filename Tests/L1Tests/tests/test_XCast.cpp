@@ -37,6 +37,14 @@
 #include "NetworkManagerMock.h"
 #include "PowerManagerMock.h"
 #include "WorkerPoolImplementation.h"
+
+// Allow access to private members for testing
+#define private public
+#define protected public
+#include "XCastManager.h"
+#undef private
+#undef protected
+
 #include "XCastImplementation.h"
 #include <interfaces/IDeviceInfo.h>
 #include <sys/time.h>
@@ -66,7 +74,7 @@ public:
         // Mock implementation - do nothing in tests
     }
 
-    uint32_t Release() override {
+    uint32_t Release() const override {
         // Mock implementation - return reference count
         return Core::ERROR_NONE;
     }
@@ -86,7 +94,7 @@ public:
     XCastManagerTestWrapper() : XCastManager() {}
     virtual ~XCastManagerTestWrapper() = default;
 
-    // Public wrappers for private methods
+    // Public wrappers for private methods (now accessible due to #define private public)
     bool testGetSerialNumberFromDeviceInfo(WPEFramework::PluginHost::IShell* pluginService, std::string& serialNumber) {
         return getSerialNumberFromDeviceInfo(pluginService, serialNumber);
     }
