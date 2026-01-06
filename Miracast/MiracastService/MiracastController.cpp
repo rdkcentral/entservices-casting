@@ -451,18 +451,23 @@ void MiracastController::restart_session(bool start_discovering_enabled)
 
     reset_WFDSourceMACAddress();
     reset_WFDSourceName();
-    stop_session();
+    stop_session(false);
     if (start_discovering_enabled){
         discover_devices();
     }
     MIRACASTLOG_TRACE("Exiting...");
 }
 
-void MiracastController::stop_session(bool stop_streaming_needed)
+void MiracastController::stop_session(bool remove_p2p_group_async)
 {
     MIRACASTLOG_TRACE("Entering...");
     stop_discover_devices();
-    remove_P2PGroupInstance();
+
+    if (remove_p2p_group_async) {
+        flush_current_session();
+    } else {
+        remove_P2PGroupInstance();
+    }
     MIRACASTLOG_TRACE("Exiting...");
 }
 
@@ -1268,7 +1273,7 @@ void MiracastController::Controller_Thread(void *args)
                         else if (CONTROLLER_STOP_DISCOVERING == controller_msgq_data.state)
                         {
                             MIRACASTLOG_INFO("CONTROLLER_STOP_DISCOVERING Received\n");
-                            stop_session(true);
+                            stop_session(false);
                             m_start_discovering_enabled = false;
                             sleep(2);
                         }
