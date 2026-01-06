@@ -61,10 +61,9 @@ namespace Plugin {
         // use move
         PluginInterfaceRef(PluginInterfaceRef&& other)
             : _interface(other._interface)
-            , _service(other._service)
+            , _service(nullptr)
         {
             other._interface = nullptr;
-            other._service = nullptr;
         }
 
         PluginInterfaceRef& operator=(PluginInterfaceRef&& other)
@@ -72,9 +71,7 @@ namespace Plugin {
             if (this != &other) {
                 Reset();
                 _interface = other._interface;
-                _service = other._service;
                 other._interface = nullptr;
-                other._service = nullptr;
             }
             return *this;
         }
