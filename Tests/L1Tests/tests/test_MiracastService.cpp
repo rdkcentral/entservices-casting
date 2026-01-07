@@ -267,7 +267,8 @@ TEST_F(MiracastServiceTest, P2PCtrlInterfaceNameNotFound)
 
 	// WIFI_P2P_CTRL_INTERFACE not configured in device properties file
 	EXPECT_NE(string(""), plugin->Initialize(&service));
-	plugin->Deinitialize(&service);
+	// Don't call Deinitialize - when Initialize fails, implementation auto-deinitializes
+	// Destructor's Deactivate will handle cleanup
 }
 
 TEST_F(MiracastServiceTest, P2PCtrlInterfacePathNotFound)
@@ -277,7 +278,8 @@ TEST_F(MiracastServiceTest, P2PCtrlInterfacePathNotFound)
 
 	// Invalid P2P Ctrl iface configured
 	EXPECT_NE(string(""), plugin->Initialize(&service));
-	plugin->Deinitialize(&service);
+	// Don't call Deinitialize - when Initialize fails, implementation auto-deinitializes
+	// Destructor's Deactivate will handle cleanup
 
 	removeEntryFromFile("/etc/device.properties","WIFI_P2P_CTRL_INTERFACE=p2p0");
 }
