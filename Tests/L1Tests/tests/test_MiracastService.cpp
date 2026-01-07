@@ -214,6 +214,8 @@ protected:
     {
         TEST_LOG("MiracastServiceTest Destructor");
 
+        workerPool->Stop();
+
         dispatcher->Deactivate();
         dispatcher->Release();
 
