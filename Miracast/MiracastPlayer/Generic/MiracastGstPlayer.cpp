@@ -62,7 +62,7 @@ void MiracastGstPlayer::destroyInstance()
     MIRACASTLOG_TRACE("Exiting...");
 }
 
-// New fix : issue ID 31 : Initialize m_is_live and m_pushBufferLoop member variables in constructor
+// New fix : issue ID 579 : Initialize m_is_live and m_pushBufferLoop member variables in constructor (UNINIT_CTOR)
 MiracastGstPlayer::MiracastGstPlayer()
 {
     MIRACASTLOG_TRACE("Entering...");
@@ -75,7 +75,7 @@ MiracastGstPlayer::MiracastGstPlayer()
     m_player_statistics_tid = 0;
     m_is_live = false;
     m_pushBufferLoop = false;
-    // New fix : issue ID 32 : Initialize m_video_rect_st struct member in constructor
+    // New fix : issue ID 579 : Initialize m_video_rect_st struct member in constructor (UNINIT_CTOR)
     m_video_rect_st = {0, 0, 0, 0};
     SoC_ConfigureVideoDecodeErrorPolicy();
     MIRACASTLOG_TRACE("Exiting...");
@@ -363,8 +363,9 @@ bool MiracastGstPlayer::get_player_statistics()
         total_video_frames = render_frame + dropped_frame;
         dropped_video_frames = dropped_frame;
 
-        // New fix : issue ID 33 : Use %f format specifier for double values instead of %lld
+        // New fix : issue ID 250 : Use %f format specifier for double values instead of %lld (PRINTF_ARGS)
         MIRACASTLOG_INFO("Append Pipeline Current PTS: [ %f ]",append_pipeline_cur_pos);
+        // New fix : issue ID 251 : Use %f format specifier for double values instead of %lld (PRINTF_ARGS)
         MIRACASTLOG_INFO("Playbin Pipeline Current PTS: [ %f ]",playbin_cur_pos);
 
         MIRACASTLOG_INFO("Total Frames: [ %llu], Rendered Frames : [ %llu ], Dropped Frames: [%llu]",
@@ -462,7 +463,7 @@ GstFlowReturn MiracastGstPlayer::appendPipelineNewSampleHandler(GstElement *elt,
     gst_buffer_unmap(buffer, &map);
 #else
     //MIRACASTLOG_INFO("Sending GstBuffer to Q");
-    // New fix : issue ID 34 : Use the return value of gst_buffer_ref to ensure proper reference handling
+    // New fix : issue ID 584 : Use the return value of gst_buffer_ref to ensure proper reference handling (UNUSED_VALUE)
     GstBuffer *ref_buffer = gst_buffer_ref(buffer);
     self->m_customQueueHandle->sendData(static_cast<void*>(ref_buffer));
 #endif
@@ -551,7 +552,7 @@ gboolean MiracastGstPlayer::playbinPipelineBusMessage (GstBus * bus, GstMessage 
             }
             else
             {
-                // New fix : issue ID 35 : Initialize error and info pointers to NULL before use
+                // New fix : issue ID 584 : Initialize error and info pointers to NULL before use (UNUSED_VALUE)
                 GError *error = NULL;
                 gchar *info = NULL;
                 gst_message_parse_error(message, &error, &info);
@@ -723,7 +724,7 @@ void MiracastGstPlayer::source_setup(GstElement *pipeline, GstElement *source, g
 
 void MiracastGstPlayer::gstBufferReleaseCallback(void* userParam)
 {
-    // New fix : issue ID 36 : Initialize gstBuffer pointer to NULL before use
+    // New fix : issue ID 584 : Initialize gstBuffer pointer to NULL before use (UNUSED_VALUE)
     GstBuffer *gstBuffer = NULL;
     gstBuffer = static_cast<GstBuffer*>(userParam);
 

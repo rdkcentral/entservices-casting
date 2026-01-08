@@ -147,7 +147,7 @@ int8_t MiracastThread::receive_message(void *message, size_t msg_size, int sem_w
     return status;
 }
 
-// New fix : issue ID 30 : Use const reference to avoid unnecessary copy of file_name string object
+// New fix : issue ID 585 : Use const reference to avoid unnecessary copy of file_name string object (UNUSED_VALUE)
 std::string MiracastCommon::parse_opt_flag( const std::string& file_name , bool integer_check , bool debugStats )
 {
     std::string return_buffer = "";

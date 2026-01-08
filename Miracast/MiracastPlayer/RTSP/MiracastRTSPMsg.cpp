@@ -904,7 +904,7 @@ RTSP_STATUS MiracastRTSPMsg::receive_buffer_timedOut(int socket_fd, void *buffer
             status = RTSP_MSG_FAILURE;
         }
     }
-    // New fix : issue ID 22 : Use %.*s format specifier with size to safely print buffer that may not be null-terminated
+    // New fix : issue ID 252 : Use %.*s format specifier with size to safely print buffer that may not be null-terminated (PRINTF_ARGS)
     MIRACASTLOG_TRACE("received string(%d) - %.*s", recv_return, recv_return, buffer);
     MIRACASTLOG_TRACE("Exiting [%d]...",status);
     return status;
@@ -1172,7 +1172,7 @@ RTSP_STATUS MiracastRTSPMsg::validate_rtsp_generic_request_response( std::string
     {
         if (rtsp_msg_buffer.find(rtsp_version_tag) != std::string::npos)
         {
-            // New fix : issue ID 23 : Add %s format specifier to match the rtsp_msg_buffer.c_str() argument
+            // New fix : issue ID 253 : Add %s format specifier to match the rtsp_msg_buffer.c_str() argument (PRINTF_ARGS)
             MIRACASTLOG_WARNING(" !!! Could be RTSP ERROR Reported %s !!!...",rtsp_msg_buffer.c_str());
             status_code = RTSP_MSG_SUCCESS;
         }
@@ -1995,7 +1995,7 @@ MiracastError MiracastRTSPMsg::stop_streaming( MiracastPlayerState state )
     return MIRACAST_OK;
 }
 
-// New fix : issue ID 24 : Pass VIDEO_RECT_STRUCT by const reference to avoid unnecessary copy
+// New fix : issue ID 243 : Pass VIDEO_RECT_STRUCT by const reference to avoid unnecessary copy (PASS_BY_VALUE)
 MiracastError MiracastRTSPMsg::updateVideoRectangle( const VIDEO_RECT_STRUCT& videorect )
 {
     MIRACASTLOG_TRACE("Entering...");

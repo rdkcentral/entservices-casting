@@ -184,7 +184,7 @@ std::string MiracastController::parse_p2p_event_data(const char *tmpBuff, const 
             if (quote_start && quote_end) {
                 unsigned int length = quote_end - quote_start;
                 if (length < sizeof(return_buf)) {
-                    // New fix : issue ID 25 : Use length format specifier %.*s to safely copy string with exact length
+                    // New fix : issue ID 587 : Use length format specifier %.*s to safely copy string with exact length (UNUSED_VALUE)
                     snprintf(return_buf, sizeof(return_buf), "%.*s", (int)(length - 1), quote_start + 1);
                 }
             }
@@ -331,9 +331,7 @@ std::string MiracastController::start_DHCPClient(std::string interface, std::str
 
             if (!local_addr.empty()){
                 MIRACASTLOG_INFO("%s is success\n", command);
-                // COVERITY FIX: Issue ID 61 - Variable copied when it could be moved
-                // ISSUE: gw_ip_addr string is copied to default_gw_ip_addr, causing unnecessary allocation
-                // FIX: Use std::move() since gw_ip_addr is not used after this point (loop breaks immediately)
+                // New fix : issue ID 22 : Use std::move() to avoid unnecessary copy of gw_ip_addr (COPY_INSTEAD_OF_MOVE)
                 default_gw_ip_addr = std::move(gw_ip_addr);
                 break;
             }
@@ -617,8 +615,7 @@ MiracastError MiracastController::connect_device(std::string device_mac , std::s
             MIRACASTLOG_ERROR("#### MCAST-TRIAGE-NOK P2P CONNECT FAILURE FOR DEVICE[%s - %s] ####",device_name.c_str(),device_mac.c_str());
             if ( nullptr != m_notify_handler )
             {
-                // ISSUE: String parameters are copied instead of moved, causing unnecessary memory allocation
-                // FIX: Use std::move() to transfer ownership instead of copying
+                // New fix : issue ID 23 : Use std::move() to avoid unnecessary copies when passing strings to function (COPY_INSTEAD_OF_MOVE)
                 m_notify_handler->onMiracastServiceClientConnectionError( std::move(device_mac) , std::move(device_name) , WPEFramework::Exchange::IMiracastService::REASON_CODE_P2P_CONNECT_FAILURE );
             }
         }
@@ -685,10 +682,14 @@ void MiracastController::create_DeviceCacheData(std::string deviceMAC,std::strin
 
     if (( nullptr != cur_device_info_ptr ) && (force_overwrite))
     {
-        // New fix : issue ID 27 : Use std::move() to transfer ownership of string parameters to struct members
+        // New fix : issue ID 27 : Use std::move() to transfer ownership of string parameters to struct members (COPY_INSTEAD_OF_MOVE)
+        // New fix : issue ID 31 : deviceMAC std::move()
         cur_device_info_ptr->deviceMAC = std::move(deviceMAC);
+        // New fix : issue ID 32 : authType std::move()
         cur_device_info_ptr->authType = std::move(authType);
+        // New fix : issue ID 33 : modelName std::move()
         cur_device_info_ptr->modelName = std::move(modelName);
+        // New fix : issue ID 34 : deviceType std::move()
         cur_device_info_ptr->deviceType = std::move(deviceType);
         // Note: Use moved-to location (cur_device_info_ptr members) instead of moved-from variables
         MIRACASTLOG_INFO("#### Device Cache Name[%s]Mac[%s]Authtype[%s]Type[%s] New[%u] Force[%u] ####",
@@ -750,8 +751,7 @@ MiracastError MiracastController::set_FriendlyName(std::string friendly_name , b
     MiracastError ret = MIRACAST_OK;
     MIRACASTLOG_TRACE("Entering..");
     if (nullptr != m_p2p_ctrl_obj){
-        // ISSUE: String parameter is copied instead of moved, causing unnecessary memory allocation
-        // FIX: Use std::move() to transfer ownership instead of copying
+        // New fix : issue ID 24 : Use std::move() to avoid unnecessary copy of friendly_name (COPY_INSTEAD_OF_MOVE)
         ret = m_p2p_ctrl_obj->set_FriendlyName(std::move(friendly_name), apply );
     }
     MIRACASTLOG_TRACE("Exiting..");
@@ -904,6 +904,7 @@ void MiracastController::Controller_Thread(void *args)
                                 }
                             }
 
+                            // New fix : issue ID 25 : Use std::move() to avoid unnecessary copies when passing strings to create_DeviceCacheData (COPY_INSTEAD_OF_MOVE)
                             create_DeviceCacheData(std::move(deviceMAC),std::move(authType),std::move(modelName),std::move(deviceType),true);
                             wfdSubElements = parse_p2p_event_data(event_buffer.c_str(), "wfd_dev_info");
                             #if 0
@@ -934,10 +935,7 @@ void MiracastController::Controller_Thread(void *args)
                             if ( false == new_thunder_req_client_connection_sent )
                             {
                                 new_thunder_req_client_connection_sent = true;
-                                // COVERITY FIX: Issues ID 71, 72 - Variables copied when they could be moved
-                                // ISSUE: device_name and received_mac_address are copied when passed to notify_ConnectionRequest
-                                // FIX: Use std::move() since variables are not used after this call in this branch
-                                // After this call, execution continues but these variables are not accessed again in this path
+                                // New fix : issue ID 30 : Use std::move() to avoid unnecessary copies of device_name and received_mac_address (COPY_INSTEAD_OF_MOVE)
                                 notify_ConnectionRequest(std::move(device_name),std::move(received_mac_address));
                                 MIRACASTLOG_INFO("!!! Connection Request reported waiting for user action !!!\n");
                             }
@@ -1115,12 +1113,9 @@ void MiracastController::Controller_Thread(void *args)
                             if (!remote_address.empty())
                             {
                                 m_groupInfo->srcDevIPAddr = remote_address;
-                                // COVERITY FIX: Issue ID 79 - Variable copied when it could be moved
-                                // ISSUE: remote_address is copied to src_dev_ip, causing unnecessary allocation
-                                // FIX: Use std::move() since remote_address is not used after this point
-                                // This is the last usage of remote_address in this scope before it goes out of scope
+                                // New fix : issue ID 36 : Use std::move() to avoid unnecessary copy of remote_address (COPY_INSTEAD_OF_MOVE)
                                 src_dev_ip = std::move(remote_address);
-                                // New fix : issue ID 26 : Use std::move() to avoid unnecessary copy of local_address
+                                // New fix : issue ID 26 : Use std::move() to avoid unnecessary copy of local_address (COPY_INSTEAD_OF_MOVE)
                                 sink_dev_ip = std::move(local_address);
                                 src_dev_mac = get_WFDSourceMACAddress();;
                                 src_dev_name = get_WFDSourceName();
@@ -1140,7 +1135,7 @@ void MiracastController::Controller_Thread(void *args)
                                                     m_connect_req_notified);
                                 if (nullptr != m_notify_handler)
                                 {
-                                    // New fix : issue ID 27 : Use std::move() to avoid unnecessary copies when passing strings to function
+                                    // New fix : issue ID 35 : Use std::move() to avoid unnecessary copies when passing strings to onMiracastServiceLaunchRequest (COPY_INSTEAD_OF_MOVE)
                                     m_notify_handler->onMiracastServiceLaunchRequest(std::move(src_dev_ip),
                                                                                      std::move(src_dev_mac),
                                                                                      std::move(src_dev_name),
@@ -1557,10 +1552,9 @@ void MiracastController::set_WFDSourceMACAddress(std::string MAC_Addr)
     m_connected_mac_addr = std::move(MAC_Addr);
 }
 
+// New fix : issue ID 244 : Use std::move() to avoid unnecessary copy of device_name parameter (PASS_BY_VALUE/COPY_INSTEAD_OF_MOVE)
 void MiracastController::set_WFDSourceName(std::string device_name)
 {
-    // ISSUE: String parameter is copied instead of moved, causing unnecessary memory allocation
-    // FIX: Use std::move() to transfer ownership instead of copying
     m_connected_device_name = std::move(device_name);
 }
 
