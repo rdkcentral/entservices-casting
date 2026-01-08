@@ -604,7 +604,6 @@ bool XCastManager::getSerialNumberFromDeviceInfo(WPEFramework::PluginHost::IShel
         return false;
     }
 
-#if 1 // new API usage example
     WPEFramework::Exchange::IDeviceInfo::DeviceSerialNo deviceSerialNumber;
     Core::hresult result = deviceInfoPlugin->SerialNumber(deviceSerialNumber);
 
@@ -616,16 +615,6 @@ bool XCastManager::getSerialNumberFromDeviceInfo(WPEFramework::PluginHost::IShel
 
     LOGERR("get DeviceInfo.SerialNumber failed, error code: %u, length: %zu", result, deviceSerialNumber.serialnumber.length());
     deviceInfoPlugin->Release();
-#else // for testing exsiting API
-    Core::hresult result = deviceInfoPlugin->SerialNumber(serialNumber);
-	if (result == Core::ERROR_NONE && !serialNumber.empty()) {
-		deviceInfoPlugin->Release();
-		return true;
-	}
-
-	LOGERR("get DeviceInfo.SerialNumber failed, error code: %u, length: %zu", result, serialNumber.length());
-	deviceInfoPlugin->Release();
-#endif
 
     return false;
 }
