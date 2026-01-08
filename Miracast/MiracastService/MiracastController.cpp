@@ -184,8 +184,7 @@ std::string MiracastController::parse_p2p_event_data(const char *tmpBuff, const 
             if (quote_start && quote_end) {
                 unsigned int length = quote_end - quote_start;
                 if (length < sizeof(return_buf)) {
-                    // New fix : issue ID 587 : Use length format specifier %.*s to safely copy string with exact length (UNUSED_VALUE)
-                    snprintf(return_buf, sizeof(return_buf), "%.*s", (int)(length - 1), quote_start + 1);
+                   snprintf(return_buf, length, "%s", quote_start + 1);
                 }
             }
             else if (ret_space)
