@@ -690,11 +690,12 @@ void MiracastController::create_DeviceCacheData(std::string deviceMAC,std::strin
         cur_device_info_ptr->authType = std::move(authType);
         cur_device_info_ptr->modelName = std::move(modelName);
         cur_device_info_ptr->deviceType = std::move(deviceType);
+        // Note: Use moved-to location (cur_device_info_ptr members) instead of moved-from variables
         MIRACASTLOG_INFO("#### Device Cache Name[%s]Mac[%s]Authtype[%s]Type[%s] New[%u] Force[%u] ####",
                             cur_device_info_ptr->modelName.c_str(),
                             cur_device_info_ptr->deviceMAC.c_str(),
                             cur_device_info_ptr->authType.c_str(),
-                            deviceType.c_str(),
+                            cur_device_info_ptr->deviceType.c_str(),
                             new_device_entry,
                             force_overwrite);
     }
@@ -1119,7 +1120,8 @@ void MiracastController::Controller_Thread(void *args)
                                 // FIX: Use std::move() since remote_address is not used after this point
                                 // This is the last usage of remote_address in this scope before it goes out of scope
                                 src_dev_ip = std::move(remote_address);
-                                sink_dev_ip = local_address;
+                                // New fix : issue ID 26 : Use std::move() to avoid unnecessary copy of local_address
+                                sink_dev_ip = std::move(local_address);
                                 src_dev_mac = get_WFDSourceMACAddress();;
                                 src_dev_name = get_WFDSourceName();
 
@@ -1138,10 +1140,11 @@ void MiracastController::Controller_Thread(void *args)
                                                     m_connect_req_notified);
                                 if (nullptr != m_notify_handler)
                                 {
-                                    m_notify_handler->onMiracastServiceLaunchRequest(src_dev_ip,
-                                                                                     src_dev_mac,
-                                                                                     src_dev_name,
-                                                                                     sink_dev_ip,
+                                    // New fix : issue ID 27 : Use std::move() to avoid unnecessary copies when passing strings to function
+                                    m_notify_handler->onMiracastServiceLaunchRequest(std::move(src_dev_ip),
+                                                                                     std::move(src_dev_mac),
+                                                                                     std::move(src_dev_name),
+                                                                                     std::move(sink_dev_ip),
                                                                                      m_connect_req_notified );
                                 }
                                 checkAndInitiateP2PBackendDiscovery();
