@@ -25,7 +25,7 @@
 #include "UtilsSynchroIarm.hpp"
 
 #include "rfcapi.h"
-#include <string> 
+#include <string>
 #include <vector>
 
 #define SERVER_DETAILS "127.0.0.1:9998"
@@ -45,7 +45,7 @@ namespace WPEFramework
     namespace Plugin
     {
         SERVICE_REGISTRATION(XCastImplementation, 1, 0);
-        XCastImplementation *XCastImplementation::_instance = nullptr;    
+        XCastImplementation *XCastImplementation::_instance = nullptr;
         XCastManager* XCastImplementation::m_xcast_manager = nullptr;
         static std::vector <DynamicAppConfig*> m_appConfigCache;
         static std::mutex m_appConfigMutex;
@@ -542,10 +542,15 @@ namespace WPEFramework
             std::string interface,ipaddress;
             bool status = false;
 
+            if (_service == nullptr) {
+                LOGERR("Service is not initialized");
+                return false;
+            }
+
             getDefaultNameAndIPAddress(interface,ipaddress);
             if (!interface.empty())
             {
-                status = m_xcast_manager->initialize(interface,m_networkStandbyMode);
+                status = m_xcast_manager->initialize(_service, interface, m_networkStandbyMode);
                 if( true == status)
                 {
                     m_activeInterfaceName = getInterfaceNameToType(interface);
@@ -706,7 +711,7 @@ namespace WPEFramework
             LOGINFO("Timer Exiting ...");
         }
 
-        uint32_t XCastImplementation::enableCastService(string friendlyname,bool enableService) 
+        uint32_t XCastImplementation::enableCastService(string friendlyname,bool enableService)
         {
             LOGINFO("friendlyname[%s] status[%d]", friendlyname.c_str(), enableService);
             if (nullptr != m_xcast_manager)
@@ -740,7 +745,7 @@ namespace WPEFramework
         {
             return (m_locateCastTimer.isActive());
         }
-        
+
         void XCastImplementation::dispatchEvent(Event event, string callsign, const JsonObject &params)
         {
             Core::IWorkerPool::Instance().Submit(Job::Create(this, event, callsign, params));
@@ -822,7 +827,7 @@ namespace WPEFramework
                             pDynamicAppConfig->payload);
             }
             LOGINFO ("=================================================================");
-        }  
+        }
 
         Core::hresult XCastImplementation::SetApplicationState(const string& applicationName, const Exchange::IXCast::State& state, const string& applicationId, const Exchange::IXCast::ErrorCode& error,Exchange::IXCast::XCastSuccess &success)
         {
@@ -1121,7 +1126,7 @@ namespace WPEFramework
                     if(pDynamicAppConfig)
                     {
                         memset ((void*)pDynamicAppConfig, '\0', sizeof(DynamicAppConfig));
-                    
+
                         memset (pDynamicAppConfig->appName, '\0', sizeof(pDynamicAppConfig->appName));
                         strncpy (pDynamicAppConfig->appName, appInfo.appName.c_str(), sizeof(pDynamicAppConfig->appName) - 1);
                         pDynamicAppConfig->appName[sizeof(pDynamicAppConfig->appName) - 1] = '\0';
@@ -1232,7 +1237,7 @@ namespace WPEFramework
                 LOGINFO("Going to delete the app [%s] from dynamic cache", appName.c_str());
                 appsToDelete.push_back(appName);
             }
-            
+
             returnStatus = deleteFromDynamicAppCache(appsToDelete);
 
             std::vector<DynamicAppConfig*> appConfigList;
