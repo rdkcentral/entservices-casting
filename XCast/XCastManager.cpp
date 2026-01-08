@@ -194,7 +194,7 @@ bool XCastManager::initialize(WPEFramework::PluginHost::IShell* pluginService, c
     }
 
     gdial_args.push_back("-I");
-    gdial_args.push_back(temp_interface);
+    gdial_args.push_back(std::move(temp_interface));
 
     if (m_uuid.empty())
     {
@@ -327,7 +327,7 @@ std::string XCastManager::getReceiverID(WPEFramework::PluginHost::IShell* plugin
         }
         // Convert to lowercase
         std::transform(gpidValue.begin(), gpidValue.end(), gpidValue.begin(), ::tolower);
-        receiverId = gpidValue;
+        receiverId = std::move(gpidValue);
     }
 
     if (receiverId.empty())
