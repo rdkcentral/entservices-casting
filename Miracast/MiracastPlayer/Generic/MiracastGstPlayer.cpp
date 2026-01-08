@@ -463,9 +463,8 @@ GstFlowReturn MiracastGstPlayer::appendPipelineNewSampleHandler(GstElement *elt,
     gst_buffer_unmap(buffer, &map);
 #else
     //MIRACASTLOG_INFO("Sending GstBuffer to Q");
-    // New fix : issue ID 584 : Use the return value of gst_buffer_ref to ensure proper reference handling (UNUSED_VALUE)
-    GstBuffer *ref_buffer = gst_buffer_ref(buffer);
-    self->m_customQueueHandle->sendData(static_cast<void*>(ref_buffer));
+    gst_buffer_ref(buffer);
+    self->m_customQueueHandle->sendData(static_cast<void*>(buffer));
 #endif
     gst_sample_unref(sample);
 
@@ -552,9 +551,8 @@ gboolean MiracastGstPlayer::playbinPipelineBusMessage (GstBus * bus, GstMessage 
             }
             else
             {
-                // New fix : issue ID 584 : Initialize error and info pointers to NULL before use (UNUSED_VALUE)
-                GError *error = NULL;
-                gchar *info = NULL;
+                GError *error;
+                gchar *info;
                 gst_message_parse_error(message, &error, &info);
                 MIRACASTLOG_ERROR("#### GST-FAIL Error received from element [%s | %s | %s] ####", GST_OBJECT_NAME(message->src), error->message, info ? info : "none");
                 g_error_free(error);
@@ -724,8 +722,7 @@ void MiracastGstPlayer::source_setup(GstElement *pipeline, GstElement *source, g
 
 void MiracastGstPlayer::gstBufferReleaseCallback(void* userParam)
 {
-    // New fix : issue ID 584 : Initialize gstBuffer pointer to NULL before use (UNUSED_VALUE)
-    GstBuffer *gstBuffer = NULL;
+    GstBuffer *gstBuffer;
     gstBuffer = static_cast<GstBuffer*>(userParam);
 
     if (nullptr != gstBuffer)
