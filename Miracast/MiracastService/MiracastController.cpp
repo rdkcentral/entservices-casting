@@ -184,7 +184,8 @@ std::string MiracastController::parse_p2p_event_data(const char *tmpBuff, const 
             if (quote_start && quote_end) {
                 unsigned int length = quote_end - quote_start;
                 if (length < sizeof(return_buf)) {
-                    snprintf(return_buf, length, "%s", quote_start + 1);
+                    // New fix : issue ID 25 : Use length format specifier %.*s to safely copy string with exact length
+                    snprintf(return_buf, sizeof(return_buf), "%.*s", (int)(length - 1), quote_start + 1);
                 }
             }
             else if (ret_space)
@@ -666,6 +667,7 @@ bool MiracastController::get_connection_status()
     return m_connectionStatus;
 }
 
+// New fix : issue ID 26 : Use std::move() on string parameters to avoid unnecessary copies
 void MiracastController::create_DeviceCacheData(std::string deviceMAC,std::string authType,std::string modelName,std::string deviceType, bool force_overwrite)
 {
     bool new_device_entry = false;
@@ -683,14 +685,15 @@ void MiracastController::create_DeviceCacheData(std::string deviceMAC,std::strin
 
     if (( nullptr != cur_device_info_ptr ) && (force_overwrite))
     {
-        cur_device_info_ptr->deviceMAC = deviceMAC;
-        cur_device_info_ptr->authType = authType;
-        cur_device_info_ptr->modelName = modelName;
-        cur_device_info_ptr->deviceType = deviceType;
+        // New fix : issue ID 27 : Use std::move() to transfer ownership of string parameters to struct members
+        cur_device_info_ptr->deviceMAC = std::move(deviceMAC);
+        cur_device_info_ptr->authType = std::move(authType);
+        cur_device_info_ptr->modelName = std::move(modelName);
+        cur_device_info_ptr->deviceType = std::move(deviceType);
         MIRACASTLOG_INFO("#### Device Cache Name[%s]Mac[%s]Authtype[%s]Type[%s] New[%u] Force[%u] ####",
-                            modelName.c_str(),
-                            deviceMAC.c_str(),
-                            authType.c_str(),
+                            cur_device_info_ptr->modelName.c_str(),
+                            cur_device_info_ptr->deviceMAC.c_str(),
+                            cur_device_info_ptr->authType.c_str(),
                             deviceType.c_str(),
                             new_device_entry,
                             force_overwrite);
@@ -1458,6 +1461,7 @@ void MiracastController::flush_current_session(void )
     MIRACASTLOG_TRACE("Exiting...");
 }
 
+// New fix : issue ID 28 : Use std::move() to avoid unnecessary copy of is_accepted string object
 void MiracastController::accept_client_connection(std::string is_accepted)
 {
     CONTROLLER_MSGQ_STRUCT controller_msgq_data = {0};
@@ -1485,7 +1489,8 @@ void MiracastController::accept_client_connection(std::string is_accepted)
     MIRACASTLOG_TRACE("Exiting...");
 }
 
-void MiracastController::switch_launch_request_context(std::string& source_dev_ip,std::string& source_dev_mac,std::string& source_dev_name,std::string& sink_dev_ip)
+// New fix : issue ID 29 : Use const references to avoid unnecessary copies of string parameters
+void MiracastController::switch_launch_request_context(const std::string& source_dev_ip,const std::string& source_dev_mac,const std::string& source_dev_name,const std::string& sink_dev_ip)
 {
     CONTROLLER_MSGQ_STRUCT controller_msgq_data = {0};
     MIRACASTLOG_TRACE("Entering...");

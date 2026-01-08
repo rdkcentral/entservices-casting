@@ -904,7 +904,8 @@ RTSP_STATUS MiracastRTSPMsg::receive_buffer_timedOut(int socket_fd, void *buffer
             status = RTSP_MSG_FAILURE;
         }
     }
-    MIRACASTLOG_TRACE("received string(%d) - %s", recv_return, buffer);
+    // New fix : issue ID 22 : Use %.*s format specifier with size to safely print buffer that may not be null-terminated
+    MIRACASTLOG_TRACE("received string(%d) - %.*s", recv_return, recv_return, buffer);
     MIRACASTLOG_TRACE("Exiting [%d]...",status);
     return status;
 }
@@ -1089,7 +1090,8 @@ RTSP_STATUS MiracastRTSPMsg::validate_rtsp_setparameter_request( std::string rts
     else
     {
         // Processing M4 request and response back
-        status_code = validate_rtsp_m4_response_back(rtsp_msg_buffer);
+        // New fix : issue ID 9 : Use std::move() to avoid unnecessary copy of rtsp_msg_buffer string object
+        status_code = validate_rtsp_m4_response_back(std::move(rtsp_msg_buffer));
     }
     MIRACASTLOG_TRACE("Exiting...");
 
@@ -1156,7 +1158,8 @@ RTSP_STATUS MiracastRTSPMsg::validate_rtsp_generic_request_response( std::string
 
     if (rtsp_msg_buffer.find(public_tag) != std::string::npos)
     {
-        status_code = validate_rtsp_m2_request_ack(rtsp_msg_buffer);
+        // New fix : issue ID 10 : Use std::move() to avoid unnecessary copy of rtsp_msg_buffer string object
+        status_code = validate_rtsp_m2_request_ack(std::move(rtsp_msg_buffer));
     }
     else if (rtsp_msg_buffer.find(transport_tag) != std::string::npos){
         status_code = validate_rtsp_m6_ack_m7_send_request(std::move(rtsp_msg_buffer));
@@ -1169,7 +1172,8 @@ RTSP_STATUS MiracastRTSPMsg::validate_rtsp_generic_request_response( std::string
     {
         if (rtsp_msg_buffer.find(rtsp_version_tag) != std::string::npos)
         {
-            MIRACASTLOG_WARNING(" !!! Could be RTSP ERROR Reported !!!...",rtsp_msg_buffer.c_str());
+            // New fix : issue ID 23 : Add %s format specifier to match the rtsp_msg_buffer.c_str() argument
+            MIRACASTLOG_WARNING(" !!! Could be RTSP ERROR Reported %s !!!...",rtsp_msg_buffer.c_str());
             status_code = RTSP_MSG_SUCCESS;
         }
         else
@@ -1222,18 +1226,21 @@ RTSP_STATUS MiracastRTSPMsg::validate_rtsp_m1_msg_m2_send_request(std::string rt
         }
     }
 
-    m1_msg_resp_sink2src = generate_request_response_msg(RTSP_MSG_FMT_M1_RESPONSE, seq_str, req_str);
+    // New fix : issue ID 11 : Use std::move() to avoid unnecessary copy of req_str string object
+    m1_msg_resp_sink2src = generate_request_response_msg(RTSP_MSG_FMT_M1_RESPONSE, seq_str, std::move(req_str));
 
     MIRACASTLOG_INFO("Sending the M1 response [%s]", m1_msg_resp_sink2src.c_str());
 
-    status_code = send_rstp_msg(m_tcpSockfd, m1_msg_resp_sink2src);
+    // New fix : issue ID 12 : Use std::move() to avoid unnecessary copy of m1_msg_resp_sink2src string object
+    status_code = send_rstp_msg(m_tcpSockfd, std::move(m1_msg_resp_sink2src));
 
     if (RTSP_MSG_SUCCESS == status_code)
     {
         std::string m2_msg_req_sink2src = "";
         MIRACASTLOG_INFO("M1 response sent");
 
-        m2_msg_req_sink2src = generate_request_response_msg(RTSP_MSG_FMT_M2_REQUEST, "", req_str);
+        // New fix : issue ID 13 : Use std::move() to avoid unnecessary copy of req_str string object (req_str no longer needed after this)
+        m2_msg_req_sink2src = generate_request_response_msg(RTSP_MSG_FMT_M2_REQUEST, "", std::move(req_str));
 
         MIRACASTLOG_INFO("Sending the M2 request [%s]",m2_msg_req_sink2src.c_str());
         status_code = send_rstp_msg(m_tcpSockfd, std::move(m2_msg_req_sink2src));
@@ -1338,7 +1345,8 @@ RTSP_STATUS MiracastRTSPMsg::validate_rtsp_m2_request_ack(std::string rtsp_m2_re
 
     if (  RTSP_MSG_SUCCESS != status_code )
     {
-        send_rtsp_reply_sink2src( RTSP_MSG_FMT_REPORT_ERROR , seq_str, RTSP_ERRORCODE_BAD_REQUEST );
+        // New fix : issue ID 14 : Use std::move() to avoid unnecessary copy of seq_str string object
+        send_rtsp_reply_sink2src( RTSP_MSG_FMT_REPORT_ERROR , std::move(seq_str), RTSP_ERRORCODE_BAD_REQUEST );
     }
 
     MIRACASTLOG_INFO("#### totalLen[%d] and processedBytes[%d] ####", totalLen,processedBytes);
@@ -1452,7 +1460,8 @@ RTSP_STATUS MiracastRTSPMsg::validate_rtsp_m4_response_back(std::string rtsp_m4_
         }
     }
 
-    m4_msg_resp_sink2src = generate_request_response_msg( RTSP_MSG_FMT_M4_RESPONSE,seq_str,"");
+    // New fix : issue ID 15 : Use std::move() to avoid unnecessary copy of seq_str string object
+    m4_msg_resp_sink2src = generate_request_response_msg( RTSP_MSG_FMT_M4_RESPONSE,std::move(seq_str),"");
 
     MIRACASTLOG_INFO("Sending the M4 response");
     status_code = send_rstp_msg(m_tcpSockfd, std::move(m4_msg_resp_sink2src));
@@ -1564,7 +1573,8 @@ RTSP_STATUS MiracastRTSPMsg::validate_rtsp_m6_ack_m7_send_request(std::string rt
         }
     }
 
-    set_WFDSessionNumber(session_number);
+    // New fix : issue ID 16 : Use std::move() to avoid unnecessary copy of session_number string object
+    set_WFDSessionNumber(std::move(session_number));
     if ( -1 != timeoutValue )
     {
         m_wfd_src_session_timeout = timeoutValue;
@@ -1627,7 +1637,8 @@ RTSP_STATUS MiracastRTSPMsg::validate_rtsp_trigger_method_request(std::string rt
     
     if (rtsp_msg_buffer.find(setup_tag) != std::string::npos)
     {
-        status_code = validate_rtsp_m5_msg_m6_send_request(rtsp_msg_buffer);
+        // New fix : issue ID 17 : Use std::move() to avoid unnecessary copy of rtsp_msg_buffer string object
+        status_code = validate_rtsp_m5_msg_m6_send_request(std::move(rtsp_msg_buffer));
     }
     else
     {
@@ -1661,8 +1672,9 @@ RTSP_STATUS MiracastRTSPMsg::validate_rtsp_trigger_method_request(std::string rt
 
         if ( sink2src_resp_needed )
         {
+            // New fix : issue ID 18 : Use std::move() to avoid unnecessary copy of received_seq_num string object
             status_code = send_rtsp_reply_sink2src( RTSP_MSG_FMT_TRIGGER_METHODS_RESPONSE , 
-                                                    received_seq_num , 
+                                                    std::move(received_seq_num) , 
                                                     error_code );
             if ( RTSP_MSG_SUCCESS == status_code )
             {
@@ -1754,7 +1766,8 @@ RTSP_STATUS MiracastRTSPMsg::validate_rtsp_receive_buffer_handling(std::string r
         }
         else if (first_line.find(options_tag) != std::string::npos)
         {
-            status_code = validate_rtsp_options_request(rtsp_msg_buffer);
+            // New fix : issue ID 19 : Use std::move() to avoid unnecessary copy of rtsp_msg_buffer string object
+            status_code = validate_rtsp_options_request(std::move(rtsp_msg_buffer));
         }
         else if (first_line.find(set_parameter_tag) != std::string::npos)
         {
@@ -1790,7 +1803,8 @@ RTSP_STATUS MiracastRTSPMsg::send_rtsp_reply_sink2src( RTSP_MSG_FMT_SINK2SRC req
             rtsp_request_buffer = generate_request_response_msg(req_fmt, std::move(received_seq_num) , "" , error_code );
 
             MIRACASTLOG_INFO("Sending the RTSP Msg for [%#04X] format\n",req_fmt);
-            status_code = send_rstp_msg(m_tcpSockfd, rtsp_request_buffer);
+            // New fix : issue ID 20 : Use std::move() to avoid unnecessary copy of rtsp_request_buffer string object
+            status_code = send_rstp_msg(m_tcpSockfd, std::move(rtsp_request_buffer));
             if (RTSP_MSG_SUCCESS == status_code)
             {
                 MIRACASTLOG_VERBOSE("RTSP Msg has sent");
@@ -1814,7 +1828,8 @@ RTSP_STATUS MiracastRTSPMsg::send_rtsp_reply_sink2src( RTSP_MSG_FMT_SINK2SRC req
 
 RTSP_STATUS MiracastRTSPMsg::validate_rtsp_post_m1_m7_xchange(std::string rtsp_post_m1_m7_xchange_buffer)
 {
-    return validate_rtsp_receive_buffer_handling(rtsp_post_m1_m7_xchange_buffer);
+    // New fix : issue ID 21 : Use std::move() to avoid unnecessary copy of rtsp_post_m1_m7_xchange_buffer string object
+    return validate_rtsp_receive_buffer_handling(std::move(rtsp_post_m1_m7_xchange_buffer));
 }
 
 RTSP_STATUS MiracastRTSPMsg::rtsp_sink2src_request_msg_handling(eCONTROLLER_FW_STATES action_id)
@@ -1980,7 +1995,8 @@ MiracastError MiracastRTSPMsg::stop_streaming( MiracastPlayerState state )
     return MIRACAST_OK;
 }
 
-MiracastError MiracastRTSPMsg::updateVideoRectangle( VIDEO_RECT_STRUCT videorect )
+// New fix : issue ID 24 : Pass VIDEO_RECT_STRUCT by const reference to avoid unnecessary copy
+MiracastError MiracastRTSPMsg::updateVideoRectangle( const VIDEO_RECT_STRUCT& videorect )
 {
     MIRACASTLOG_TRACE("Entering...");
 
