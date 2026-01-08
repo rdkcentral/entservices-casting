@@ -112,20 +112,7 @@ XCastManager::~XCastManager()
     m_observer = nullptr;
 }
 
-void XCastManager::setPluginService(WPEFramework::PluginHost::IShell* service)
-{
-    lock_guard<recursive_mutex> lock(m_mutexSync);
-
-    if (service != nullptr) {
-        service->AddRef();
-        m_pluginService = service;
-    } else {
-        m_pluginService = nullptr;
-        LOGINFO("Plugin service set to nullptr");
-    }
-}
-
-bool XCastManager::initialize(const std::string& gdial_interface_name, bool networkStandbyMode )
+bool XCastManager::initialize(WPEFramework::PluginHost::IShell* pluginService, const std::string& gdial_interface_name, bool networkStandbyMode )
 {
     std::vector<std::string> gdial_args;
     bool returnValue = false,
@@ -211,7 +198,7 @@ bool XCastManager::initialize(const std::string& gdial_interface_name, bool netw
 
     if (m_uuid.empty())
     {
-        m_uuid = getReceiverID();
+        m_uuid = getReceiverID(pluginService);
     }
 
     if (!m_uuid.empty())
@@ -296,12 +283,6 @@ void XCastManager::deinitialize()
         gdialCastObj = nullptr;
     }
 
-    if (m_pluginService != nullptr) {
-        m_pluginService->Release();
-        m_pluginService = nullptr;
-        LOGINFO("Plugin service reference cleaned up");
-    }
-
     // Clear cached value
     m_cachedGeneratedUUID.clear();
 }
@@ -317,7 +298,7 @@ void XCastManager::shutdown()
     }
 }
 
-std::string XCastManager::getReceiverID(void)
+std::string XCastManager::getReceiverID(WPEFramework::PluginHost::IShell* pluginService)
 {
     std::ifstream file("/tmp/gpid.txt");
     std::string line, gpidValue, receiverId = "";
@@ -370,10 +351,10 @@ std::string XCastManager::getReceiverID(void)
         if (!m_cachedGeneratedUUID.empty()) {
             LOGINFO("Using cached generated UUID: %s", m_cachedGeneratedUUID.c_str());
             receiverId = m_cachedGeneratedUUID;
-        } else {
+        } else if (pluginService != nullptr) {
             // Generate UUID from serial number
             std::string serialNumber;
-            if (getSerialNumberFromDeviceInfo(m_pluginService, serialNumber)) {
+            if (getSerialNumberFromDeviceInfo(pluginService, serialNumber)) {
                 receiverId = generateUUIDv5FromSerialNumber(serialNumber);
                 if (!receiverId.empty()) {
                     // Cache the generated UUID since serial number is constant
@@ -385,6 +366,8 @@ std::string XCastManager::getReceiverID(void)
             } else {
                 LOGERR("Failed to retrieve serial number from DeviceInfo plugin");
             }
+        } else {
+            LOGINFO("Plugin service not available, cannot generate UUID from serial number");
         }
     }
     return receiverId;
@@ -621,15 +604,28 @@ bool XCastManager::getSerialNumberFromDeviceInfo(WPEFramework::PluginHost::IShel
         return false;
     }
 
+#if 1 // new API usage example
     WPEFramework::Exchange::IDeviceInfo::DeviceSerialNo deviceSerialNumber;
     Core::hresult result = deviceInfoPlugin->SerialNumber(deviceSerialNumber);
-    deviceInfoPlugin->Release();
 
     if (result == Core::ERROR_NONE && !deviceSerialNumber.serialnumber.empty()) {
         serialNumber = deviceSerialNumber.serialnumber;
+        deviceInfoPlugin->Release();
         return true;
     }
+
     LOGERR("get DeviceInfo.SerialNumber failed, error code: %u, length: %zu", result, deviceSerialNumber.serialnumber.length());
+    deviceInfoPlugin->Release();
+#else // for testing exsiting API
+    Core::hresult result = deviceInfoPlugin->SerialNumber(serialNumber);
+	if (result == Core::ERROR_NONE && !serialNumber.empty()) {
+		deviceInfoPlugin->Release();
+		return true;
+	}
+
+	LOGERR("get DeviceInfo.SerialNumber failed, error code: %u, length: %zu", result, serialNumber.length());
+	deviceInfoPlugin->Release();
+#endif
 
     return false;
 }

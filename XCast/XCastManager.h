@@ -44,13 +44,13 @@ namespace WPEFramework {
 class XCastManager : public GDialNotifier
 {
 protected:
-    XCastManager() : m_pluginService(nullptr) {}
+    XCastManager() {}
 public:
     virtual ~XCastManager();
     /**
      * Initialize gdialService to communication with gdial server
      */
-    bool initialize(const std::string& gdial_interface_name, bool networkStandbyMode );
+    bool initialize(WPEFramework::PluginHost::IShell* pluginService, const std::string& gdial_interface_name, bool networkStandbyMode );
     void deinitialize();
 
     /** Shutdown gdialService connectivity */
@@ -101,21 +101,14 @@ public:
     void setService(XCastNotifier * service){
         m_observer = service;
     }
-    /**
-     * Set plugin service with proper lifecycle management.
-     * Calls AddRef() to increment reference count and stores the service.
-     * Must be paired with proper cleanup in deinitialize().
-     */
-    void setPluginService(WPEFramework::PluginHost::IShell* service);
 private:
     //Internal methods
     XCastNotifier * m_observer;
-    WPEFramework::PluginHost::IShell* m_pluginService;
 
     std::string m_cachedGeneratedUUID;
     void getWiFiInterface(std::string& WiFiInterfaceName);
     void getGDialInterfaceName(std::string& interfaceName);
-    std::string getReceiverID(void);
+    std::string getReceiverID(WPEFramework::PluginHost::IShell* pluginService);
     bool envGetValue(const char *key, std::string &value);
     /**
      * Retrieves the device serial number from the deviceInfo plugin using on-demand acquisition.
