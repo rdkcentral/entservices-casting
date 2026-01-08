@@ -50,7 +50,7 @@ void XCastManager::onApplicationLaunchRequestWithLaunchParam(string appName,stri
 {
     if ( nullptr != m_observer )
     {
-        m_observer->onXcastApplicationLaunchRequestWithParam(appName,strPayLoad,strQuery,strAddDataUrl);
+        m_observer->onXcastApplicationLaunchRequestWithParam(appName,std::move(strPayLoad),strQuery,strAddDataUrl);
     }
 }
 
@@ -58,7 +58,7 @@ void XCastManager::onApplicationLaunchRequest(string appName, string parameter)
 {
     if ( nullptr != m_observer )
     {
-        m_observer->onXcastApplicationLaunchRequest(appName,parameter);
+        m_observer->onXcastApplicationLaunchRequest(std::move(appName),std::move(parameter));
     }
 }
 
@@ -66,7 +66,7 @@ void XCastManager::onApplicationStopRequest(string appName, string appID)
 {
     if ( nullptr != m_observer )
     {
-        m_observer->onXcastApplicationStopRequest(appName,appID);
+        m_observer->onXcastApplicationStopRequest(std::move(appName),std::move(appID));
     }
 }
 
@@ -74,7 +74,7 @@ void XCastManager::onApplicationHideRequest(string appName, string appID)
 {
     if ( nullptr != m_observer )
     {
-        m_observer->onXcastApplicationHideRequest(appName,appID);
+        m_observer->onXcastApplicationHideRequest(std::move(appName),std::move(appID));
     }
 }
 
@@ -82,7 +82,7 @@ void XCastManager::onApplicationResumeRequest(string appName, string appID)
 {
     if ( nullptr != m_observer )
     {
-        m_observer->onXcastApplicationResumeRequest(appName,appID);
+        m_observer->onXcastApplicationResumeRequest(std::move(appName),std::move(appID));
     }
 }
 
@@ -90,7 +90,7 @@ void XCastManager::onApplicationStateRequest(string appName, string appID)
 {
     if ( nullptr != m_observer )
     {
-        m_observer->onXcastApplicationStateRequest(appName,appID);
+        m_observer->onXcastApplicationStateRequest(std::move(appName),std::move(appID));
     }
 }
 
@@ -98,7 +98,7 @@ void XCastManager::updatePowerState(string powerState)
 {
     if ( nullptr != m_observer )
     {
-        m_observer->onXcastUpdatePowerStateRequest(powerState);
+        m_observer->onXcastUpdatePowerStateRequest(std::move(powerState));
     }
 }
 
@@ -320,7 +320,7 @@ std::string XCastManager::getReceiverID(void)
         }
         // Convert to lowercase
         std::transform(gpidValue.begin(), gpidValue.end(), gpidValue.begin(), ::tolower);
-        receiverId = gpidValue;
+        receiverId = std::move(gpidValue);
     }
 
     if (receiverId.empty())
@@ -402,7 +402,8 @@ bool XCastManager::envGetValue(const char *key, std::string &value)
     return returnValue;
 }
 
-int XCastManager::applicationStateChanged( string app, string state, string id, string error)
+// New fix : issue ID 39 : Use const references to avoid unnecessary copies of string parameters
+int XCastManager::applicationStateChanged( const string& app, const string& state, const string& id, const string& error)
 {
     int status = 0;
     LOGINFO("AppName[%s] AppState[%s] AppID[%s] Error[%s]", app.c_str(), id.c_str() , state.c_str() , error.c_str());
@@ -417,14 +418,15 @@ int XCastManager::applicationStateChanged( string app, string state, string id, 
     return status;
 }//app && state not empty
 
-void XCastManager::enableCastService(string friendlyname,bool enableService)
+// New fix : issue ID 40 : Use const reference to avoid unnecessary copy of friendlyname string parameter
+void XCastManager::enableCastService(const string& friendlyname,bool enableService)
 {
     LOGINFO("friendlyname[%s] enableService[%d]", friendlyname.c_str(), enableService);
     lock_guard<recursive_mutex> lock(m_mutexSync);
     if(gdialCastObj != NULL)
     {
         std::string activation = enableService ? "true": "false";
-        gdialCastObj->ActivationChanged( activation, friendlyname);
+        gdialCastObj->ActivationChanged( std::move(activation), friendlyname);
         LOGINFO("XcastService send onActivationChanged");
     }
     else
@@ -450,18 +452,19 @@ string XCastManager::getProtocolVersion(void)
     return strVersion;
 }
 
+// New fix : issue ID 41 : Use std::move() when assigning to member variable to avoid unnecessary copy
 int XCastManager::setManufacturerName( string manufacturer)
 {
     int status = 0;
     LOGINFO("Manufacturer[%s]", manufacturer.c_str());
     lock_guard<recursive_mutex> lock(m_mutexSync);
-    m_manufacturerName = manufacturer;
     if(gdialCastObj != NULL)
     {
         gdialCastObj->setManufacturerName( manufacturer );
         status = 1;
     }
-    else
+    m_manufacturerName = std::move(manufacturer);
+    return status;
         LOGINFO(" gdialCastObj is NULL ");
     return status;
 }
@@ -473,18 +476,19 @@ string XCastManager::getManufacturerName(void)
     return m_manufacturerName;
 }
 
+// New fix : issue ID 42 : Use std::move() when assigning to member variable to avoid unnecessary copy
 int XCastManager::setModelName( string model)
 {
     int status = 0;
     lock_guard<recursive_mutex> lock(m_mutexSync);
     LOGINFO("Model[%s]", model.c_str());
-    m_modelName = model;
     if(gdialCastObj != NULL)
     {
         gdialCastObj->setModelName(model);
         status = 1;
     }
-    else
+    m_modelName = std::move(model);
+    return status;
         LOGINFO(" gdialCastObj is NULL ");
     return status;
 }
