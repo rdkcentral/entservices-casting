@@ -89,6 +89,14 @@ namespace WPEFramework
                                     deviceParameters.sinkDeviceIP.c_str());
                             Exchange::JMiracastService::Event::OnLaunchRequest(_parent, deviceParameters);
                         }
+                       
+			/* @@@NNA...12116 change start*/
+                        void OnPresentationLanguageChanged(const string& language) override
+                        {
+                            LOGINFO("=> language:[%s]", language.c_str());
+                            Exchange::JMiracastService::Event::OnPresentationLanguageChanged(_parent, language);
+                        }
+                        /* @@@NNA...12116 change end*/
 
                     private:
                         MiracastService& _parent;
