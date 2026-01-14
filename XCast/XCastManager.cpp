@@ -282,9 +282,6 @@ void XCastManager::deinitialize()
         gdialService::destroyInstance();
         gdialCastObj = nullptr;
     }
-
-    // Clear cached value
-    m_cachedGeneratedUUID.clear();
 }
 
 void XCastManager::shutdown()
@@ -348,9 +345,11 @@ std::string XCastManager::getReceiverID(WPEFramework::PluginHost::IShell* plugin
     {
         LOGINFO("ReceiverID not found, attempting to generate UUID from serial number");
 
-        if (!m_cachedGeneratedUUID.empty()) {
-            LOGINFO("Using cached generated UUID: %s", m_cachedGeneratedUUID.c_str());
-            receiverId = m_cachedGeneratedUUID;
+        static std::string cachedGeneratedUUID;
+
+        if (!cachedGeneratedUUID.empty()) {
+            LOGINFO("Using cached generated UUID: %s", cachedGeneratedUUID.c_str());
+            receiverId = cachedGeneratedUUID;
         } else if (pluginService != nullptr) {
             // Generate UUID from serial number
             std::string serialNumber;
@@ -358,8 +357,8 @@ std::string XCastManager::getReceiverID(WPEFramework::PluginHost::IShell* plugin
                 receiverId = generateUUIDv5FromSerialNumber(serialNumber);
                 if (!receiverId.empty()) {
                     // Cache the generated UUID since serial number is constant
-                    m_cachedGeneratedUUID = receiverId;
-                    LOGINFO("Generated and cached UUID from serial number: %s", m_cachedGeneratedUUID.c_str());
+                    cachedGeneratedUUID = receiverId;
+                    LOGINFO("Generated and cached UUID from serial number: %s", cachedGeneratedUUID.c_str());
                 } else {
                     LOGERR("Failed to generate UUID from serial number");
                 }

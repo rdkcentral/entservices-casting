@@ -105,7 +105,6 @@ private:
     //Internal methods
     XCastNotifier * m_observer;
 
-    std::string m_cachedGeneratedUUID;
     void getWiFiInterface(std::string& WiFiInterfaceName);
     void getGDialInterfaceName(std::string& interfaceName);
     std::string getReceiverID(WPEFramework::PluginHost::IShell* pluginService);
