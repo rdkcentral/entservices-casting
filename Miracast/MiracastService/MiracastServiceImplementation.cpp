@@ -246,7 +246,7 @@ namespace WPEFramework
                 {
                     std::string friendlyName = "";
                     friendlyName = Result["friendlyName"].String();
-                    // New fix : issue ID 234 : Add mutex lock to protect shared data m_isServiceEnabled
+                    // New fix : issue ID 237 : Add mutex lock to protect shared data m_isServiceEnabled
                     bool isServiceEnabled;
                     {
                         lock_guard<recursive_mutex> lock(m_EventMutex);
@@ -551,7 +551,7 @@ namespace WPEFramework
             eMIRA_SERVICE_STATES current_state = getCurrentServiceState();
             if (enabled)
             {
-                // New fix : issue ID 235 : Acquire lock before checking m_isServiceEnabled to prevent race condition
+                // New fix : issue ID 234 : Acquire lock before checking m_isServiceEnabled to prevent race condition
                 lock_guard<recursive_mutex> lock(m_EventMutex);
                 if (!m_isServiceEnabled)
                 {
@@ -582,7 +582,7 @@ namespace WPEFramework
                 }
                 else
                 {
-                    // New fix : issue ID 235 : Acquire lock before checking m_isServiceEnabled to prevent race condition
+                    // New fix : issue ID 234 : Acquire lock before checking m_isServiceEnabled to prevent race condition
                     lock_guard<recursive_mutex> lock(m_EventMutex);
                     if (m_isServiceEnabled)
                     {
@@ -621,7 +621,7 @@ namespace WPEFramework
         Core::hresult MiracastServiceImplementation::GetEnabled(bool &enabled , bool &success )
         {
             MIRACASTLOG_TRACE("Entering ...");
-            // New fix : issue ID 236 : Add mutex lock to protect shared data m_isServiceEnabled
+            // New fix : issue ID 235 : Add mutex lock to protect shared data m_isServiceEnabled
             {
                 lock_guard<recursive_mutex> lock(m_EventMutex);
                 enabled = m_isServiceEnabled;
@@ -785,7 +785,7 @@ namespace WPEFramework
                 }
             }
 
-            // New fix : issue ID 237 : Add mutex lock to protect shared data m_isServiceEnabled
+            // New fix : issue ID 236 : Add mutex lock to protect shared data m_isServiceEnabled
             bool isServiceEnabled;
             {
                 lock_guard<recursive_mutex> lock(m_EventMutex);
