@@ -1248,7 +1248,6 @@ namespace WPEFramework
         {
             MiracastServiceImplementation *self = (MiracastServiceImplementation *)userdata;
             MIRACASTLOG_TRACE("Entering ...");
-            // New fix : issue ID 240 : Add mutex lock to protect shared data m_isServiceEnabled (MISSING_LOCK)
             lock_guard<recursive_mutex> lock(self->m_EventMutex);
             MIRACASTLOG_INFO("TimerCallback Triggered for Monitor Miracast Connection Expired and Restarting Session...");
             if (self->m_isServiceEnabled)
