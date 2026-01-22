@@ -663,7 +663,6 @@ bool MiracastController::get_connection_status()
     return m_connectionStatus;
 }
 
-// New fix : issue ID 26 : Use std::move() on string parameters to avoid unnecessary copies
 void MiracastController::create_DeviceCacheData(std::string deviceMAC,std::string authType,std::string modelName,std::string deviceType, bool force_overwrite)
 {
     bool new_device_entry = false;
@@ -1094,9 +1093,6 @@ void MiracastController::Controller_Thread(void *args)
                                 if (!popen_buffer.empty())
                                 {
                                     // COVERITY FIX: Issue ID 75 - Variable copied when it could be moved
-                                    // ISSUE: popen_buffer string is copied to remote_address, causing unnecessary allocation
-                                    // FIX: Use std::move() since popen_buffer is not used after this assignment
-                                    // popen_buffer is a local variable and this is its last usage in this scope
                                     remote_address = std::move(popen_buffer);
                                     if ( false == getConnectionStatusByARPING(remote_address.c_str(),m_groupInfo->interface.c_str()))
                                     {
@@ -1393,7 +1389,6 @@ void MiracastController::Controller_Thread(void *args)
     MIRACASTLOG_TRACE("Exiting...");
 }
 
-// NOTE: Pass by value required - function modifies msg_type field internally
 void MiracastController::send_thundermsg_to_controller_thread(CONTROLLER_MSGQ_STRUCT controller_msgq_data)
 {
     MIRACASTLOG_TRACE("Entering...");
@@ -1458,7 +1453,6 @@ void MiracastController::flush_current_session(void )
     MIRACASTLOG_TRACE("Exiting...");
 }
 
-// New fix : issue ID 28 : Use std::move() to avoid unnecessary copy of is_accepted string object
 void MiracastController::accept_client_connection(std::string is_accepted)
 {
     CONTROLLER_MSGQ_STRUCT controller_msgq_data = {0};
