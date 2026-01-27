@@ -37,7 +37,7 @@ using namespace std;
 class XCastManager : public GDialNotifier
 {
 protected:
-    XCastManager() : m_observer(nullptr) {}
+    XCastManager() {}
 public:
     virtual ~XCastManager();
     /**
