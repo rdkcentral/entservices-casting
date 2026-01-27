@@ -463,9 +463,11 @@ int XCastManager::setManufacturerName( string manufacturer)
         gdialCastObj->setManufacturerName( manufacturer );
         status = 1;
     }
-    m_manufacturerName = std::move(manufacturer);
-    return status;
+    else
+    {
         LOGINFO(" gdialCastObj is NULL ");
+    }
+    m_manufacturerName = std::move(manufacturer);
     return status;
 }
 
@@ -487,9 +489,11 @@ int XCastManager::setModelName( string model)
         gdialCastObj->setModelName(model);
         status = 1;
     }
-    m_modelName = std::move(model);
-    return status;
+    else
+    {
         LOGINFO(" gdialCastObj is NULL ");
+    }
+    m_modelName = std::move(model);
     return status;
 }
 
