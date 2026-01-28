@@ -44,7 +44,7 @@ namespace WPEFramework {
 class XCastManager : public GDialNotifier
 {
 protected:
-    XCastManager() {}
+    XCastManager() : m_observer(nullptr) {}
 public:
     virtual ~XCastManager();
     /**
