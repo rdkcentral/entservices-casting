@@ -63,14 +63,12 @@ public:
      *   @param error - The error string if the requested application is not available or due to other errors
      *   @return indicates whether state is properly communicated to rtdial server.
      */
-    // New fix : issue ID 39 : Update header declaration to match implementation using const references
     int applicationStateChanged( const string& app, const string& state, const string& id, const string& error);
     /**
      *This function will enable cast service by default.
      *@param friendlyname - friendlyname
      *@param enableService - Enable/Disable the SSDP discovery of Dial server
      */
-    // New fix : issue ID 40 : Update header declaration to match implementation using const reference
     void enableCastService(const string& friendlyname,bool enableService = true);
 
     void registerApplications (std::vector<DynamicAppConfig*>& appConfigList);

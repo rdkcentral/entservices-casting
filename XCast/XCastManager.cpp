@@ -435,7 +435,6 @@ bool XCastManager::envGetValue(const char *key, std::string &value)
     return returnValue;
 }
 
-// New fix : issue ID 39 : Use const references to avoid unnecessary copies of string parameters
 int XCastManager::applicationStateChanged( const string& app, const string& state, const string& id, const string& error)
 {
     int status = 0;
@@ -451,7 +450,6 @@ int XCastManager::applicationStateChanged( const string& app, const string& stat
     return status;
 }//app && state not empty
 
-// New fix : issue ID 40 : Use const reference to avoid unnecessary copy of friendlyname string parameter
 void XCastManager::enableCastService(const string& friendlyname,bool enableService)
 {
     LOGINFO("friendlyname[%s] enableService[%d]", friendlyname.c_str(), enableService);
@@ -485,7 +483,6 @@ string XCastManager::getProtocolVersion(void)
     return strVersion;
 }
 
-// New fix : issue ID 41 : Use std::move() when assigning to member variable to avoid unnecessary copy
 int XCastManager::setManufacturerName( string manufacturer)
 {
     int status = 0;
@@ -511,7 +508,6 @@ string XCastManager::getManufacturerName(void)
     return m_manufacturerName;
 }
 
-// New fix : issue ID 42 : Use std::move() when assigning to member variable to avoid unnecessary copy
 int XCastManager::setModelName( string model)
 {
     int status = 0;

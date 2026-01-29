@@ -75,10 +75,8 @@ private:
     bool m_isWiFiDisplayParamsEnabled;
     pthread_t m_p2p_ctrl_monitor_thread_id;
 
-    // New fix : issue ID 37 : Update header declaration to match implementation using const reference
     MiracastError p2pInit(const std::string& p2p_ctrl_iface);
     MiracastError p2pUninit();
-    // New fix : issue ID 38 : Update header declaration to match implementation using const reference
     MiracastError executeCommand(const std::string& command, int interface, std::string &retBuffer);
     int p2pExecute(char *cmd, enum INTERFACE iface, char *ret_buf, size_t actual_buffer_len);
     int p2pWpaCtrlSendCmd(char *cmd, struct wpa_ctrl *wpa_p2p_ctrl_iface, char *ret_buf,size_t actual_buffer_len);

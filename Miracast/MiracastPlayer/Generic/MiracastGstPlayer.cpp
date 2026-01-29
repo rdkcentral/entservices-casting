@@ -62,7 +62,6 @@ void MiracastGstPlayer::destroyInstance()
     MIRACASTLOG_TRACE("Exiting...");
 }
 
-// New fix : issue ID 579 : Initialize m_is_live and m_pushBufferLoop member variables in constructor (UNINIT_CTOR)
 MiracastGstPlayer::MiracastGstPlayer()
 {
     MIRACASTLOG_TRACE("Entering...");
@@ -75,7 +74,6 @@ MiracastGstPlayer::MiracastGstPlayer()
     m_player_statistics_tid = 0;
     m_is_live = false;
     m_pushBufferLoop = false;
-    // New fix : issue ID 579 : Initialize m_video_rect_st struct member in constructor (UNINIT_CTOR)
     m_video_rect_st = {0, 0, 0, 0};
     SoC_ConfigureVideoDecodeErrorPolicy();
     MIRACASTLOG_TRACE("Exiting...");
@@ -363,9 +361,7 @@ bool MiracastGstPlayer::get_player_statistics()
         total_video_frames = render_frame + dropped_frame;
         dropped_video_frames = dropped_frame;
 
-        // New fix : issue ID 250 : Use %f format specifier for double values instead of %lld (PRINTF_ARGS)
         MIRACASTLOG_INFO("Append Pipeline Current PTS: [ %f ]",append_pipeline_cur_pos);
-        // New fix : issue ID 251 : Use %f format specifier for double values instead of %lld (PRINTF_ARGS)
         MIRACASTLOG_INFO("Playbin Pipeline Current PTS: [ %f ]",playbin_cur_pos);
 
         MIRACASTLOG_INFO("Total Frames: [ %llu], Rendered Frames : [ %llu ], Dropped Frames: [%llu]",

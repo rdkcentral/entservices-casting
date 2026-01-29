@@ -202,13 +202,11 @@ namespace Plugin {
             return std::move(PluginInterfaceRef<INTERFACE>(interface, _service));
         }
 
-        // New fix : issue ID 528 : Remove useless const qualifier on return type for primitive types (PW.USELESS_TYPE_QUALIFIER_ON_RETURN_TYPE)
         uint32_t retryInterval() const
         {
             return _retry_interval;
         }
 
-        // New fix : issue ID 529 : Remove useless const qualifier on return type for primitive types (PW.USELESS_TYPE_QUALIFIER_ON_RETURN_TYPE)
         int retryCount() const
         {
             return _retry_count;

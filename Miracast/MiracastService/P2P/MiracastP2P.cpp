@@ -143,7 +143,6 @@ void MiracastP2P::Release_P2PCtrlInterface(void)
 // Connects to the wpa_supplicant via control interface
 // Gets attached to wpa_supplicant to receiver events
 // Starts the p2p_monitor thread
-// New fix : issue ID 37 : Use const reference to avoid unnecessary copy of p2p_ctrl_iface string object
 MiracastError MiracastP2P::p2pInit(const std::string& p2p_ctrl_iface)
 {
     int retry = 0;
@@ -362,7 +361,6 @@ int MiracastP2P::p2pExecute(char *cmd, enum INTERFACE iface, char *ret_buf, size
     return ret;
 }
 
-// New fix : issue ID 38 : Use const reference to avoid unnecessary copy of command string object
 MiracastError MiracastP2P::executeCommand(const std::string& command, int interface, std::string &retBuffer)
 {
     MIRACASTLOG_TRACE("Entering..");

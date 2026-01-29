@@ -113,7 +113,6 @@ public:
     void reset_NewSourceName(void);
 
     void setP2PBackendDiscovery(bool is_enabled);
-    // New fix : issue ID 29 : Update header declaration to match implementation using const references
     void switch_launch_request_context(const std::string& source_dev_ip,const std::string& source_dev_mac,const std::string& source_dev_name,const std::string& sink_dev_ip);
     void start_discoveryAsync(void);
     void stop_discoveryAsync(void);
