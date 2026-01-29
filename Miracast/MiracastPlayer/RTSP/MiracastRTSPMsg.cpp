@@ -1233,7 +1233,6 @@ RTSP_STATUS MiracastRTSPMsg::validate_rtsp_m1_msg_m2_send_request(std::string rt
         std::string m2_msg_req_sink2src = "";
         MIRACASTLOG_INFO("M1 response sent");
 
-        // Note: req_str was already moved at line 1230, so we pass empty string here
         m2_msg_req_sink2src = generate_request_response_msg(RTSP_MSG_FMT_M2_REQUEST, "", "");
 
         MIRACASTLOG_INFO("Sending the M2 request [%s]",m2_msg_req_sink2src.c_str());
