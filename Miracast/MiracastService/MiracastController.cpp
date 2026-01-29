@@ -195,8 +195,6 @@ std::string MiracastController::parse_p2p_event_data(const char *tmpBuff, const 
             }
         }
     }
-    // Coverity Issue Type 6: LOGICALLY_DEAD_CODE - return_buf is stack array, always non-null
-    // Simply return the string - if empty, it will be an empty string
     return std::string(return_buf);
 }
 
@@ -1516,8 +1514,6 @@ void MiracastController::restart_discoveryAsync(void)
 
 void MiracastController::set_WFDSourceMACAddress(std::string MAC_Addr)
 {
-    // ISSUE: String parameter is copied instead of moved, causing unnecessary memory allocation
-    // FIX: Use std::move() to transfer ownership instead of copying
     m_connected_mac_addr = std::move(MAC_Addr);
 }
 
@@ -1623,8 +1619,6 @@ void MiracastController::notify_ConnectionRequest(std::string device_name,std::s
 
     if (nullptr != m_notify_handler)
     {
-        // ISSUE: String parameters are copied instead of moved, causing unnecessary memory allocation
-        // FIX: Use std::move() to transfer ownership instead of copying
         m_notify_handler->onMiracastServiceClientConnectionRequest(std::move(device_mac), std::move(device_name));
     }
     MIRACASTLOG_TRACE("Exiting...");
