@@ -170,8 +170,8 @@ namespace WPEFramework
                     XCastImplementation& _parent;
             };
 
-            class NetworkManagerNotification : public Exchange::INetworkManager::IActiveInterfaceChangeNotification,
-                                               public Exchange::INetworkManager::IIPAddressChangeNotification
+            class NetworkManagerNotification : public Exchange::INetworkManager::IActiveIfaceNotify,
+                                               public Exchange::INetworkManager::IIPAddNotify
             {
                 private:
                     NetworkManagerNotification(const NetworkManagerNotification&) = delete;
@@ -205,8 +205,8 @@ namespace WPEFramework
                     }
 
                     BEGIN_INTERFACE_MAP(NetworkManagerNotification)
-                    INTERFACE_ENTRY(Exchange::INetworkManager::IActiveInterfaceChangeNotification)
-                    INTERFACE_ENTRY(Exchange::INetworkManager::IIPAddressChangeNotification)
+                    INTERFACE_ENTRY(Exchange::INetworkManager::IActiveIfaceNotify)
+                    INTERFACE_ENTRY(Exchange::INetworkManager::IIPAddNotify)
                     END_INTERFACE_MAP
 
                 private:
