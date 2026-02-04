@@ -387,8 +387,8 @@ namespace WPEFramework
             Core::hresult retStatus2 = Core::ERROR_GENERAL;
             if (_networkManagerPlugin)
             {
-                retStatus1 = _networkManagerPlugin->RegisterActiveInterfaceChangeNotification(_notification.baseInterface<Exchange::INetworkManager::IActiveInterfaceChangeNotification>());
-                retStatus2 = _networkManagerPlugin->RegisterIPAddressChangeNotification(_notification.baseInterface<Exchange::INetworkManager::IIPAddressChangeNotification>());
+                retStatus1 = _networkManagerPlugin->RegisterActiveInterfaceChangeNotification(_networkManagerNotification.baseInterface<Exchange::INetworkManager::IActiveInterfaceChangeNotification>());
+                retStatus2 = _networkManagerPlugin->RegisterIPAddressChangeNotification(_networkManagerNotification.baseInterface<Exchange::INetworkManager::IIPAddressChangeNotification>());
                 if (Core::ERROR_NONE == retStatus1 && Core::ERROR_NONE == retStatus2)
                 {
                     LOGINFO("INetworkManager::Register event registered");
@@ -406,8 +406,8 @@ namespace WPEFramework
         {
             if (_registeredNMEventHandlers && _networkManagerPlugin)
             {
-                _networkManagerPlugin->UnregisterActiveInterfaceChangeNotification(_notification.baseInterface<Exchange::INetworkManager::IActiveInterfaceChangeNotification>());
-                _networkManagerPlugin->UnregisterIPAddressChangeNotification(_notification.baseInterface<Exchange::INetworkManager::IIPAddressChangeNotification>());
+                _networkManagerPlugin->UnregisterActiveInterfaceChangeNotification(_networkManagerNotification.baseInterface<Exchange::INetworkManager::IActiveInterfaceChangeNotification>());
+                _networkManagerPlugin->UnregisterIPAddressChangeNotification(_networkManagerNotification.baseInterface<Exchange::INetworkManager::IIPAddressChangeNotification>());
                 LOGINFO("INetworkManager::Unregister event unregistered");
                 _registeredNMEventHandlers = false;
             }

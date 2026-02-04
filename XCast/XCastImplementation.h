@@ -187,7 +187,7 @@ namespace WPEFramework
                     template <typename T>
                     T* baseInterface()
                     {
-                        static_assert(std::is_base_of<T, Notification>(), "base type mismatch");
+                        static_assert(std::is_base_of<T, NetworkManagerNotification>(), "base type mismatch");
                         return static_cast<T*>(this);
                     }
 
