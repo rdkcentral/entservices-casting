@@ -383,9 +383,13 @@ namespace WPEFramework
 
         void XCastImplementation::registerNetworkEventHandlers()
         {
+            Core::hresult retStatus1 = Core::ERROR_GENERAL;
+            Core::hresult retStatus2 = Core::ERROR_GENERAL;
             if (_networkManagerPlugin)
             {
-                if (Core::ERROR_NONE == _networkManagerPlugin->Register(&_networkManagerNotification))
+                retStatus1 = _networkManagerPlugin->RegisterActiveIfaceNotify(_networkManagerNotification.baseInterface<Exchange::INetworkManager::IActiveIfaceNotify>());
+                retStatus2 = _networkManagerPlugin->RegisterIPAddNotify(_networkManagerNotification.baseInterface<Exchange::INetworkManager::IIPAddNotify>());
+                if (Core::ERROR_NONE == retStatus1 && Core::ERROR_NONE == retStatus2)
                 {
                     LOGINFO("INetworkManager::Register event registered");
                     _registeredNMEventHandlers = true;
@@ -402,7 +406,8 @@ namespace WPEFramework
         {
             if (_registeredNMEventHandlers && _networkManagerPlugin)
             {
-                _networkManagerPlugin->Unregister(&_networkManagerNotification);
+                _networkManagerPlugin->UnregisterActiveIfaceNotify(_networkManagerNotification.baseInterface<Exchange::INetworkManager::IActiveIfaceNotify>());
+                _networkManagerPlugin->UnregisterIPAddNotify(_networkManagerNotification.baseInterface<Exchange::INetworkManager::IIPAddNotify>());
                 LOGINFO("INetworkManager::Unregister event unregistered");
                 _registeredNMEventHandlers = false;
             }
