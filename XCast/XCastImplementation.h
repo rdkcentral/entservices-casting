@@ -170,8 +170,7 @@ namespace WPEFramework
                     XCastImplementation& _parent;
             };
 
-            class NetworkManagerNotification : public Exchange::INetworkManager::IActiveIfaceNotify,
-                                               public Exchange::INetworkManager::IIPAddNotify
+            class NetworkManagerNotification : public Exchange::INetworkManager::INotification
             {
                 private:
                     NetworkManagerNotification(const NetworkManagerNotification&) = delete;
@@ -183,13 +182,6 @@ namespace WPEFramework
                     {
                     }
                     ~NetworkManagerNotification() override = default;
-
-                    template <typename T>
-                    T* baseInterface()
-                    {
-                        static_assert(std::is_base_of<T, NetworkManagerNotification>(), "base type mismatch");
-                        return static_cast<T*>(this);
-                    }
 
                 public:
                     void onActiveInterfaceChange(const string prevActiveInterface, const string currentActiveinterface) override
@@ -205,8 +197,7 @@ namespace WPEFramework
                     }
 
                     BEGIN_INTERFACE_MAP(NetworkManagerNotification)
-                    INTERFACE_ENTRY(Exchange::INetworkManager::IActiveIfaceNotify)
-                    INTERFACE_ENTRY(Exchange::INetworkManager::IIPAddNotify)
+                    INTERFACE_ENTRY(Exchange::INetworkManager::INotification)
                     END_INTERFACE_MAP
 
                 private:
