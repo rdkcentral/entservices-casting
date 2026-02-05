@@ -383,9 +383,13 @@ namespace WPEFramework
 
         void XCastImplementation::registerNetworkEventHandlers()
         {
+            Core::hresult retStatus1 = Core::ERROR_GENERAL;
+            Core::hresult retStatus2 = Core::ERROR_GENERAL;
             if (_networkManagerPlugin)
             {
-                if (Core::ERROR_NONE == _networkManagerPlugin->Register(&_networkManagerNotification))
+                retStatus1 = _networkManagerPlugin->RegisterActiveInterfaceChangeNotification(_networkManagerNotification.baseInterface<Exchange::INetworkManager::IActiveInterfaceChangeNotification>());
+                retStatus2 = _networkManagerPlugin->RegisterIPAddressChangeNotification(_networkManagerNotification.baseInterface<Exchange::INetworkManager::IIPAddressChangeNotification>());
+                if (Core::ERROR_NONE == retStatus1 && Core::ERROR_NONE == retStatus2)
                 {
                     LOGINFO("INetworkManager::Register event registered");
                     _registeredNMEventHandlers = true;
@@ -402,7 +406,8 @@ namespace WPEFramework
         {
             if (_registeredNMEventHandlers && _networkManagerPlugin)
             {
-                _networkManagerPlugin->Unregister(&_networkManagerNotification);
+                _networkManagerPlugin->UnregisterActiveInterfaceChangeNotification(_networkManagerNotification.baseInterface<Exchange::INetworkManager::IActiveInterfaceChangeNotification>());
+                _networkManagerPlugin->UnregisterIPAddressChangeNotification(_networkManagerNotification.baseInterface<Exchange::INetworkManager::IIPAddressChangeNotification>());
                 LOGINFO("INetworkManager::Unregister event unregistered");
                 _registeredNMEventHandlers = false;
             }
