@@ -162,7 +162,6 @@ protected:
     Exchange::IPowerManager::INetworkStandbyModeChangedNotification* _networkStandbyModeChangedNotification = nullptr;
     Exchange::IPowerManager::IModeChangedNotification* _modeChangedNotification = nullptr;
     Exchange::IPowerManager::PowerState _powerState = Exchange::IPowerManager::POWER_STATE_OFF;
-    Exchange::INetworkManager::INotification* _networkManagerNotification = nullptr;
     Exchange::INetworkManager::IIfaceStateChangeNotify* _ifaceStateChangeNotify = nullptr;
     Exchange::INetworkManager::IActiveIfaceNotify* _activeIfaceNotify = nullptr;
     Exchange::INetworkManager::IIPAddNotify* _ipAddNotify = nullptr;
@@ -279,38 +278,50 @@ protected:
                     return Core::ERROR_NONE;
             }));
 
-        EXPECT_CALL(*mockNetworkManager, Register(::testing::_))
+        EXPECT_CALL(*mockNetworkManager, RegisterIfaceStateNotify(::testing::_))
             .Times(::testing::AnyNumber())
             .WillRepeatedly(::testing::Invoke(
                 [&](WPEFramework::Exchange::INetworkManager::IIfaceStateChangeNotify* notification) -> uint32_t {
                     _ifaceStateChangeNotify = notification;
                     return Core::ERROR_NONE;
                 }));
+        EXPECT_CALL(*mockNetworkManager, RegisterActiveIfaceNotify(::testing::_))
+            .Times(::testing::AnyNumber())
             .WillRepeatedly(::testing::Invoke(
                 [&](WPEFramework::Exchange::INetworkManager::IActiveIfaceNotify* notification) -> uint32_t {
                     _activeIfaceNotify = notification;
                     return Core::ERROR_NONE;
                 }));
+        EXPECT_CALL(*mockNetworkManager, RegisterIPAddNotify(::testing::_))
+            .Times(::testing::AnyNumber())
             .WillRepeatedly(::testing::Invoke(
                 [&](WPEFramework::Exchange::INetworkManager::IIPAddNotify* notification) -> uint32_t {
                     _ipAddNotify = notification;
                     return Core::ERROR_NONE;
                 }));
+        EXPECT_CALL(*mockNetworkManager, RegisterInetStatNotify(::testing::_))
+            .Times(::testing::AnyNumber())
             .WillRepeatedly(::testing::Invoke(
                 [&](WPEFramework::Exchange::INetworkManager::IInetStatNotify* notification) -> uint32_t {
                     _inetStatNotify = notification;
                     return Core::ERROR_NONE;
                 }));
+        EXPECT_CALL(*mockNetworkManager, RegisterAvailSSIDsNotify(::testing::_))
+            .Times(::testing::AnyNumber())
             .WillRepeatedly(::testing::Invoke(
                 [&](WPEFramework::Exchange::INetworkManager::IAvailSSIDsNotify* notification) -> uint32_t {
                     _availSSIDsNotify = notification;
                     return Core::ERROR_NONE;
                 }));
+        EXPECT_CALL(*mockNetworkManager, RegisterWiFiStateNotify(::testing::_))
+            .Times(::testing::AnyNumber())
             .WillRepeatedly(::testing::Invoke(
                 [&](WPEFramework::Exchange::INetworkManager::IWiFiStateNotify* notification) -> uint32_t {
                     _wifiStateNotify = notification;
                     return Core::ERROR_NONE;
                 }));
+        EXPECT_CALL(*mockNetworkManager, RegisterWiFiSigQualityNotify(::testing::_))
+            .Times(::testing::AnyNumber())
             .WillRepeatedly(::testing::Invoke(
                 [&](WPEFramework::Exchange::INetworkManager::IWiFiSigQualityNotify* notification) -> uint32_t {
                     _wifiSigQualityNotify = notification;
@@ -681,8 +692,8 @@ TEST_F(XCastTest, unRegisterAllApplications)
     EXPECT_EQ(response, string("{\"success\":true}"));
 
     // Added to trigger registerApplication handling based on timer
-    ASSERT_NE(_networkManagerNotification, nullptr);
-    _networkManagerNotification->onActiveInterfaceChange("eth0", "wlan0");
+    ASSERT_NE(_activeIfaceNotify, nullptr);
+    _activeIfaceNotify->onActiveInterfaceChange("eth0", "wlan0");
     usleep(50);
 
     wg.Wait();
