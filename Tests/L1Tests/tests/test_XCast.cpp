@@ -162,13 +162,7 @@ protected:
     Exchange::IPowerManager::INetworkStandbyModeChangedNotification* _networkStandbyModeChangedNotification = nullptr;
     Exchange::IPowerManager::IModeChangedNotification* _modeChangedNotification = nullptr;
     Exchange::IPowerManager::PowerState _powerState = Exchange::IPowerManager::POWER_STATE_OFF;
-    Exchange::INetworkManager::IIfaceStateChangeNotify* _ifaceStateChangeNotify = nullptr;
-    Exchange::INetworkManager::IActiveIfaceNotify* _activeIfaceNotify = nullptr;
-    Exchange::INetworkManager::IIPAddNotify* _ipAddNotify = nullptr;
-    Exchange::INetworkManager::IInetStatNotify* _inetStatNotify = nullptr;
-    Exchange::INetworkManager::IAvailSSIDsNotify* _availSSIDsNotify = nullptr;
-    Exchange::INetworkManager::IWiFiStateNotify* _wifiStateNotify = nullptr;
-    Exchange::INetworkManager::IWiFiSigQualityNotify* _wifiSigQualityNotify = nullptr;
+    Exchange::INetworkManager::INotification* _networkManagerNotification = nullptr;
     bool _networkStandbyMode = false;
     Core::ProxyType<Plugin::XCastImplementation> xcastImpl;
     NiceMock<COMLinkMock> comLinkMock;
@@ -278,53 +272,11 @@ protected:
                     return Core::ERROR_NONE;
             }));
 
-        EXPECT_CALL(*mockNetworkManager, RegisterIfaceStateNotify(::testing::_))
+        EXPECT_CALL(*mockNetworkManager, Register(::testing::_))
             .Times(::testing::AnyNumber())
             .WillRepeatedly(::testing::Invoke(
-                [&](WPEFramework::Exchange::INetworkManager::IIfaceStateChangeNotify* notification) -> uint32_t {
-                    _ifaceStateChangeNotify = notification;
-                    return Core::ERROR_NONE;
-                }));
-        EXPECT_CALL(*mockNetworkManager, RegisterActiveIfaceNotify(::testing::_))
-            .Times(::testing::AnyNumber())
-            .WillRepeatedly(::testing::Invoke(
-                [&](WPEFramework::Exchange::INetworkManager::IActiveIfaceNotify* notification) -> uint32_t {
-                    _activeIfaceNotify = notification;
-                    return Core::ERROR_NONE;
-                }));
-        EXPECT_CALL(*mockNetworkManager, RegisterIPAddNotify(::testing::_))
-            .Times(::testing::AnyNumber())
-            .WillRepeatedly(::testing::Invoke(
-                [&](WPEFramework::Exchange::INetworkManager::IIPAddNotify* notification) -> uint32_t {
-                    _ipAddNotify = notification;
-                    return Core::ERROR_NONE;
-                }));
-        EXPECT_CALL(*mockNetworkManager, RegisterInetStatNotify(::testing::_))
-            .Times(::testing::AnyNumber())
-            .WillRepeatedly(::testing::Invoke(
-                [&](WPEFramework::Exchange::INetworkManager::IInetStatNotify* notification) -> uint32_t {
-                    _inetStatNotify = notification;
-                    return Core::ERROR_NONE;
-                }));
-        EXPECT_CALL(*mockNetworkManager, RegisterAvailSSIDsNotify(::testing::_))
-            .Times(::testing::AnyNumber())
-            .WillRepeatedly(::testing::Invoke(
-                [&](WPEFramework::Exchange::INetworkManager::IAvailSSIDsNotify* notification) -> uint32_t {
-                    _availSSIDsNotify = notification;
-                    return Core::ERROR_NONE;
-                }));
-        EXPECT_CALL(*mockNetworkManager, RegisterWiFiStateNotify(::testing::_))
-            .Times(::testing::AnyNumber())
-            .WillRepeatedly(::testing::Invoke(
-                [&](WPEFramework::Exchange::INetworkManager::IWiFiStateNotify* notification) -> uint32_t {
-                    _wifiStateNotify = notification;
-                    return Core::ERROR_NONE;
-                }));
-        EXPECT_CALL(*mockNetworkManager, RegisterWiFiSigQualityNotify(::testing::_))
-            .Times(::testing::AnyNumber())
-            .WillRepeatedly(::testing::Invoke(
-                [&](WPEFramework::Exchange::INetworkManager::IWiFiSigQualityNotify* notification) -> uint32_t {
-                    _wifiSigQualityNotify = notification;
+                [&](WPEFramework::Exchange::INetworkManager::INotification* notification) -> uint32_t {
+                    _networkManagerNotification = notification;
                     return Core::ERROR_NONE;
                 }));
 
@@ -692,8 +644,8 @@ TEST_F(XCastTest, unRegisterAllApplications)
     EXPECT_EQ(response, string("{\"success\":true}"));
 
     // Added to trigger registerApplication handling based on timer
-    ASSERT_NE(_activeIfaceNotify, nullptr);
-    _activeIfaceNotify->onActiveInterfaceChange("eth0", "wlan0");
+    ASSERT_NE(_networkManagerNotification, nullptr);
+    _networkManagerNotification->onActiveInterfaceChange("eth0", "wlan0");
     usleep(50);
 
     wg.Wait();
@@ -1091,21 +1043,15 @@ TEST_F(XCastTest, onNetworkManagerEvents)
     EXPECT_EQ(Core::ERROR_NONE, mJsonRpcHandler.Invoke(connection, _T("setFriendlyName"), _T("{\"friendlyname\": \"friendlyTest\"}"), response));
     EXPECT_EQ(response, string("{\"success\":true}"));
 
-    ASSERT_NE(_wifiSigQualityNotify, nullptr);
-    _wifiSigQualityNotify->onWiFiSignalQualityChange("myHomeSSID", -32, -106, 74, Exchange::INetworkManager::WIFI_SIGNAL_EXCELLENT);
-    ASSERT_NE(_wifiStateNotify, nullptr);
-    _wifiStateNotify->onWiFiStateChange(Exchange::INetworkManager::WIFI_STATE_DISCONNECTED);
-    ASSERT_NE(_availSSIDsNotify, nullptr);
-    _availSSIDsNotify->onAvailableSSIDs("{\"AvailableSSIDs\":[{\"SSID\":\"myHomeSSID\",\"BSSID\":\"00:11:22:33:44:55\",\"SignalStrength\":-32,\"Frequency\":2412,\"Security\":\"WPA2-Personal\"},{\"SSID\":\"myOfficeSSID\",\"BSSID\":\"66:77:88:99:AA:BB\",\"SignalStrength\":\"-45,\"Frequency\":2412,\"Security\":\"WPA2-Enterprise\"}]}");
-    ASSERT_NE(_inetStatNotify, nullptr);
-    _inetStatNotify->onInternetStatusChange(Exchange::INetworkManager::INTERNET_NOT_AVAILABLE, Exchange::INetworkManager::INTERNET_FULLY_CONNECTED, "eth0");
-    ASSERT_NE(_ifaceStateChangeNotify, nullptr);
-    _ifaceStateChangeNotify->onInterfaceStateChange(Exchange::INetworkManager::INTERFACE_LINK_UP, "eth0");
-    ASSERT_NE(_ipAddNotify, nullptr);
-    _ipAddNotify->onIPAddressChange("eth0", "IPv4", "192.168.5.100", Exchange::INetworkManager::IP_ACQUIRED);
+    ASSERT_NE(_networkManagerNotification, nullptr);
+    _networkManagerNotification->onWiFiSignalQualityChange("myHomeSSID", "-32", "-106", "74", Exchange::INetworkManager::WIFI_SIGNAL_EXCELLENT);
+    _networkManagerNotification->onWiFiStateChange(Exchange::INetworkManager::WIFI_STATE_DISCONNECTED);
+    _networkManagerNotification->onAvailableSSIDs("{\"AvailableSSIDs\":[{\"SSID\":\"myHomeSSID\",\"BSSID\":\"00:11:22:33:44:55\",\"SignalStrength\":\"-32\",\"Frequency\":\"2412\",\"Security\":\"WPA2-Personal\"},{\"SSID\":\"myOfficeSSID\",\"BSSID\":\"66:77:88:99:AA:BB\",\"SignalStrength\":\"-45\",\"Frequency\":\"2412\",\"Security\":\"WPA2-Enterprise\"}]}");
+    _networkManagerNotification->onInternetStatusChange(Exchange::INetworkManager::INTERNET_NOT_AVAILABLE, Exchange::INetworkManager::INTERNET_FULLY_CONNECTED, "eth0");
+    _networkManagerNotification->onInterfaceStateChange(Exchange::INetworkManager::INTERFACE_LINK_UP, "eth0");
+    _networkManagerNotification->onIPAddressChange("eth0", "IPv4", "192.168.5.100", Exchange::INetworkManager::IP_ACQUIRED);
     sleep(1);
-    ASSERT_NE(_activeIfaceNotify, nullptr);
-    _activeIfaceNotify->onActiveInterfaceChange("eth0", "wlan0");
+    _networkManagerNotification->onActiveInterfaceChange("eth0", "wlan0");
 
     wg.Wait();
 
