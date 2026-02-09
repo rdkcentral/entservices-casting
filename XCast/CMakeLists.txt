@@ -71,7 +71,7 @@ target_link_libraries(${PLUGIN_IMPLEMENTATION} PRIVATE ${NAMESPACE}COM::${NAMESP
 
 find_package(IARMBus)
 find_package(CEC)
-find_library(NMPROXY_LIB NAMES ${NAMESPACE}NetworkManagerProxy PATHS ${CMAKE_SYSROOT}/usr/lib/thunder/proxystubs)
+find_library(NMPROXY_LIB NAMES ${NAMESPACE}NetworkManagerProxy PATHS ${CMAKE_SYSROOT}/usr/lib/${STORAGE_DIRECTORY}/proxystubs)
 
 if (RDK_SERVICE_L2_TEST)
     message ("L2 test Enabled")
