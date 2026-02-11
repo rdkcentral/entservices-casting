@@ -113,7 +113,7 @@ public:
     void reset_NewSourceName(void);
 
     void setP2PBackendDiscovery(bool is_enabled);
-    void switch_launch_request_context(std::string& source_dev_ip,std::string& source_dev_mac,std::string& source_dev_name,std::string& sink_dev_ip);
+    void switch_launch_request_context(const std::string& source_dev_ip,const std::string& source_dev_mac,const std::string& source_dev_name,const std::string& sink_dev_ip);
     void start_discoveryAsync(void);
     void stop_discoveryAsync(void);
     void restart_discoveryAsync(void);
