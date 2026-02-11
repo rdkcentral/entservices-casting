@@ -78,6 +78,7 @@ namespace WPEFramework
         XCastImplementation::XCastImplementation()
         : _service(nullptr),
         _pwrMgrNotification(*this),
+        m_networkStandbyMode(false),
         _registeredPowerEventHandlers(false),
         _registeredNMEventHandlers(false),
         _networkManagerPlugin(nullptr),
@@ -748,7 +749,7 @@ namespace WPEFramework
 
         void XCastImplementation::dispatchEvent(Event event, string callsign, const JsonObject &params)
         {
-            Core::IWorkerPool::Instance().Submit(Job::Create(this, event, callsign, params));
+            Core::IWorkerPool::Instance().Submit(Job::Create(this, event, std::move(callsign), params));
         }
 
         void XCastImplementation::Dispatch(Event event, string callsign, const JsonObject params)
