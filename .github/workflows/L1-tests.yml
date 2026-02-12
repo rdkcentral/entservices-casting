@@ -131,12 +131,13 @@ jobs:
         with:
           repository: rdkcentral/networkmanager
           path: networkmanager
+          ref: main
           fetch-depth: 1
 
       - name: Copy INetworkManager interface header
         run: |
           mkdir -p "$GITHUB_WORKSPACE/install/usr/include/WPEFramework/interfaces"
-          cp "$GITHUB_WORKSPACE/networkmanager/interfaces/INetworkManager.h" "$GITHUB_WORKSPACE/install/usr/include/WPEFramework/interfaces/"
+          cp "$GITHUB_WORKSPACE/networkmanager/interface/INetworkManager.h" "$GITHUB_WORKSPACE/install/usr/include/WPEFramework/interfaces/"
 
       - name: Checkout entservices-casting
         if: ${{ inputs.caller_source == 'local' }}
