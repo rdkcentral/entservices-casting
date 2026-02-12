@@ -54,7 +54,7 @@ void XCastManager::onApplicationLaunchRequestWithLaunchParam(string appName,stri
 {
     if ( nullptr != m_observer )
     {
-        m_observer->onXcastApplicationLaunchRequestWithParam(appName,strPayLoad,strQuery,strAddDataUrl);
+        m_observer->onXcastApplicationLaunchRequestWithParam(appName,std::move(strPayLoad),strQuery,strAddDataUrl);
     }
 }
 
@@ -62,7 +62,7 @@ void XCastManager::onApplicationLaunchRequest(string appName, string parameter)
 {
     if ( nullptr != m_observer )
     {
-        m_observer->onXcastApplicationLaunchRequest(appName,parameter);
+        m_observer->onXcastApplicationLaunchRequest(std::move(appName),std::move(parameter));
     }
 }
 
@@ -70,7 +70,7 @@ void XCastManager::onApplicationStopRequest(string appName, string appID)
 {
     if ( nullptr != m_observer )
     {
-        m_observer->onXcastApplicationStopRequest(appName,appID);
+        m_observer->onXcastApplicationStopRequest(std::move(appName),std::move(appID));
     }
 }
 
@@ -78,7 +78,7 @@ void XCastManager::onApplicationHideRequest(string appName, string appID)
 {
     if ( nullptr != m_observer )
     {
-        m_observer->onXcastApplicationHideRequest(appName,appID);
+        m_observer->onXcastApplicationHideRequest(std::move(appName),std::move(appID));
     }
 }
 
@@ -86,7 +86,7 @@ void XCastManager::onApplicationResumeRequest(string appName, string appID)
 {
     if ( nullptr != m_observer )
     {
-        m_observer->onXcastApplicationResumeRequest(appName,appID);
+        m_observer->onXcastApplicationResumeRequest(std::move(appName),std::move(appID));
     }
 }
 
@@ -94,7 +94,7 @@ void XCastManager::onApplicationStateRequest(string appName, string appID)
 {
     if ( nullptr != m_observer )
     {
-        m_observer->onXcastApplicationStateRequest(appName,appID);
+        m_observer->onXcastApplicationStateRequest(std::move(appName),std::move(appID));
     }
 }
 
@@ -102,7 +102,7 @@ void XCastManager::updatePowerState(string powerState)
 {
     if ( nullptr != m_observer )
     {
-        m_observer->onXcastUpdatePowerStateRequest(powerState);
+        m_observer->onXcastUpdatePowerStateRequest(std::move(powerState));
     }
 }
 
@@ -435,7 +435,7 @@ bool XCastManager::envGetValue(const char *key, std::string &value)
     return returnValue;
 }
 
-int XCastManager::applicationStateChanged( string app, string state, string id, string error)
+int XCastManager::applicationStateChanged( const string& app, const string& state, const string& id, const string& error)
 {
     int status = 0;
     LOGINFO("AppName[%s] AppState[%s] AppID[%s] Error[%s]", app.c_str(), id.c_str() , state.c_str() , error.c_str());
@@ -450,14 +450,14 @@ int XCastManager::applicationStateChanged( string app, string state, string id, 
     return status;
 }//app && state not empty
 
-void XCastManager::enableCastService(string friendlyname,bool enableService)
+void XCastManager::enableCastService(const string& friendlyname,bool enableService)
 {
     LOGINFO("friendlyname[%s] enableService[%d]", friendlyname.c_str(), enableService);
     lock_guard<recursive_mutex> lock(m_mutexSync);
     if(gdialCastObj != NULL)
     {
         std::string activation = enableService ? "true": "false";
-        gdialCastObj->ActivationChanged( activation, friendlyname);
+        gdialCastObj->ActivationChanged( std::move(activation), friendlyname);
         LOGINFO("XcastService send onActivationChanged");
     }
     else
@@ -488,14 +488,16 @@ int XCastManager::setManufacturerName( string manufacturer)
     int status = 0;
     LOGINFO("Manufacturer[%s]", manufacturer.c_str());
     lock_guard<recursive_mutex> lock(m_mutexSync);
-    m_manufacturerName = manufacturer;
     if(gdialCastObj != NULL)
     {
         gdialCastObj->setManufacturerName( manufacturer );
         status = 1;
     }
     else
+    {
         LOGINFO(" gdialCastObj is NULL ");
+    }
+    m_manufacturerName = std::move(manufacturer);
     return status;
 }
 
@@ -511,14 +513,16 @@ int XCastManager::setModelName( string model)
     int status = 0;
     lock_guard<recursive_mutex> lock(m_mutexSync);
     LOGINFO("Model[%s]", model.c_str());
-    m_modelName = model;
     if(gdialCastObj != NULL)
     {
         gdialCastObj->setModelName(model);
         status = 1;
     }
     else
+    {
         LOGINFO(" gdialCastObj is NULL ");
+    }
+    m_modelName = std::move(model);
     return status;
 }
 

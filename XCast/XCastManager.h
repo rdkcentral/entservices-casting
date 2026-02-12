@@ -44,7 +44,7 @@ namespace WPEFramework {
 class XCastManager : public GDialNotifier
 {
 protected:
-    XCastManager() {}
+    XCastManager() : m_observer(nullptr) {}
 public:
     virtual ~XCastManager();
     /**
@@ -63,13 +63,13 @@ public:
      *   @param error - The error string if the requested application is not available or due to other errors
      *   @return indicates whether state is properly communicated to rtdial server.
      */
-    int applicationStateChanged( string app, string state, string id, string error);
+    int applicationStateChanged( const string& app, const string& state, const string& id, const string& error);
     /**
      *This function will enable cast service by default.
      *@param friendlyname - friendlyname
      *@param enableService - Enable/Disable the SSDP discovery of Dial server
      */
-    void enableCastService(string friendlyname,bool enableService = true);
+    void enableCastService(const string& friendlyname,bool enableService = true);
 
     void registerApplications (std::vector<DynamicAppConfig*>& appConfigList);
     string  getProtocolVersion(void);
