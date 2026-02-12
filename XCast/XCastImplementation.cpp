@@ -397,7 +397,6 @@ namespace WPEFramework
                 }
             }
         }
-
         void XCastImplementation::unregisterNetworkEventHandlers()
         {
             if (_registeredNMEventHandlers && _networkManagerPlugin)
