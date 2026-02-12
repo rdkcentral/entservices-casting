@@ -126,6 +126,18 @@ jobs:
           ref: develop
           token: ${{ secrets.RDKCM_RDKE }}
 
+      - name: Checkout networkmanager
+        uses: actions/checkout@v3
+        with:
+          repository: rdkcentral/networkmanager
+          path: networkmanager
+          fetch-depth: 1
+
+      - name: Copy INetworkManager interface header
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/install/usr/include/WPEFramework/interfaces"
+          cp "$GITHUB_WORKSPACE/networkmanager/interfaces/INetworkManager.h" "$GITHUB_WORKSPACE/install/usr/include/WPEFramework/interfaces/"
+
       - name: Checkout entservices-casting
         if: ${{ inputs.caller_source == 'local' }}
         uses: actions/checkout@v3
