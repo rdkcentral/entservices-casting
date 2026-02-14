@@ -158,11 +158,7 @@ namespace Utils
         return thunderClient;
     }
 
-#ifndef USE_THUNDER_R4
-    class Job : public Core::IDispatchType<void>
-#else
     class Job : public Core::IDispatch
-#endif /* USE_THUNDER_R4 */
     {
     public:
         Job(std::function<void()> work)

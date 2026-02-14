@@ -22,8 +22,8 @@
 #define MODULE_NAME MiracastPlayer
 #endif
 
+#include <core/core.h>
 #include <plugins/plugins.h>
-#include <tracing/tracing.h>
 
 #undef EXTERNAL
 #define EXTERNAL
