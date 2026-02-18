@@ -30,7 +30,6 @@
 
 using namespace std;
 using namespace WPEFramework;
-using PowerState = WPEFramework::Exchange::IPowerManager::PowerState;
 // Events
 // com.comcast.xcast_1
 #define EVT_ON_LAUNCH_REQUEST         "onApplicationLaunchRequest"
@@ -110,7 +109,7 @@ bool XCast::m_standbyBehavior = true;
 bool XCast::m_standbyBehavior = false;
 #endif
 
-WPEFramework::Exchange::IPowerManager::PowerState XCast::m_powerState = WPEFramework::Exchange::IPowerManager::POWER_STATE_STANDBY;
+IARM_Bus_PWRMgr_PowerState_t XCast::m_powerState = IARM_BUS_PWRMGR_POWERSTATE_STANDBY;
 bool XCast::m_networkStandbyMode = false;
 static int m_sleeptime = 1;
 static bool m_is_restart_req = false;
@@ -120,8 +119,6 @@ XCast *XCast::m_instance{nullptr};
 
 XCast::XCast()
     : PluginHost::JSONRPC()
-    , _pwrMgrNotification(*this)
-    , _registeredEventHandlers(false)
     ,_skipURL(0)
     ,_connectionId(0)
     ,_service(nullptr)
@@ -168,46 +165,40 @@ void XCast::RegisterAll()
     Utils::Synchro::RegisterLockedApi(METHOD_GET_MODEL_NAME, &XCast::getModelName, this);
 }
 
-void XCast::InitializePowerManager(PluginHost::IShell* service)
-{
-    LOGINFO("Connect the COM-RPC socket\n");
-    _powerManagerPlugin = PowerManagerInterfaceBuilder(_T("org.rdk.PowerManager"))
-        .withIShell(service)
-        .withRetryIntervalMS(200)
-        .withRetryCount(25)
-        .createInterface();
-    registerEventHandlers();
-}
 
 void XCast::InitializeIARM()
 {
-    Core::hresult retStatus = Core::ERROR_GENERAL;
-    PowerState pwrStateCur = WPEFramework::Exchange::IPowerManager::POWER_STATE_UNKNOWN;
-    PowerState pwrStatePrev = WPEFramework::Exchange::IPowerManager::POWER_STATE_UNKNOWN;
-    bool nwStandby = false;
+    if (Utils::IARM::init())
+    {
+        IARM_Bus_PWRMgr_GetPowerState_Param_t getPowerStateParam;
+        IARM_Bus_PWRMgr_NetworkStandbyMode_Param_t networkStandbyModeParam;
+        IARM_Result_t res;
 
-    LOGINFO("XCast:: Initialize  plugin called \n");
+        IARM_CHECK( Utils::Synchro::RegisterLockedIarmEventHandler<XCast>(IARM_BUS_PWRMGR_NAME,IARM_BUS_PWRMGR_EVENT_MODECHANGED, powerModeChange) );
+        IARM_CHECK( Utils::Synchro::RegisterLockedIarmEventHandler<XCast>(IARM_BUS_PWRMGR_NAME,IARM_BUS_PWRMGR_EVENT_NETWORK_STANDBYMODECHANGED, networkStandbyModeChange));
 
-    ASSERT (_powerManagerPlugin);
-    if (_powerManagerPlugin){
-        retStatus = _powerManagerPlugin->GetPowerState(pwrStateCur, pwrStatePrev);
-        if (Core::ERROR_NONE == retStatus)
+        res = IARM_Bus_Call(IARM_BUS_PWRMGR_NAME, IARM_BUS_PWRMGR_API_GetPowerState,(void *)&getPowerStateParam, sizeof(getPowerStateParam));
+        if (res == IARM_RESULT_SUCCESS)
         {
-            m_powerState = pwrStateCur;
-            LOGINFO("XCast::m_powerState:%d", m_powerState);
+            m_powerState = getPowerStateParam.curState;
         }
+        LOGINFO("m_powerState:%d ",m_powerState);
 
-        retStatus = _powerManagerPlugin->GetNetworkStandbyMode(nwStandby);
-        if (Core::ERROR_NONE == retStatus)
-        {
-            m_networkStandbyMode = nwStandby;
-            LOGINFO("m_networkStandbyMode:%u ",m_networkStandbyMode);
+        res = IARM_Bus_Call(IARM_BUS_PWRMGR_NAME,IARM_BUS_PWRMGR_API_GetNetworkStandbyMode, (void *)&networkStandbyModeParam,sizeof(networkStandbyModeParam));
+        if(res == IARM_RESULT_SUCCESS) {
+            m_networkStandbyMode = networkStandbyModeParam.bStandbyMode;
         }
+        LOGINFO("m_networkStandbyMode:%u ",m_networkStandbyMode);
     }
 }
 
 void XCast::DeinitializeIARM()
 {
+    if (Utils::IARM::isConnected())
+    {
+        IARM_Result_t res;
+        IARM_CHECK( Utils::Synchro::RemoveLockedEventHandler<XCast>(IARM_BUS_PWRMGR_NAME,IARM_BUS_PWRMGR_EVENT_MODECHANGED, powerModeChange) );
+    }
     Unregister(METHOD_GET_API_VERSION_NUMBER);
     Unregister(METHOD_ON_APPLICATION_STATE_CHANGED);
     Unregister(METHOD_SET_ENABLED);
@@ -218,49 +209,33 @@ void XCast::DeinitializeIARM()
     Unregister(METHOD_SET_FRIENDLYNAME);
 }
 
-void XCast::registerEventHandlers()
-{
-    ASSERT (_powerManagerPlugin);
-
-    if(!_registeredEventHandlers && _powerManagerPlugin) {
-        _registeredEventHandlers = true;
-        _powerManagerPlugin->Register(_pwrMgrNotification.baseInterface<Exchange::IPowerManager::INetworkStandbyModeChangedNotification>());
-        _powerManagerPlugin->Register(_pwrMgrNotification.baseInterface<Exchange::IPowerManager::IModeChangedNotification>());
-    }
-}
-
 bool XCast::setPowerState(std::string powerState)
 {
-    PowerState cur_powerState = m_powerState,
-               new_powerState = WPEFramework::Exchange::IPowerManager::POWER_STATE_OFF;
-    Core::hresult status = Core::ERROR_GENERAL;
+    IARM_Bus_PWRMgr_PowerState_t cur_powerState = m_powerState,
+                                 new_powerState = IARM_BUS_PWRMGR_POWERSTATE_OFF;
     bool ret = true;
     if ("ON" == powerState)
     {
-        new_powerState = WPEFramework::Exchange::IPowerManager::POWER_STATE_ON;
+        new_powerState = IARM_BUS_PWRMGR_POWERSTATE_ON;
     }
     else if ("STANDBY" == powerState)
     {
-        new_powerState = WPEFramework::Exchange::IPowerManager::POWER_STATE_STANDBY;
+        new_powerState = IARM_BUS_PWRMGR_POWERSTATE_STANDBY;
     }
     else if ("TOGGLE" == powerState)
     {
-        new_powerState = ( WPEFramework::Exchange::IPowerManager::POWER_STATE_ON == cur_powerState ) ? WPEFramework::Exchange::IPowerManager::POWER_STATE_STANDBY : WPEFramework::Exchange::IPowerManager::POWER_STATE_ON;
+        new_powerState = ( IARM_BUS_PWRMGR_POWERSTATE_ON == cur_powerState ) ? IARM_BUS_PWRMGR_POWERSTATE_STANDBY : IARM_BUS_PWRMGR_POWERSTATE_ON;
     }
 
-    if ((WPEFramework::Exchange::IPowerManager::POWER_STATE_OFF != new_powerState) && (cur_powerState != new_powerState))
+    if ((IARM_BUS_PWRMGR_POWERSTATE_OFF != new_powerState) && (cur_powerState != new_powerState))
     {
-        ASSERT (_powerManagerPlugin);
-
-        if (_powerManagerPlugin)
-        {
-            status = _powerManagerPlugin->SetPowerState(0, new_powerState, "random");
-        }
-
-        if (status == Core::ERROR_GENERAL)
+        IARM_Bus_PWRMgr_SetPowerState_Param_t param;
+        param.newState = new_powerState;
+        IARM_Result_t res = IARM_Bus_Call(IARM_BUS_PWRMGR_NAME, IARM_BUS_PWRMGR_API_SetPowerState,(void *)&param, sizeof(param));
+        if(res != IARM_RESULT_SUCCESS)
         {
             ret = false;
-            LOGINFO("Failed to change power state [%d] -> [%d] ret[%x]",cur_powerState,new_powerState,ret);
+            LOGINFO("Failed to change power state [%d] -> [%d] ret[%x]",cur_powerState,new_powerState,res);
         }
         else
         {
@@ -271,29 +246,37 @@ bool XCast::setPowerState(std::string powerState)
     return ret;
 }
 
-void XCast::onPowerModeChanged(const PowerState currentState, const PowerState newState)
+void XCast::powerModeChange(const char *owner, IARM_EventId_t eventId, void *data, size_t len)
 {
-    LOGINFO("onPowerModeChanged: State Changed %d -- > %d\r",
-        currentState, newState);
-    m_powerState = newState;
-    LOGWARN("creating worker thread for threadPowerModeChangeEvent m_powerState :%d",m_powerState);
-    std::thread powerModeChangeThread = std::thread(threadPowerModeChangeEvent);
-    powerModeChangeThread.detach();
+    if (XCast::m_xcastEnable && strcmp(owner, IARM_BUS_PWRMGR_NAME)  == 0) {
+        if (eventId == IARM_BUS_PWRMGR_EVENT_MODECHANGED ) {
+            IARM_Bus_PWRMgr_EventData_t *param = (IARM_Bus_PWRMgr_EventData_t *)data;
+            LOGINFO("Event IARM_BUS_PWRMGR_EVENT_MODECHANGED: State Changed %d -- > %d\r",
+                    param->data.state.curState, param->data.state.newState);
+            m_powerState = param->data.state.newState;
+            LOGWARN("creating worker thread for threadPowerModeChangeEvent m_powerState :%d",m_powerState);
+            std::thread powerModeChangeThread = std::thread(threadPowerModeChangeEvent);
+            powerModeChangeThread.detach();
+        }
+    }
 }
 
-void XCast::onNetworkStandbyModeChanged(const bool enabled)
+void XCast::networkStandbyModeChange(const char *owner, IARM_EventId_t eventId, void *data, size_t len)
 {
-    m_networkStandbyMode = enabled;
+  if ((strcmp(owner, IARM_BUS_PWRMGR_NAME)  == 0) && ( eventId == IARM_BUS_PWRMGR_EVENT_NETWORK_STANDBYMODECHANGED )) {
+    IARM_Bus_PWRMgr_EventData_t *param = (IARM_Bus_PWRMgr_EventData_t *)data;
+    m_networkStandbyMode = param->data.bNetworkStandbyMode;
     LOGWARN("creating worker thread for threadNetworkStandbyModeChangeEvent Mode :%u",m_networkStandbyMode);
     std::thread networkStandbyModeChangeThread = std::thread(networkStandbyModeChangeEvent);
     networkStandbyModeChangeThread.detach();
+  }
 }
 
 void XCast::threadPowerModeChangeEvent(void)
 {
     powerModeChangeActive = true;
     LOGINFO(" threadPowerModeChangeEvent m_standbyBehavior:%d , m_powerState:%d ",m_standbyBehavior,m_powerState);
-    if(m_powerState == WPEFramework::Exchange::IPowerManager::POWER_STATE_ON)
+    if(m_powerState == IARM_BUS_PWRMGR_POWERSTATE_ON)
     {
         m_sleeptime = 1;
         if (m_is_restart_req)
@@ -304,7 +287,7 @@ void XCast::threadPowerModeChangeEvent(void)
             m_is_restart_req = false;
         }
     }
-    else if (m_powerState == WPEFramework::Exchange::IPowerManager::POWER_STATE_STANDBY_DEEP_SLEEP )
+    else if (m_powerState == IARM_BUS_PWRMGR_POWERSTATE_STANDBY_DEEP_SLEEP )
     {
         m_sleeptime = 3;
         m_is_restart_req = true; //After DEEPSLEEP, restart xdial again for next transition.
@@ -312,7 +295,7 @@ void XCast::threadPowerModeChangeEvent(void)
 
     if(m_standbyBehavior == false)
     {
-        if(m_xcastEnable && ( m_powerState == WPEFramework::Exchange::IPowerManager::POWER_STATE_ON))
+        if(m_xcastEnable && ( m_powerState == IARM_BUS_PWRMGR_POWERSTATE_ON))
             m_instance->_xcast->enableCastService(m_friendlyName,true);
         else
             m_instance->_xcast->enableCastService(m_friendlyName,false);
@@ -374,7 +357,7 @@ const string XCast::Initialize(PluginHost::IShell *service)
 
         if(_xcast != nullptr) {
             InitializeIARM();
-            InitializePowerManager(service);
+
             _xcast->Register(&_notification);
             _xcast->Initialize(m_networkStandbyMode);
 
@@ -410,14 +393,6 @@ void XCast::Deinitialize(PluginHost::IShell* service)
         m_SystemPluginObj = nullptr;
     }
 
-    if (_powerManagerPlugin)
-    {
-        _powerManagerPlugin->Unregister(_pwrMgrNotification.baseInterface<Exchange::IPowerManager::INetworkStandbyModeChangedNotification>());
-        _powerManagerPlugin->Unregister(_pwrMgrNotification.baseInterface<Exchange::IPowerManager::IModeChangedNotification>());
-        _powerManagerPlugin.Reset();
-    }
-
-    _registeredEventHandlers = false;
 
     if(_xcast)
     {
@@ -506,7 +481,7 @@ uint32_t XCast::setEnabled(const JsonObject& parameters, JsonObject& response)
         returnResponse(false);
     }
     m_xcastEnable= enabled;
-    if (m_xcastEnable && ( (m_standbyBehavior == true) || ((m_standbyBehavior == false)&&(m_powerState == WPEFramework::Exchange::IPowerManager::POWER_STATE_ON))))
+    if (m_xcastEnable && ( (m_standbyBehavior == true) || ((m_standbyBehavior == false)&&(m_powerState == IARM_BUS_PWRMGR_POWERSTATE_ON))))
     {
         enabled = true;
     }
@@ -578,7 +553,7 @@ uint32_t XCast::setFriendlyName(const JsonObject& parameters, JsonObject& respon
         {
             m_friendlyName = paramStr;
             LOGINFO("XcastService::setFriendlyName  :%s",m_friendlyName.c_str());
-            if (m_xcastEnable && ( (m_standbyBehavior == true) || ((m_standbyBehavior == false)&&(m_powerState == WPEFramework::Exchange::IPowerManager::POWER_STATE_ON))))
+            if (m_xcastEnable && ( (m_standbyBehavior == true) || ((m_standbyBehavior == false)&&(m_powerState == IARM_BUS_PWRMGR_POWERSTATE_ON))))
             {
                 enabledStatus = true;                
             }
@@ -1177,7 +1152,7 @@ uint32_t XCast::registerApplications(const JsonObject& parameters, JsonObject& r
             registerApplicationsInternal(m_appConfigCache);
 
             /*Reenabling cast service after registering Applications*/
-            if (m_xcastEnable && ( (m_standbyBehavior == true) || ((m_standbyBehavior == false)&&(m_powerState == WPEFramework::Exchange::IPowerManager::POWER_STATE_ON)) ) ) {
+            if (m_xcastEnable && ( (m_standbyBehavior == true) || ((m_standbyBehavior == false)&&(m_powerState == IARM_BUS_PWRMGR_POWERSTATE_ON)) ) ) {
                 LOGINFO("Enable CastService  m_xcastEnable: %d m_standbyBehavior: %d m_powerState:%d", m_xcastEnable, m_standbyBehavior, m_powerState);
                 _xcast->enableCastService(m_friendlyName,true);
             }
@@ -1215,7 +1190,7 @@ uint32_t XCast::unregisterApplications(const JsonObject& parameters, JsonObject&
             registerApplicationsInternal (appConfigList);
 
             /*Reenabling cast service after registering Applications*/
-            if (m_xcastEnable && ( (m_standbyBehavior == true) || ((m_standbyBehavior == false)&&(m_powerState == WPEFramework::Exchange::IPowerManager::POWER_STATE_ON)) ) ) {
+            if (m_xcastEnable && ( (m_standbyBehavior == true) || ((m_standbyBehavior == false)&&(m_powerState == IARM_BUS_PWRMGR_POWERSTATE_ON)) ) ) {
                 LOGINFO("Enable CastService  m_xcastEnable: %d m_standbyBehavior: %d m_powerState:%d", m_xcastEnable, m_standbyBehavior, m_powerState);
                 _xcast->enableCastService(m_friendlyName,true);
             }

@@ -74,7 +74,7 @@ using namespace std;
 #define EVT_ON_CLIENT_CONNECTION_ERROR         "onClientConnectionError"
 #define EVT_ON_LAUNCH_REQUEST                  "onLaunchRequest"
 
-static PowerState m_powerState = WPEFramework::Exchange::IPowerManager::POWER_STATE_STANDBY;
+static IARM_Bus_PWRMgr_PowerState_t m_powerState = IARM_BUS_PWRMGR_POWERSTATE_STANDBY;
 static bool m_IsTransitionFromDeepSleep = false;
 static bool m_IsWiFiConnectingState = false;
 
@@ -100,17 +100,15 @@ namespace WPEFramework
 		MiracastService *MiracastService::_instance = nullptr;
 		MiracastController *MiracastService::m_miracast_ctrler_obj = nullptr;
 
-        MiracastService::MiracastService()
-            : PluginHost::JSONRPC(),
-              m_isServiceInitialized(false),
-              m_isServiceEnabled(false),
-              m_eService_state(MIRACAST_SERVICE_STATE_IDLE),
-              _pwrMgrNotification(*this),
-              _registeredEventHandlers(false)
-        {
-            LOGINFO("Entering..!!!");
-            MiracastService::_instance = this;
-            MIRACAST::logger_init("MiracastService");
+		MiracastService::MiracastService()
+			: PluginHost::JSONRPC(),
+			  m_isServiceInitialized(false),
+			  m_isServiceEnabled(false),
+			  m_eService_state(MIRACAST_SERVICE_STATE_IDLE)
+		{
+			LOGINFO("Entering..!!!");
+			MiracastService::_instance = this;
+			MIRACAST::logger_init("MiracastService");
 
             Register(METHOD_MIRACAST_SET_ENABLE, &MiracastService::setEnableWrapper, this);
             Register(METHOD_MIRACAST_GET_ENABLE, &MiracastService::getEnable, this);
@@ -129,11 +127,8 @@ namespace WPEFramework
             m_isTestNotifierEnabled = false;
             Register(METHOD_MIRACAST_TEST_NOTIFIER, &MiracastService::testNotifier, this);
 #endif /* ENABLE_MIRACAST_SERVICE_TEST_NOTIFIER */
-            _engine = Core::ProxyType<RPC::InvokeServerType<1, 0, 4>>::Create();
-            _communicatorClient = Core::ProxyType<RPC::CommunicatorClient>::Create(Core::NodeId("/tmp/communicator"), Core::ProxyType<Core::IIPCServer>(_engine));
-
-            LOGINFO("Exiting..!!!");
-        }
+			LOGINFO("Exiting..!!!");
+		}
 
 		MiracastService::~MiracastService()
 		{
@@ -165,57 +160,51 @@ namespace WPEFramework
 			LOGINFO("Exiting..!!!");
 		}
 
-        const void MiracastService::InitializePowerState()
-        {
-            Core::hresult res = Core::ERROR_GENERAL;
-            PowerState pwrStateCur = WPEFramework::Exchange::IPowerManager::POWER_STATE_UNKNOWN;
-            PowerState pwrStatePrev = WPEFramework::Exchange::IPowerManager::POWER_STATE_UNKNOWN;
+		const void MiracastService::InitializeIARM()
+		{
+			if (Utils::IARM::init())
+			{
+				IARM_Result_t res;
+				IARM_Bus_PWRMgr_GetPowerState_Param_t param;
 
-            ASSERT (_powerManagerPlugin);
-            if (_powerManagerPlugin){
-                res = _powerManagerPlugin->GetPowerState(pwrStateCur, pwrStatePrev);
-                if (Core::ERROR_NONE == res)
-                {
-                    setPowerState(pwrStateCur);
-                    LOGINFO("MiracastService::Current state is (%d) \n",pwrStateCur);
-                }
-            }
-        }
+				IARM_CHECK( IARM_Bus_RegisterEventHandler(IARM_BUS_PWRMGR_NAME,IARM_BUS_PWRMGR_EVENT_MODECHANGED, pwrMgrModeChangeEventHandler) );
+				// get power state:
+				res = IARM_Bus_Call(IARM_BUS_PWRMGR_NAME,
+									IARM_BUS_PWRMGR_API_GetPowerState,
+									(void *)&param,
+									sizeof(param));
+				if(IARM_RESULT_SUCCESS == res )
+				{
+					LOGINFO("MiracastService::Current state is IARM: (%d) \n",param.curState);
+					setPowerState(param.curState);
+				}
+			}
+		}
 
-        void MiracastService::DeinitializeIARM()
-        {
-        }
+		void MiracastService::DeinitializeIARM()
+		{
+			if (Utils::IARM::isConnected())
+			{
+				IARM_Result_t res;
+				IARM_CHECK( IARM_Bus_RemoveEventHandler(IARM_BUS_PWRMGR_NAME,IARM_BUS_PWRMGR_EVENT_MODECHANGED, pwrMgrModeChangeEventHandler) );
+			}
+		}
 
-        void MiracastService::InitializePowerManager(PluginHost::IShell *service)
-        {
-            _powerManagerPlugin = PowerManagerInterfaceBuilder(_T("org.rdk.PowerManager"))
-                                      .withIShell(service)
-                                      .withRetryIntervalMS(200)
-                                      .withRetryCount(25)
-                                      .createInterface();
-            registerEventHandlers();
-        }
-
-        void MiracastService::registerEventHandlers()
-        {
-            ASSERT (_powerManagerPlugin);
-
-            if(!_registeredEventHandlers && _powerManagerPlugin) {
-                _registeredEventHandlers = true;
-                _powerManagerPlugin->Register(_pwrMgrNotification.baseInterface<Exchange::IPowerManager::IModeChangedNotification>());
-            }
-        }
-
-
-		void MiracastService:: onPowerModeChanged(const PowerState currentState, const PowerState newState)
+		void MiracastService::pwrMgrModeChangeEventHandler(const char *owner, IARM_EventId_t eventId, void *data, size_t len)
 		{
 			if (nullptr == _instance)
 			{
 				LOGERR("#### MCAST-TRIAGE-NOK-PWR Miracast Service not enabled yet ####");
 				return;
 			}
-			lock_guard<mutex> lck(_instance->m_DiscoveryStateMutex);
-			_instance->setPowerState(newState);
+
+			if ((0 == strcmp(owner, IARM_BUS_PWRMGR_NAME)) && (IARM_BUS_PWRMGR_EVENT_MODECHANGED == eventId ))
+			{
+				IARM_Bus_PWRMgr_EventData_t *param = (IARM_Bus_PWRMgr_EventData_t *)data;
+
+				lock_guard<mutex> lck(_instance->m_DiscoveryStateMutex);
+				_instance->setPowerState(param->data.state.newState);
+			}
 		}
 
 		// Thunder plugins communication
@@ -288,8 +277,7 @@ namespace WPEFramework
 			{
 				MiracastError ret_code = MIRACAST_OK;
 
-                InitializePowerManager(service);
-                InitializePowerState();
+				InitializeIARM();
 		
 				m_miracast_ctrler_obj = MiracastController::getInstance(ret_code, this,p2p_ctrl_iface);
 				if (nullptr != m_miracast_ctrler_obj)
@@ -360,10 +348,6 @@ namespace WPEFramework
 
             MIRACASTLOG_INFO("Entering..!!!");
 
-            if (_powerManagerPlugin) {
-                _powerManagerPlugin->Unregister(_pwrMgrNotification.baseInterface<Exchange::IPowerManager::IModeChangedNotification>());
-                _powerManagerPlugin.Reset();
-            }
             if (m_WiFiPluginObj)
             {
                 m_WiFiPluginObj->Unsubscribe(1000, _T("onWIFIStateChanged"));
@@ -389,7 +373,6 @@ namespace WPEFramework
                 _engine.Release();
             }
 
-            _registeredEventHandlers = false;
 
             if (m_isServiceInitialized) {
                 MiracastController::destroyInstance();
@@ -1333,7 +1316,7 @@ namespace WPEFramework
 			if (parameters.HasLabel("state"))
 			{
 				powerState = parameters["state"].Number();
-				setPowerState(getPowerManagerPluginPowerState(powerState));
+				setPowerState(static_cast<IARM_Bus_PWRMgr_PowerState_t>(powerState));
 			}
 			returnResponse(true);
 		}
@@ -1533,44 +1516,57 @@ namespace WPEFramework
 			MIRACASTLOG_INFO("changing state [%#08X] -> [%#08X]",old_state,new_state);
 		}
 
-        std::string MiracastService::getPowerStateString(PowerState pwrState)
-        {
-            std::string pwrStateStr = "";
+		std::string MiracastService::getPowerStateString(IARM_Bus_PWRMgr_PowerState_t pwrState)
+		{
+			std::string	pwrStateStr = "";
 
-            switch (pwrState) 
-            {
-                case WPEFramework::Exchange::IPowerManager::POWER_STATE_ON: pwrStateStr = "ON"; break;
-                case WPEFramework::Exchange::IPowerManager::POWER_STATE_OFF: pwrStateStr = "OFF"; break;
-                case WPEFramework::Exchange::IPowerManager::POWER_STATE_STANDBY: pwrStateStr = "LIGHT_SLEEP"; break;
-                case WPEFramework::Exchange::IPowerManager::POWER_STATE_STANDBY_LIGHT_SLEEP: pwrStateStr = "LIGHT_SLEEP"; break;
-                case WPEFramework::Exchange::IPowerManager::POWER_STATE_STANDBY_DEEP_SLEEP: pwrStateStr = "DEEP_SLEEP"; break;
-                default: pwrStateStr = "UNKNOWN"; break;
-            }
-            return pwrStateStr;
-        }
+			switch (pwrState)
+			{
+				case IARM_BUS_PWRMGR_POWERSTATE_ON:
+				{
+					pwrStateStr = "ON";
+				}
+				break;
+				case IARM_BUS_PWRMGR_POWERSTATE_OFF:
+				{
+					pwrStateStr = "OFF";
+				}
+				break;
+				case IARM_BUS_PWRMGR_POWERSTATE_STANDBY:
+				case IARM_BUS_PWRMGR_POWERSTATE_STANDBY_LIGHT_SLEEP:
+				{
+					pwrStateStr = "LIGHT_SLEEP";
+				}
+				break;
+				case IARM_BUS_PWRMGR_POWERSTATE_STANDBY_DEEP_SLEEP:
+				{
+					pwrStateStr = "DEEP_SLEEP";
+				}
+				break;
+				default:
+				{
+					pwrStateStr = "UNKNOWN";
+				}
+				break;
+			}
+			return pwrStateStr;
+		}
 
-        PowerState MiracastService::getPowerManagerPluginPowerState(uint32_t powerState)
-        {
-            PowerState ret_power_state = (PowerState)powerState++;
-            return ret_power_state;
-        }
-
-
-		PowerState MiracastService::getCurrentPowerState(void)
+		IARM_Bus_PWRMgr_PowerState_t MiracastService::getCurrentPowerState(void)
 		{
 			MIRACASTLOG_INFO("current power state [%s]",getPowerStateString(m_powerState).c_str());
 			return m_powerState;
 		}
 
-		void MiracastService::setPowerState(PowerState pwrState)
+		void MiracastService::setPowerState(IARM_Bus_PWRMgr_PowerState_t pwrState)
 		{
-			PowerState old_pwr_state = m_powerState,
+			IARM_Bus_PWRMgr_PowerState_t old_pwr_state = m_powerState,
 										 new_pwr_state = pwrState;
 			m_powerState = pwrState;
 			MIRACASTLOG_INFO("changing power state [%s] -> [%s]",
 								getPowerStateString(old_pwr_state).c_str(),
 								getPowerStateString(new_pwr_state).c_str());
-			if (WPEFramework::Exchange::IPowerManager::POWER_STATE_ON == pwrState)
+			if (IARM_BUS_PWRMGR_POWERSTATE_ON == pwrState)
 			{
 				lock_guard<recursive_mutex> lock(_instance->m_EventMutex);
 				if ((m_IsTransitionFromDeepSleep) && (_instance->m_isServiceEnabled))
@@ -1584,7 +1580,7 @@ namespace WPEFramework
 					LOGINFO("#### MCAST-TRIAGE-OK-PWR Miracast discovery already Disabled [%d]. No need to enable it",_instance->m_isServiceEnabled);
 				}
 			}
-			else if (WPEFramework::Exchange::IPowerManager::POWER_STATE_STANDBY_DEEP_SLEEP == pwrState)
+			else if (IARM_BUS_PWRMGR_POWERSTATE_STANDBY_DEEP_SLEEP == pwrState)
 			{
 				lock_guard<recursive_mutex> lock(_instance->m_EventMutex);
 				if ( _instance->m_isServiceEnabled )
