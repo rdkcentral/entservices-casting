@@ -136,10 +136,6 @@ namespace Plugin {
         };
 
     private:
-
-        private:
-            XCast& _parent;
-        };
         // We do not allow this plugin to be copied !!
         XCast(const XCast&) = delete;
         XCast& operator=(const XCast&) = delete;

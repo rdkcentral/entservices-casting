@@ -673,7 +673,7 @@ void XCast::onFriendlyNameUpdateHandler(const JsonObject& parameters)
             {
                 bool enabledStatus = false;
                 LOGWARN("Failed to create the timer. Setting friendlyName immediately");
-                if (m_xcastEnable && ( (m_standbyBehavior == true) || ((m_standbyBehavior == false)&&(m_powerState == WPEFramework::Exchange::IPowerManager::POWER_STATE_ON))))
+                if (m_xcastEnable && ( (m_standbyBehavior == true) || ((m_standbyBehavior == false)&&(m_powerState == IARM_BUS_PWRMGR_POWERSTATE_ON))))
                 {
                     enabledStatus = true;
                 }
@@ -839,7 +839,7 @@ gboolean XCast::update_friendly_name_timercallback(gpointer userdata)
     XCast *self = (XCast *)userdata;
     bool enabledStatus = false;
 
-    if (m_xcastEnable && ( (m_standbyBehavior == true) || ((m_standbyBehavior == false)&&(m_powerState == WPEFramework::Exchange::IPowerManager::POWER_STATE_ON))))
+    if (m_xcastEnable && ( (m_standbyBehavior == true) || ((m_standbyBehavior == false)&&(m_powerState == IARM_BUS_PWRMGR_POWERSTATE_ON))))
     {
         enabledStatus = true;
     }
