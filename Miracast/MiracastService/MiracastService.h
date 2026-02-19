@@ -25,13 +25,7 @@
 #include "Module.h"
 #include <MiracastController.h>
 #include "libIARM.h"
-#include <interfaces/IPowerManager.h>
-#include "PowerManagerInterface.h"
-
-
-using namespace WPEFramework;
-using PowerState = WPEFramework::Exchange::IPowerManager::PowerState;
-using ThermalTemperature = WPEFramework::Exchange::IPowerManager::ThermalTemperature;
+#include "pwrMgr.h"
 
 typedef enum DeviceWiFiStates{
 	DEVICE_WIFI_STATE_UNINSTALLED = 0,
@@ -98,8 +92,6 @@ namespace WPEFramework
             virtual void onMiracastServiceClientConnectionError(string client_mac, string client_name , eMIRACAST_SERVICE_ERR_CODE error_code ) override;
             virtual void onMiracastServiceLaunchRequest(string src_dev_ip, string src_dev_mac, string src_dev_name, string sink_dev_ip, bool is_connect_req_reported ) override;
             virtual void onStateChange(eMIRA_SERVICE_STATES state ) override;
-            void onPowerModeChanged(const PowerState currentState, const PowerState newState);
-            void registerEventHandlers();
 
             BEGIN_INTERFACE_MAP(MiracastService)
             INTERFACE_ENTRY(PluginHost::IPlugin)
@@ -111,38 +103,6 @@ namespace WPEFramework
             static MiracastController *m_miracast_ctrler_obj;
 
         private:
-            class PowerManagerNotification : public Exchange::IPowerManager::IModeChangedNotification {
-            private:
-                PowerManagerNotification(const PowerManagerNotification&) = delete;
-                PowerManagerNotification& operator=(const PowerManagerNotification&) = delete;
-            
-            public:
-                explicit PowerManagerNotification(MiracastService& parent)
-                    : _parent(parent)
-                {
-                }
-                ~PowerManagerNotification() override = default;
-            
-            public:
-                void OnPowerModeChanged(const PowerState currentState, const PowerState newState) override
-                {
-                    _parent.onPowerModeChanged(currentState, newState);
-                }
-
-                template <typename T>
-                T* baseInterface()
-                {
-                    static_assert(std::is_base_of<T, PowerManagerNotification>(), "base type mismatch");
-                    return static_cast<T*>(this);
-                }
-
-                BEGIN_INTERFACE_MAP(PowerManagerNotification)
-                INTERFACE_ENTRY(Exchange::IPowerManager::IModeChangedNotification)
-                END_INTERFACE_MAP
-            
-            private:
-                MiracastService& _parent;
-            };
             bool m_isServiceInitialized;
             bool m_isServiceEnabled;
             std::mutex m_DiscoveryStateMutex;
@@ -155,11 +115,6 @@ namespace WPEFramework
             std::string m_src_dev_mac;
             std::string m_src_dev_name;
             std::string m_sink_dev_ip;
-            Core::ProxyType<RPC::InvokeServerType<1, 0, 4> > _engine;
-            Core::ProxyType<RPC::CommunicatorClient> _communicatorClient;
-            PowerManagerInterfaceRef _powerManagerPlugin;
-            Core::Sink<PowerManagerNotification> _pwrMgrNotification;
-            bool _registeredEventHandlers;
             WPEFramework::JSONRPC::LinkType<WPEFramework::Core::JSON::IElement> *m_SystemPluginObj = NULL;
             WPEFramework::JSONRPC::LinkType<WPEFramework::Core::JSON::IElement> *m_WiFiPluginObj = NULL;
             uint32_t setEnableWrapper(const JsonObject &parameters, JsonObject &response);
@@ -189,14 +144,14 @@ namespace WPEFramework
             bool envGetValue(const char *key, std::string &value);
             eMIRA_SERVICE_STATES getCurrentServiceState(void);
             void changeServiceState(eMIRA_SERVICE_STATES eService_state);
-            PowerState getCurrentPowerState(void);
-            void setPowerState(PowerState pwrState);
-            std::string getPowerStateString(PowerState pwrState);
-            PowerState getPowerManagerPluginPowerState(uint32_t powerState);
+            IARM_Bus_PWRMgr_PowerState_t getCurrentPowerState(void);
+            void setPowerState(IARM_Bus_PWRMgr_PowerState_t pwrState);
+            std::string getPowerStateString(IARM_Bus_PWRMgr_PowerState_t pwrState);
             void setEnable(bool isEnabled);
-            void InitializePowerManager(PluginHost::IShell *service);
-            const void InitializePowerState();
+
+            const void InitializeIARM();
             void DeinitializeIARM();
+            static void pwrMgrModeChangeEventHandler(const char *owner, IARM_EventId_t eventId, void *data, size_t len);
 
             // We do not allow this plugin to be copied !!
             MiracastService(const MiracastService &) = delete;

@@ -38,17 +38,12 @@
 #include "tptimer.h"
 #include "libIBus.h"
 #include "libIBusDaemon.h"
+#include "pwrMgr.h"
 #include "XCastCommon.h"
 #include <mutex>
 #include <map>
 #include <glib.h>
 #include "UtilsLogging.h"
-#include <interfaces/IPowerManager.h>
-#include "PowerManagerInterface.h"
-
-using namespace WPEFramework::Exchange;
-using PowerState = WPEFramework::Exchange::IPowerManager::PowerState;
-using ThermalTemperature = WPEFramework::Exchange::IPowerManager::ThermalTemperature;
 
 namespace WPEFramework {
 namespace Plugin {
@@ -62,9 +57,6 @@ namespace Plugin {
 
         XCast();
         virtual ~XCast();
-        void registerEventHandlers();
-        void onPowerModeChanged(const PowerState currentState, const PowerState newState);
-        void onNetworkStandbyModeChanged(const bool enabled);
         virtual const string Initialize(PluginHost::IShell* service) override;
         virtual void Deinitialize(PluginHost::IShell* service) override;
         virtual string Information() const override { return {}; }
@@ -144,45 +136,6 @@ namespace Plugin {
         };
 
     private:
-        class PowerManagerNotification : public Exchange::IPowerManager::INetworkStandbyModeChangedNotification,
-                                                     public Exchange::IPowerManager::IModeChangedNotification {
-        private:
-            PowerManagerNotification(const PowerManagerNotification&) = delete;
-            PowerManagerNotification& operator=(const PowerManagerNotification&) = delete;
-
-        public:
-            explicit PowerManagerNotification(XCast& parent)
-                : _parent(parent)
-            {
-            }
-            ~PowerManagerNotification() override = default;
-
-        public:
-            void OnPowerModeChanged(const PowerState currentState, const PowerState newState) override
-            {
-                _parent.onPowerModeChanged(currentState, newState);
-            }
-
-            void OnNetworkStandbyModeChanged(const bool enabled)
-            {
-                _parent.onNetworkStandbyModeChanged(enabled);
-            }
-
-            template <typename T>
-            T* baseInterface()
-            {
-                static_assert(std::is_base_of<T, PowerManagerNotification>(), "base type mismatch");
-                return static_cast<T*>(this);
-            }
-
-            BEGIN_INTERFACE_MAP(PowerManagerNotification)
-            INTERFACE_ENTRY(Exchange::IPowerManager::INetworkStandbyModeChangedNotification)
-            INTERFACE_ENTRY(Exchange::IPowerManager::IModeChangedNotification)
-            END_INTERFACE_MAP
-
-        private:
-            XCast& _parent;
-        };
         // We do not allow this plugin to be copied !!
         XCast(const XCast&) = delete;
         XCast& operator=(const XCast&) = delete;
@@ -214,7 +167,7 @@ namespace Plugin {
          * Whether Cast service is enabled by RFC
          */
         static bool m_xcastEnable;
-        static WPEFramework::Exchange::IPowerManager::PowerState m_powerState;
+        static IARM_Bus_PWRMgr_PowerState_t m_powerState;
         static bool m_networkStandbyMode;
         bool m_isDynamicRegistrationsRequired;
         std::mutex m_appConfigMutex;
@@ -225,10 +178,6 @@ namespace Plugin {
         guint m_FriendlyNameUpdateTimerID{0};
         //Timer related variables and functions
         TpTimer m_locateCastTimer;
-        PowerManagerInterfaceRef _powerManagerPlugin;
-        Core::Sink<PowerManagerNotification> _pwrMgrNotification;
-        bool _registeredEventHandlers;
-        void InitializePowerManager(PluginHost::IShell *service);
         void InitializeIARM();
         void DeinitializeIARM();
         //Internal methods
@@ -248,7 +197,9 @@ namespace Plugin {
         /**
          * Check whether the xdial service is allowed in this device.
          */
+        static void powerModeChange(const char *owner, IARM_EventId_t eventId, void *data, size_t len);
         static void threadPowerModeChangeEvent(void);
+        static void networkStandbyModeChange(const char *owner, IARM_EventId_t eventId, void *data, size_t len);
         static void networkStandbyModeChangeEvent(void);
     private:
         static XCast *m_instance;
