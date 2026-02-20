@@ -214,12 +214,15 @@ jobs:
           path: entservices-apis
           ref: ${{env.INTERFACES_REF}}
           #token : ${{ secrets.RDKCM_RDKE }}
-          run: rm -rf $GITHUB_WORKSPACE/entservices-apis/jsonrpc/DTV.json
+
+      - name: Remove DTV.json
+        run: rm -rf $GITHUB_WORKSPACE/entservices-apis/jsonrpc/DTV.json
 
       - name: Copy INetworkManager interface header
         run: |
           mkdir -p "$GITHUB_WORKSPACE/install/usr/include/WPEFramework/interfaces"
           cp "$GITHUB_WORKSPACE/networkmanager/interface/INetworkManager.h" "$GITHUB_WORKSPACE/install/usr/include/WPEFramework/interfaces/"
+          cp "$GITHUB_WORKSPACE/networkmanager/interface/INetworkManager.h" "$GITHUB_WORKSPACE/entservices-apis/apis/"
 
       - name: Build entservices-apis
         run: >
