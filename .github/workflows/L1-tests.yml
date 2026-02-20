@@ -146,7 +146,7 @@ jobs:
         with:
           repository: rdkcentral/entservices-casting
           path: entservices-casting
-          ref: feature/workflowtest_L1-L2
+          ref: develop
 
       - name: Checkout googletest
         if: steps.cache.outputs.cache-hit != 'true'
