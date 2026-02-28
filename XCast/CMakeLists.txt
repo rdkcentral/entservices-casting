@@ -26,21 +26,13 @@ set(PLUGIN_XCAST_MODE "Local" CACHE STRING "Controls if the plugin should run in
 find_package(${NAMESPACE}Plugins REQUIRED)
 find_package(RFC)
 find_package(GLIB REQUIRED)
-find_package(WPEFrameworkSecurityUtil)
 find_package(${NAMESPACE}Definitions REQUIRED)
-if(NOT WPEFRAMEWORK_SECURITYUTIL_FOUND)
-    add_definitions(-DSECURITY_TOKEN_ENABLED=0)
-endif()
 
 find_library(GLIB_LIBRARY NAMES glib-2.0)
 
 find_library(XDIAL_LIBRARIES NAMES gdial-server)
 
-if (USE_THUNDER_R4)
-    find_package(${NAMESPACE}COM REQUIRED)
-else ()
-    find_package(${NAMESPACE}Protocols REQUIRED)
-endif (USE_THUNDER_R4)
+find_package(${NAMESPACE}COM REQUIRED)
 
 add_library(${MODULE_NAME} SHARED
         XCast.cpp
@@ -74,16 +66,12 @@ set_target_properties(${PLUGIN_IMPLEMENTATION} PROPERTIES
         CXX_STANDARD_REQUIRED YES)	
 		
 
-if (USE_THUNDER_R4)
 target_link_libraries(${PLUGIN_IMPLEMENTATION} PRIVATE ${NAMESPACE}COM::${NAMESPACE}COM)
-else ()
-target_link_libraries(${PLUGIN_IMPLEMENTATION} PRIVATE ${NAMESPACE}Protocols::${NAMESPACE}Protocols)
-endif (USE_THUNDER_R4)
 
 
 find_package(IARMBus)
 find_package(CEC)
-find_library(NMPROXY_LIB NAMES ${NAMESPACE}NetworkManagerProxy PATHS ${CMAKE_SYSROOT}/usr/lib/wpeframework/proxystubs)
+find_library(NMPROXY_LIB NAMES ${NAMESPACE}NetworkManagerProxy PATHS ${CMAKE_SYSROOT}/usr/lib/${STORAGE_DIRECTORY}/proxystubs)
 
 if (RDK_SERVICE_L2_TEST)
     message ("L2 test Enabled")
