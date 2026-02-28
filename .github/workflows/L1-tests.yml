@@ -335,6 +335,9 @@ jobs:
           &&
           cmake --install build/googletest
 
+      - name: Install GDB
+        run: sudo apt-get update && sudo apt-get install -y gdb
+    
       - name: Build mocks
         run: >
           cmake
@@ -654,7 +657,20 @@ jobs:
           RdkServicesL1Test &&
           cp -rf $(pwd)/rdkL1TestResults.json $GITHUB_WORKSPACE/rdkL1TestResultsWithValgrind.json &&
           rm -rf $(pwd)/rdkL1TestResults.json
+          &&
+          gdb -batch \
+          -ex "file RdkServicesL1Test" \
+          -ex "run" \
+          -ex "bt" \
+          -ex "quit" \
+          > gdb_output.txt || true
 
+      - name: Upload GDB Output
+        uses: actions/upload-artifact@v4
+        with:
+          name: gdb-log
+          path: gdb_output.txt
+      
       - name: Generate coverage
         if: ${{ matrix.coverage == 'with-coverage' && !env.ACT }}
         run: >
