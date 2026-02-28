@@ -124,7 +124,7 @@ jobs:
         with:
           repository: rdkcentral/entservices-testframework
           path: entservices-testframework
-          ref: develop
+          ref: L2TestPlugin_COMRPC
           token: ${{ secrets.RDKCM_RDKE }}
 
       - name: Checkout networkmanager
@@ -147,7 +147,7 @@ jobs:
         with:
           repository: rdkcentral/entservices-casting
           path: entservices-casting
-          ref: develop
+          ref: L2TestPlugin_COMRPC
 
       - name: Checkout googletest
         if: steps.cache.outputs.cache-hit != 'true'
