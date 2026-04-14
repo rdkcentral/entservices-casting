@@ -76,7 +76,7 @@ namespace WPEFramework
             MIRACASTLOG_TRACE("Entering ...");
             ASSERT(nullptr != notification);
 
-            MIRACASTLOG_INFO("Register notification: %p", notification);
+            MIRACASTLOG_INFO("Register notification: %p");
             _adminLock.Lock();
 
             // Make sure we can't register the same notification callback multiple times
