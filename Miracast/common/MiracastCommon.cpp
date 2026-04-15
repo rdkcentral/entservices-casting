@@ -22,7 +22,7 @@
 MiracastThread::MiracastThread(std::string thread_name, size_t stack_size, size_t msg_size, size_t queue_depth, void (*callback)(void *), void *user_data)
 {
     MIRACASTLOG_TRACE("Entering...");
-    m_thread_name = thread_name;
+    m_thread_name = std::move(thread_name);
 
     m_thread_stacksize = stack_size;
     m_thread_message_size = msg_size;
@@ -257,8 +257,11 @@ bool MiracastCommon::execute_PopenCommand( const char* popen_command, const char
         }
         pclose(popen_pipe_ptr);
         popen_pipe_ptr = nullptr;
-        free(current_line_buffer);
-        current_line_buffer = nullptr;
+        if (current_line_buffer != nullptr)
+		{
+			free(current_line_buffer);
+			current_line_buffer = nullptr;
+		}
         popen_buffer = buffer;
         REMOVE_R(popen_buffer);
         REMOVE_N(popen_buffer);
@@ -313,7 +316,7 @@ MessageQueue::~MessageQueue(void)
         userParam = m_internalQueue.front();
         if (nullptr != m_free_resource_cb)
         {
-            MIRACASTLOG_TRACE("dtor asked to free [%x]", userParam);
+            MIRACASTLOG_TRACE("dtor asked to free [%p]", userParam);
             m_free_resource_cb(userParam);
         }
         m_internalQueue.pop();
@@ -381,7 +384,7 @@ void MessageQueue::ReceiveData(void*& value,int wait_time_ms)
     value = m_internalQueue.front();
     m_internalQueue.pop();
     m_currentMsgCount--;
-    MIRACASTLOG_TRACE("[ReceiveData] data at address: %x", value);
+    MIRACASTLOG_TRACE("[ReceiveData] data at address: %p", value);
     // Notify producer that space is available
     m_condNotFull.notify_one();
     MIRACASTLOG_TRACE("Exiting...");

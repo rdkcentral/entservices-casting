@@ -1,5 +1,6 @@
 #!/bin/bash
 set -x
+set -e
 ##############################
 GITHUB_WORKSPACE="${PWD}"
 ls -la ${GITHUB_WORKSPACE}
@@ -26,20 +27,22 @@ cd ..
 # Clone the required repositories
 
 
-git clone --branch  R4.4.3 https://github.com/rdkcentral/ThunderTools.git
+git clone --branch R4.4.3 https://github.com/rdkcentral/ThunderTools.git
 
 git clone --branch R4.4.1 https://github.com/rdkcentral/Thunder.git
 
-git clone --branch main https://github.com/rdkcentral/entservices-apis.git
+git clone --branch develop https://github.com/rdkcentral/entservices-apis.git
 
-git clone https://$GITHUB_TOKEN@github.com/rdkcentral/entservices-testframework.git
+git clone --branch develop https://$GITHUB_TOKEN@github.com/rdkcentral/entservices-testframework.git
+
+git clone --branch main https://github.com/rdkcentral/networkmanager.git
 
 ############################
 # Build Thunder-Tools
 echo "======================================================================================"
 echo "buliding thunderTools"
 cd ThunderTools
-patch -p1 < $GITHUB_WORKSPACE/entservices-testframework/Tests/L1Tests/patches/00010-R4.4-Add-support-for-project-dir.patch
+patch -p1 < $GITHUB_WORKSPACE/entservices-testframework/patches/00010-R4.4-Add-support-for-project-dir.patch
 cd -
 
 
@@ -58,10 +61,10 @@ echo "==========================================================================
 echo "buliding thunder"
 
 cd Thunder
-patch -p1 < $GITHUB_WORKSPACE/entservices-testframework/Tests/L2Tests/patches/Use_Legact_Alt_Based_On_ThunderTools_R4.4.3.patch
-patch -p1 < $GITHUB_WORKSPACE/entservices-testframework/Tests/L2Tests/patches/error_code_R4_4.patch
-patch -p1 < $GITHUB_WORKSPACE/entservices-testframework/Tests/L1Tests/patches/1004-Add-support-for-project-dir.patch
-patch -p1 < $GITHUB_WORKSPACE/entservices-testframework/Tests/L1Tests/patches/RDKEMW-733-Add-ENTOS-IDS.patch
+patch -p1 < $GITHUB_WORKSPACE/entservices-testframework/patches/Use_Legact_Alt_Based_On_ThunderTools_R4.4.3.patch
+patch -p1 < $GITHUB_WORKSPACE/entservices-testframework/patches/error_code_R4_4.patch
+patch -p1 < $GITHUB_WORKSPACE/entservices-testframework/patches/1004-Add-support-for-project-dir.patch
+patch -p1 < $GITHUB_WORKSPACE/entservices-testframework/patches/RDKEMW-733-Add-ENTOS-IDS.patch
 cd -
 
 cmake -G Ninja -S Thunder -B build/Thunder \
@@ -139,7 +142,6 @@ touch rdk/iarmbus/libIBus.h
 touch rdk/iarmbus/libIBusDaemon.h
 touch rdk/iarmmgrs-hal/deepSleepMgr.h
 touch rdk/iarmmgrs-hal/mfrMgr.h
-touch rdk/iarmmgrs-hal/pwrMgr.h
 touch rdk/iarmmgrs-hal/sysMgr.h
 touch network/wifiSrvMgrIarmIf.h
 touch network/netsrvmgrIarm.h
@@ -149,6 +151,7 @@ touch rbus.h
 touch telemetry_busmessage_sender.h
 touch maintenanceMGR.h
 touch pkg.h
+touch edid-parser.hpp
 touch secure_wrapper.h
 touch wpa_ctrl.h
 touch btmgr.h
@@ -160,5 +163,6 @@ echo "==========================================================================
 
 cd ../../
 cp -r /usr/include/gstreamer-1.0/gst /usr/include/glib-2.0/* /usr/lib/x86_64-linux-gnu/glib-2.0/include/* /usr/local/include/trower-base64/base64.h .
+cp -v $GITHUB_WORKSPACE/networkmanager/interface/INetworkManager.h $GITHUB_WORKSPACE/install/usr/include/WPEFramework/interfaces/
 
 ls -la ${GITHUB_WORKSPACE}

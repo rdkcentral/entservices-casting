@@ -30,6 +30,7 @@
 #include "MiracastGstPlayer.h"
 
 MiracastGstPlayer *MiracastGstPlayer::m_GstPlayer{nullptr};
+static bool m_playbackThreadLoop = true;
 
 MiracastGstPlayer *MiracastGstPlayer::getInstance()
 {
@@ -54,6 +55,7 @@ void MiracastGstPlayer::destroyInstance()
 
 MiracastGstPlayer::MiracastGstPlayer()
 {
+    gst_init(nullptr, nullptr);
 }
 
 MiracastGstPlayer::~MiracastGstPlayer()
@@ -74,7 +76,20 @@ bool MiracastGstPlayer::launch(std::string& localip , std::string& streaming_por
 	if ( nullptr != rtsp_instance )
 	{
 		m_rtsp_reference_instance = rtsp_instance;
-		this->onFirstVideoFrameCallback(nullptr,0,0,this);
+        m_customQueueHandle = new MessageQueue(10,gstBufferReleaseCallback);
+        if (nullptr == m_customQueueHandle)
+        {
+            MIRACASTLOG_ERROR("Failed to create MessageQueue");
+            return false;
+        }
+        if (0 != pthread_create(&m_playback_thread, nullptr, MiracastGstPlayer::playbackThread, this))
+        {
+            MIRACASTLOG_ERROR("Failed to create playback thread");
+        }
+        if (0 != pthread_create(&m_pushbuffer_handler_tid, nullptr, MiracastGstPlayer::pushbuffer_handler_thread, this))
+        {
+            MIRACASTLOG_ERROR("Failed to create push buffer handler thread");
+        }
 	}
 	return true;
 }
@@ -91,8 +106,32 @@ bool MiracastGstPlayer::resume()
 
 bool MiracastGstPlayer::stop()
 {
-	destroyInstance();
-	return true;
+    m_pushBufferLoop = false;
+
+    if (m_customQueueHandle)
+    {
+        MIRACASTLOG_INFO("detaching MsgQ");
+        m_customQueueHandle->detachQueue();
+
+        if(m_pushbuffer_handler_tid)
+        {
+            pthread_join(m_pushbuffer_handler_tid,nullptr);
+            m_pushbuffer_handler_tid = 0;
+        }
+    }
+    if (m_playback_thread)
+    {
+        m_playbackThreadLoop = false;
+        pthread_join(m_playback_thread,nullptr);
+    }
+    if (m_customQueueHandle)
+    {
+        MIRACASTLOG_INFO("Flushing MsgQ");
+        delete m_customQueueHandle;
+        m_customQueueHandle = nullptr;
+    }
+    destroyInstance();
+    return true;
 }
 
 void MiracastGstPlayer::onFirstVideoFrameCallback(GstElement* object, guint arg0, gpointer arg1,gpointer userdata)
@@ -105,7 +144,7 @@ void MiracastGstPlayer::onFirstVideoFrameCallback(GstElement* object, guint arg0
 	MIRACASTLOG_TRACE("Exiting..!!!");
 }
 
-void MiracastGstPlayer::notifyPlaybackState(eMIRA_GSTPLAYER_STATES gst_player_state, eM_PLAYER_REASON_CODE state_reason_code )
+void MiracastGstPlayer::notifyPlaybackState(eMIRA_GSTPLAYER_STATES gst_player_state, MiracastPlayerReasonCode state_reason_code )
 {
 	MIRACASTLOG_TRACE("Entering..!!!");
 	if ( nullptr != m_rtsp_reference_instance )
@@ -119,4 +158,86 @@ void MiracastGstPlayer::notifyPlaybackState(eMIRA_GSTPLAYER_STATES gst_player_st
 		m_rtsp_reference_instance->send_msgto_rtsp_msg_hdler_thread(rtsp_hldr_msgq_data);
 	}
 	MIRACASTLOG_TRACE("Exiting..!!!");
+}
+
+void MiracastGstPlayer::update_rtsp_capability_completion_status(bool state)
+{
+    MIRACASTLOG_TRACE("Entering..!!!");
+    if (true == state)
+    {
+        MIRACASTLOG_INFO("RTSP Capability Status completed successfully");
+        this->onFirstVideoFrameCallback(nullptr,0,0,this);
+    }
+    MIRACASTLOG_TRACE("Exiting..!!!");
+}
+
+void MiracastGstPlayer::gstBufferReleaseCallback(void* userParam)
+{
+    GstBuffer *gstBuffer;
+    gstBuffer = static_cast<GstBuffer*>(userParam);
+
+    if (nullptr != gstBuffer)
+    {
+        MIRACASTLOG_INFO("gstBuffer[%p]", static_cast<void*>(gstBuffer));
+        gst_buffer_unref(gstBuffer);
+        gstBuffer = nullptr;
+    }
+}
+
+void *MiracastGstPlayer::playbackThread(void *ctx)
+{
+    MiracastGstPlayer *self = (MiracastGstPlayer *)ctx;
+    MIRACASTLOG_TRACE("Entering..!!!");
+    GstBuffer *new_buffer = nullptr;
+    while (self && m_playbackThreadLoop )
+    {
+        usleep(50);
+        if (self->m_customQueueHandle)
+        {
+            new_buffer = gst_buffer_new_allocate(NULL, 128, NULL);
+            if (new_buffer)
+            {
+                MIRACASTLOG_INFO("new_buffer[%p]", static_cast<void*>(new_buffer));
+                self->m_customQueueHandle->sendData(static_cast<void*>(new_buffer));
+            }
+            else
+            {
+                MIRACASTLOG_ERROR("Failed to create new GstBuffer");
+            }
+        }
+    }
+    MIRACASTLOG_TRACE("Exiting..!!!");
+    pthread_exit(nullptr);
+}
+
+void* MiracastGstPlayer::pushbuffer_handler_thread(void *ctx)
+{
+    MiracastGstPlayer *self = (MiracastGstPlayer *)ctx;
+    MIRACASTLOG_TRACE("Entering..!!!");
+    void* buffer = nullptr;
+    GstBuffer *gstBuffer = nullptr;
+    if (self)
+    {
+        self->m_pushBufferLoop = true;
+    }
+    while (self && (self->m_pushBufferLoop))
+    {
+        usleep(50);
+        buffer = nullptr;
+        self->m_customQueueHandle->ReceiveData(buffer);
+
+        if (nullptr != buffer)
+        {
+            gstBuffer = static_cast<GstBuffer*>(buffer);
+            MIRACASTLOG_INFO("Received buffer [%p]", static_cast<void*>(gstBuffer));
+            gst_buffer_unref(gstBuffer);
+            gstBuffer = nullptr;
+        }
+        else
+        {
+            MIRACASTLOG_ERROR("Received buffer is NULL");
+        }
+    }
+    MIRACASTLOG_TRACE("Exiting..!!!");
+    pthread_exit(nullptr);
 }
