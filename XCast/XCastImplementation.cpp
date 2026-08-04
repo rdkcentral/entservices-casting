@@ -79,7 +79,6 @@ namespace WPEFramework
         : _service(nullptr),
         _pwrMgrNotification(*this),
         _registeredPowerEventHandlers(false),
-        _registeredNMEventHandlers(false),
         _networkManagerPlugin(nullptr),
         _adminLock(),
         _networkManagerNotification(*this)
@@ -388,22 +387,19 @@ namespace WPEFramework
                 if (Core::ERROR_NONE == _networkManagerPlugin->Register(&_networkManagerNotification))
                 {
                     LOGINFO("INetworkManager::Register event registered");
-                    _registeredNMEventHandlers = true;
                 }
                 else
                 {
                     LOGERR("Failed to register INetworkManager::Register event");
-                    _registeredNMEventHandlers = false;
                 }
             }
         }
         void XCastImplementation::unregisterNetworkEventHandlers()
         {
-            if (_registeredNMEventHandlers && _networkManagerPlugin)
+            if (_networkManagerPlugin)
             {
                 _networkManagerPlugin->Unregister(&_networkManagerNotification);
                 LOGINFO("INetworkManager::Unregister event unregistered");
-                _registeredNMEventHandlers = false;
             }
         }
 
