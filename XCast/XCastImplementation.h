@@ -37,6 +37,7 @@
 
 #include "libIBus.h"
 #include "PowerManagerInterface.h"
+#include <telemetry_busmessage_sender.h>
 
 
 #define SYSTEM_CALLSIGN "org.rdk.System"
@@ -187,6 +188,8 @@ namespace WPEFramework
                     void onActiveInterfaceChange(const string prevActiveInterface, const string currentActiveinterface) override
                     {
                         LOGINFO("Active interface changed [%s] -- > [%s]",prevActiveInterface.c_str(), currentActiveinterface.c_str());
+                        std::string value = "Active interface changed [" + prevActiveInterface + "] --> [" + currentActiveinterface + "]";
+                        t2_event_s("WIFI_INFO_ConnMode_split", value.c_str());
                         _parent.onActiveInterfaceChange(std::move(prevActiveInterface), std::move(currentActiveinterface));
                     }
 

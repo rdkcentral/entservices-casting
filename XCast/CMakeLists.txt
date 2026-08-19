@@ -83,6 +83,7 @@ endif (USE_THUNDER_R4)
 
 find_package(IARMBus)
 find_package(CEC)
+find_package(Telemetry)
 find_library(NMPROXY_LIB NAMES ${NAMESPACE}NetworkManagerProxy PATHS ${CMAKE_SYSROOT}/usr/lib/wpeframework/proxystubs)
 
 if (RDK_SERVICE_L2_TEST)
@@ -116,6 +117,11 @@ endif()
 set_source_files_properties(XCast.cpp PROPERTIES COMPILE_FLAGS "-fexceptions")
 
 target_link_libraries(${PLUGIN_IMPLEMENTATION} PUBLIC ${NAMESPACE}Plugins::${NAMESPACE}Plugins ${IARMBUS_LIBRARIES} ${GLIB_LIBRARIES} ${RFC_LIBRARIES})
+
+if(TELEMETRY_FOUND)
+    target_link_libraries(${PLUGIN_IMPLEMENTATION} PRIVATE ${TELEMETRY_LIBRARIES})
+    target_include_directories(${PLUGIN_IMPLEMENTATION} PRIVATE ${TELEMETRY_INCLUDE_DIRS})
+endif()
 
 install(TARGETS ${PLUGIN_IMPLEMENTATION}
         DESTINATION lib/${STORAGE_DIRECTORY}/plugins)
