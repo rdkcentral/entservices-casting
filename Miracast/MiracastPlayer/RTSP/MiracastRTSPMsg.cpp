@@ -863,7 +863,7 @@ bool MiracastRTSPMsg::wait_data_timeout(int m_Sockfd, unsigned int ms)
     }
     else if ( 0 == result )
     {
-        MIRACASTLOG_VERBOSE("select() timedout");
+        MIRACASTLOG_VERBOSE("select() timedout [%s]",strerror(errno));
     }
     else
     {
@@ -893,10 +893,15 @@ RTSP_STATUS MiracastRTSPMsg::receive_buffer_timedOut(int socket_fd, void *buffer
 
     if (recv_return <= 0)
     {
-        if (errno == EAGAIN || errno == EWOULDBLOCK)
+        if ((0 != recv_return) && (errno == EAGAIN || errno == EWOULDBLOCK))
         {
-            MIRACASTLOG_ERROR("error: recv timed out");
+            MIRACASTLOG_ERROR("error: recv timed out [%s]", strerror(errno));
             status = RTSP_TIMEDOUT;
+        }
+        else if (0 == recv_return)
+        {
+            MIRACASTLOG_ERROR("error: seems peer connection closed by source [%s]", strerror(errno));
+            status = RTSP_MSG_TEARDOWN_REQUEST;
         }
         else
         {
@@ -2143,6 +2148,11 @@ void MiracastRTSPMsg::RTSPMessageHandler_Thread(void *args)
                 {
                     reason = WPEFramework::Exchange::IMiracastPlayer::REASON_CODE_NEW_SRC_DEV_CONNECT_REQ;
                     MIRACASTLOG_INFO("#### MCAST-TRIAGE-OK-APP-STOP-ON-NEW-CONNECT APP REQUESTED TO STOP ON NEW CONNECTION ####");
+                }
+                else if ('\0' == rtsp_message_socket[0])
+                {
+                    MIRACASTLOG_INFO("#### MCAST-TRIAGE-OK-SRC_DEV-STOP SRC DEV EXITING FROM PEER ####");
+                    reason = WPEFramework::Exchange::IMiracastPlayer::REASON_CODE_RTSP_TIMEOUT;
                 }
             }
             else if ( RTSP_METHOD_NOT_SUPPORTED == status_code )
