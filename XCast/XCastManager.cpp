@@ -123,17 +123,22 @@ bool XCastManager::initialize(const std::string& gdial_interface_name, bool netw
          isFriendlyNameEnabled = true,
          isWolWakeEnableEnabled = true;
 
+    LOGINFO("PROFILE: initialize: Entering ...");
     if (gdial_interface_name.empty())
     {
         LOGERR("Interface Name should not be empty");
         return false;
     }
 
+    LOGINFO("PROFILE: initialize: waiting for m_mutexSync");
     lock_guard<recursive_mutex> lock(m_mutexSync);
+    LOGINFO("PROFILE: initialize: m_mutexSync acquired");
 #ifdef RFC_ENABLED
     RFC_ParamData_t param;
     WDMP_STATUS wdmpStatus = WDMP_SUCCESS;
+    LOGINFO("PROFILE: initialize: getRFCParameter[XDial.Enable] start");
     wdmpStatus = getRFCParameter(const_cast<char *>("XCastPlugin"), "Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.Feature.XDial.Enable", &param);
+    LOGINFO("PROFILE: initialize: getRFCParameter[XDial.Enable] done, status[%d]", wdmpStatus);
     if (wdmpStatus == WDMP_SUCCESS || wdmpStatus == WDMP_ERR_DEFAULT_VALUE)
     {
         if( param.type == WDMP_BOOLEAN )
@@ -144,7 +149,9 @@ bool XCastManager::initialize(const std::string& gdial_interface_name, bool netw
             }
         }
     }
+    LOGINFO("PROFILE: initialize: getRFCParameter[XDial.FriendlyNameEnable] start");
     wdmpStatus = getRFCParameter(const_cast<char *>("XCastPlugin"), "Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.Feature.XDial.FriendlyNameEnable", &param);
+    LOGINFO("PROFILE: initialize: getRFCParameter[XDial.FriendlyNameEnable] done, status[%d]", wdmpStatus);
     if (wdmpStatus == WDMP_SUCCESS || wdmpStatus == WDMP_ERR_DEFAULT_VALUE)
     {
         if( param.type == WDMP_BOOLEAN )
@@ -157,7 +164,9 @@ bool XCastManager::initialize(const std::string& gdial_interface_name, bool netw
             }
         }
     }
+    LOGINFO("PROFILE: initialize: getRFCParameter[XDial.WolWakeEnable] start");
     wdmpStatus = getRFCParameter(const_cast<char *>("XCastPlugin"), "Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.Feature.XDial.WolWakeEnable", &param);
+    LOGINFO("PROFILE: initialize: getRFCParameter[XDial.WolWakeEnable] done, status[%d]", wdmpStatus);
     if (wdmpStatus == WDMP_SUCCESS || wdmpStatus == WDMP_ERR_DEFAULT_VALUE)
     {
         if( param.type == WDMP_BOOLEAN )
@@ -170,7 +179,9 @@ bool XCastManager::initialize(const std::string& gdial_interface_name, bool netw
             }
         }
     }
+    LOGINFO("PROFILE: initialize: getRFCParameter[XDial.AppList] start");
     wdmpStatus = getRFCParameter(const_cast<char *>("XCastPlugin"), "Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.Feature.XDial.AppList", &param);
+    LOGINFO("PROFILE: initialize: getRFCParameter[XDial.AppList] done, status[%d]", wdmpStatus);
     if (wdmpStatus == WDMP_SUCCESS || wdmpStatus == WDMP_ERR_DEFAULT_VALUE)
     {
         if( param.type == WDMP_STRING )
@@ -178,9 +189,12 @@ bool XCastManager::initialize(const std::string& gdial_interface_name, bool netw
             m_defaultAppList = param.value;
         }
     }
+    LOGINFO("PROFILE: initialize: all RFC lookups completed");
 #endif //RFC_ENABLED
     std::string temp_interface = "";
+    LOGINFO("PROFILE: initialize: getGDialInterfaceName start");
     getGDialInterfaceName(temp_interface);
+    LOGINFO("PROFILE: initialize: getGDialInterfaceName done");
 
     if (0 == gdial_interface_name.compare("ETHERNET"))
     {
@@ -202,7 +216,9 @@ bool XCastManager::initialize(const std::string& gdial_interface_name, bool netw
 
     if (m_uuid.empty())
     {
+        LOGINFO("PROFILE: initialize: getReceiverID start");
         m_uuid = getReceiverID();
+        LOGINFO("PROFILE: initialize: getReceiverID done");
     }
 
     if (!m_uuid.empty())
@@ -213,10 +229,12 @@ bool XCastManager::initialize(const std::string& gdial_interface_name, bool netw
 
     if (m_modelName.empty())
     {
+        LOGINFO("PROFILE: initialize: envGetValue[MODEL_NUM] start");
         if (!(envGetValue("MODEL_NUM", m_modelName)))
         {
             LOGERR("MODEL_NUM not configured in device properties file");
         }
+        LOGINFO("PROFILE: initialize: envGetValue[MODEL_NUM] done");
     }
 
     if (!m_modelName.empty())
@@ -227,10 +245,12 @@ bool XCastManager::initialize(const std::string& gdial_interface_name, bool netw
 
     if (m_manufacturerName.empty())
     {
+        LOGINFO("PROFILE: initialize: envGetValue[MFG_NAME] start");
         if (!(envGetValue("MFG_NAME", m_manufacturerName)))
         {
             LOGERR("MFG_NAME not configured in device properties file");
         }
+        LOGINFO("PROFILE: initialize: envGetValue[MFG_NAME] done");
     }
 
     if (!m_manufacturerName.empty())
@@ -263,9 +283,12 @@ bool XCastManager::initialize(const std::string& gdial_interface_name, bool netw
         gdial_args.push_back("--feature-wolwake");
     }
 
+    LOGINFO("PROFILE: initialize: gdial args prepared");
     if (nullptr == gdialCastObj)
     {
+        LOGINFO("PROFILE: initialize: gdialService::getInstance start");
         gdialCastObj = gdialService::getInstance(this,gdial_args,"XCastOutofProcess");
+        LOGINFO("PROFILE: initialize: gdialService::getInstance done");
     }
 
     if (nullptr != gdialCastObj)

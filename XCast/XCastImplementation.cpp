@@ -175,14 +175,19 @@ namespace WPEFramework
             if(nullptr == m_xcast_manager)
             {
                 m_networkStandbyMode = networkStandbyMode;
+                                LOGINFO("PROFILE: Initialize: XCastManager::getInstance start");
                 m_xcast_manager  = XCastManager::getInstance();
+                                LOGINFO("PROFILE: Initialize: XCastManager::getInstance done");
                 if(nullptr != m_xcast_manager)
                 {
                     m_xcast_manager->setService(this);
+                                        LOGINFO("PROFILE: Initialize: connectToGDialService start");
                     if( false == connectToGDialService())
                     {
+                                                LOGINFO("PROFILE: Initialize: connectToGDialService failed, starting locate cast timer");
                         startTimer(LOCATE_CAST_FIRST_TIMEOUT_IN_MILLIS);
                     }
+                                        LOGINFO("PROFILE: Initialize: connectToGDialService done");
                 }
             }
             return Core::ERROR_NONE;
@@ -262,7 +267,9 @@ namespace WPEFramework
                 return Core::ERROR_GENERAL;
             }
 
-            uint32_t ret = m_SystemPluginObj->Invoke<JsonObject, JsonObject>(THUNDER_RPC_TIMEOUT, _T("getFriendlyName"), params, Result);
+              LOGINFO("PROFILE: updateSystemFriendlyName: getFriendlyName start");
+              uint32_t ret = m_SystemPluginObj->Invoke<JsonObject, JsonObject>(THUNDER_RPC_TIMEOUT, _T("getFriendlyName"), params, Result);
+              LOGINFO("PROFILE: updateSystemFriendlyName: getFriendlyName done, ret[%u]", ret);
 
             if (Core::ERROR_NONE == ret)
             {
@@ -348,14 +355,22 @@ namespace WPEFramework
             _service = service;
             _service->AddRef();
             ASSERT(service != nullptr);
+                        LOGINFO("PROFILE: Configure: InitializePowerManager start");
             InitializePowerManager(service);
+                        LOGINFO("PROFILE: Configure: InitializePowerManager done");
+                        LOGINFO("PROFILE: Configure: Initialize start");
             Initialize(m_networkStandbyMode);
+                        LOGINFO("PROFILE: Configure: Initialize done");
+                        LOGINFO("PROFILE: Configure: getSystemPlugin start");
             getSystemPlugin();
+                        LOGINFO("PROFILE: Configure: getSystemPlugin done");
             m_SystemPluginObj->Subscribe<JsonObject>(1000, "onFriendlyNameChanged", &XCastImplementation::onFriendlyNameUpdateHandler, this);
+                        LOGINFO("PROFILE: Configure: updateSystemFriendlyName start");
             if (Core::ERROR_NONE == updateSystemFriendlyName())
             {
                 LOGINFO("XCast::Initialize m_friendlyName:  %s\n ",m_friendlyName.c_str());
             }
+                        LOGINFO("PROFILE: Configure: updateSystemFriendlyName done");
             return result;
          }
 
@@ -363,16 +378,19 @@ namespace WPEFramework
         {
 
             LOGINFO("Connect the COM-RPC socket\n");
-            
+                        LOGINFO("PROFILE: InitializePowerManager: createInterface start");
             _powerManagerPlugin = PowerManagerInterfaceBuilder(_T("org.rdk.PowerManager"))
                 .withIShell(service)
                 .withRetryIntervalMS(200)
                 .withRetryCount(25)
                 .createInterface();
+                        LOGINFO("PROFILE: InitializePowerManager: createInterface done");
 
             if (_powerManagerPlugin) {
                 LOGINFO("PowerManagerInterfaceBuilder created successfully");
+                                LOGINFO("PROFILE: InitializePowerManager: checkPowerAndNetworkStandbyStates start");
                 checkPowerAndNetworkStandbyStates();
+                                LOGINFO("PROFILE: InitializePowerManager: checkPowerAndNetworkStandbyStates done");
             }
             else {
                 LOGERR("Failed to get PowerManager instance");
@@ -412,14 +430,18 @@ namespace WPEFramework
 
             ASSERT (_powerManagerPlugin);
             if (_powerManagerPlugin){
+                                LOGINFO("PROFILE: checkPowerAndNetworkStandbyStates: GetPowerState start");
                 retStatus = _powerManagerPlugin->GetPowerState(pwrStateCur, pwrStatePrev);
+                                LOGINFO("PROFILE: checkPowerAndNetworkStandbyStates: GetPowerState done, ret[%u]", retStatus);
                 if (Core::ERROR_NONE == retStatus)
                 {
                     m_powerState = pwrStateCur;
                     LOGINFO("m_powerState:%d", m_powerState);
                 }
 
-                retStatus = _powerManagerPlugin->GetNetworkStandbyMode(nwStandby);
+                                LOGINFO("PROFILE: checkPowerAndNetworkStandbyStates: GetNetworkStandbyMode start");
+                  retStatus = _powerManagerPlugin->GetNetworkStandbyMode(nwStandby);
+                                LOGINFO("PROFILE: checkPowerAndNetworkStandbyStates: GetNetworkStandbyMode done, ret[%u]", retStatus);
                 if (Core::ERROR_NONE == retStatus)
                 {
                     m_networkStandbyMode = nwStandby;
@@ -541,10 +563,14 @@ namespace WPEFramework
             std::string interface,ipaddress;
             bool status = false;
 
+                        LOGINFO("PROFILE: connectToGDialService: getDefaultNameAndIPAddress start");
             getDefaultNameAndIPAddress(interface,ipaddress);
+                        LOGINFO("PROFILE: connectToGDialService: getDefaultNameAndIPAddress done");
             if (!interface.empty())
             {
+                                LOGINFO("PROFILE: connectToGDialService: XCastManager::initialize start");
                 status = m_xcast_manager->initialize(interface,m_networkStandbyMode);
+                                LOGINFO("PROFILE: connectToGDialService: XCastManager::initialize done, status[%u]", status);
                 if( true == status)
                 {
                     m_activeInterfaceName = interface;
@@ -560,7 +586,9 @@ namespace WPEFramework
             JsonObject Params, Result, Params0, Result0;
             bool returnValue = false;
 
-            getThunderPlugins();
+                        LOGINFO("PROFILE: getDefaultNameAndIPAddress: getThunderPlugins start");
+                        getThunderPlugins();
+                        LOGINFO("PROFILE: getDefaultNameAndIPAddress: getThunderPlugins done");
 
             if (nullptr == m_NetworkPluginObj)
             {
@@ -568,7 +596,9 @@ namespace WPEFramework
                 return false;
             }
 
-            uint32_t ret = m_NetworkPluginObj->Invoke<JsonObject, JsonObject>(THUNDER_RPC_TIMEOUT, _T("getDefaultInterface"), Params0, Result0);
+                        LOGINFO("PROFILE: getDefaultNameAndIPAddress: getDefaultInterface start");
+                        uint32_t ret = m_NetworkPluginObj->Invoke<JsonObject, JsonObject>(THUNDER_RPC_TIMEOUT, _T("getDefaultInterface"), Params0, Result0);
+                        LOGINFO("PROFILE: getDefaultNameAndIPAddress: getDefaultInterface done, ret[%u]", ret);
             if (Core::ERROR_NONE == ret)
             {
                 if (Result0["success"].Boolean())
@@ -584,7 +614,9 @@ namespace WPEFramework
             Params.Set(_T("interface"), interface);
             Params.Set(_T("ipversion"), string("IPv4"));
 
-            ret = m_NetworkPluginObj->Invoke<JsonObject, JsonObject>(THUNDER_RPC_TIMEOUT, _T("getIPSettings"), Params, Result);
+                        LOGINFO("PROFILE: getDefaultNameAndIPAddress: getIPSettings start");
+                        ret = m_NetworkPluginObj->Invoke<JsonObject, JsonObject>(THUNDER_RPC_TIMEOUT, _T("getIPSettings"), Params, Result);
+                        LOGINFO("PROFILE: getDefaultNameAndIPAddress: getIPSettings done, ret[%u]", ret);
             if (Core::ERROR_NONE == ret)
             {
                 if (Result["success"].Boolean())
