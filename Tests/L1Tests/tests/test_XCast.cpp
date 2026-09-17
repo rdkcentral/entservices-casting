@@ -325,7 +325,7 @@ protected:
         : plugin(Core::ProxyType<Plugin::XCast>::Create())
         , mJsonRpcHandler(*(plugin))
         , INIT_CONX(1, 0)
-        , workerPool(Core::ProxyType<WorkerPoolImplementation>::Create(2, Core::Thread::DefaultStackSize(), 16))
+        , workerPool(Core::ProxyType<WorkerPoolImplementation>::Create(4, Core::Thread::DefaultStackSize(), 16))
     {
         PluginHost::IFactories::Assign(&factoriesImplementation);
         Core::IWorkerPool::Assign(&(*workerPool));
