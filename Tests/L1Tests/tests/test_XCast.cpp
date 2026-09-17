@@ -73,6 +73,10 @@ public:
     Core::hresult ChipSet(WPEFramework::Exchange::IDeviceInfo::DeviceChip& deviceChip) const override { return Core::ERROR_NONE; }
     Core::hresult FirmwareVersion(WPEFramework::Exchange::IDeviceInfo::FirmwareversionInfo& firmwareVersionInfo) const override { return Core::ERROR_NONE; }
     Core::hresult SystemInfo(WPEFramework::Exchange::IDeviceInfo::SystemInfos& systemInfo) const override { return Core::ERROR_NONE; }
+    Core::hresult OsName(WPEFramework::Exchange::IDeviceInfo::DeviceOsName& deviceOsName) const override { return Core::ERROR_NONE; }
+    Core::hresult OsName(const string& osName) override { return Core::ERROR_NONE; }
+    Core::hresult OsVersion(WPEFramework::Exchange::IDeviceInfo::DeviceOsVersion& deviceOsVersion) const override { return Core::ERROR_NONE; }
+    Core::hresult OsVersion(const string& osVersion) override { return Core::ERROR_NONE; }
     Core::hresult Addresses(WPEFramework::Exchange::IDeviceInfo::IAddressesInfoIterator*& addressesInfo) const override { return Core::ERROR_NONE; }
     Core::hresult EthMac(WPEFramework::Exchange::IDeviceInfo::EthernetMac& ethernetMac) const override { return Core::ERROR_NONE; }
     Core::hresult EstbMac(WPEFramework::Exchange::IDeviceInfo::StbMac& stbMac) const override { return Core::ERROR_NONE; }
