@@ -62,6 +62,8 @@ public:
     MOCK_METHOD(Core::hresult, SerialNumber, (WPEFramework::Exchange::IDeviceInfo::DeviceSerialNo& serialNumber), (const, override));
 
     // Stub implementations for other pure virtual methods from IDeviceInfo
+    Core::hresult DeviceId(WPEFramework::Exchange::IDeviceInfo::DeviceIdInfo& deviceIdInfo) const override { return Core::ERROR_NONE; }
+    Core::hresult HardwareId(WPEFramework::Exchange::IDeviceInfo::HardwareIdInfo& hardwareIdInfo) const override { return Core::ERROR_NONE; }
     Core::hresult Sku(WPEFramework::Exchange::IDeviceInfo::DeviceModelNo& deviceModelNo) const override { return Core::ERROR_NONE; }
     Core::hresult Make(WPEFramework::Exchange::IDeviceInfo::DeviceMake& deviceMake) const override { return Core::ERROR_NONE; }
     Core::hresult Model(WPEFramework::Exchange::IDeviceInfo::DeviceModel& deviceModel) const override { return Core::ERROR_NONE; }
