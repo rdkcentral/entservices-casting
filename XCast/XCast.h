@@ -74,7 +74,9 @@ namespace WPEFramework {
 						{
 							LOGINFO("[EVENT] appName[%s] strPayLoad[%s] strQuery[%s] strAddDataUrl[%s]",
 								appName.c_str(), strPayLoad.c_str(), strQuery.c_str(), strAddDataUrl.c_str());
+						    LOGINFO("Before Exchange::JXCast::Event::OnApplicationLaunchRequestWithParam");
 							Exchange::JXCast::Event::OnApplicationLaunchRequestWithParam(_parent, appName, strPayLoad, strQuery, strAddDataUrl);
+							LOGINFO("After Exchange::JXCast::Event::OnApplicationLaunchRequestWithParam");
 						}
 						virtual void OnApplicationLaunchRequest(const string& appName, const string& parameter) override
 						{
