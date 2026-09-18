@@ -673,6 +673,7 @@ TEST_F(XCastTest, onApplicationLaunchRequest)
         .Times(2)
         .WillOnce(::testing::Invoke(
             [&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+                TEST_LOG("*****First Submit() REACHED *****");
                 string text;
                 EXPECT_TRUE(json->ToString(text));
                 EXPECT_EQ(text, string(_T("{\"jsonrpc\":\"2.0\",\"method\":\"client.events.onApplicationLaunchRequest\",\"params\":{\"applicationName\":\"Youtube\",\"parameter\":\"http:\\/\\/youtube.com?myYouTube\"}}")));
@@ -682,6 +683,7 @@ TEST_F(XCastTest, onApplicationLaunchRequest)
             }))
         .WillOnce(::testing::Invoke(
             [&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+                TEST_LOG("***** SECOND Submit() REACHED *****");
                 string text;
                 EXPECT_TRUE(json->ToString(text));
                 EXPECT_EQ(text, string(_T("{\"jsonrpc\":\"2.0\",\"method\":\"client.events.onApplicationLaunchRequest\",\"params\":{\"applicationName\":\"Youtube\",\"strPayLoad\":\"youtube_payload\",\"strQuery\":\"source_type=12\",\"strAddDataUrl\":\"http:\\/\\/youtube.com\"}}")));
@@ -698,7 +700,9 @@ TEST_F(XCastTest, onApplicationLaunchRequest)
     gdialNotifier->onApplicationLaunchRequest("Youtube", "http://youtube.com?myYouTube");
     EXPECT_EQ(Core::ERROR_NONE, onLaunchRequest.Lock(5000));
     gdialNotifier->onApplicationLaunchRequestWithLaunchParam("Youtube", "youtube_payload", "source_type=12", "http://youtube.com");
+    TEST_LOG("After onApplicationLaunchRequestWithLaunchParam");
     EXPECT_EQ(Core::ERROR_NONE, onLaunchRequestParam.Lock(5000));
+    TEST_LOG("After onLaunchRequestParam.Lock");
 
     EVENT_UNSUBSCRIBE(0, _T("onApplicationLaunchRequest"), _T("client.events"), message);
 
