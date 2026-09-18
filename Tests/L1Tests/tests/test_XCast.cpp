@@ -701,7 +701,9 @@ TEST_F(XCastTest, onApplicationLaunchRequest)
     EXPECT_EQ(Core::ERROR_NONE, onLaunchRequest.Lock(5000));
     gdialNotifier->onApplicationLaunchRequestWithLaunchParam("Youtube", "youtube_payload", "source_type=12", "http://youtube.com");
     TEST_LOG("After onApplicationLaunchRequestWithLaunchParam");
-    EXPECT_EQ(Core::ERROR_NONE, onLaunchRequestParam.Lock(5000));
+    uint32_t result = onLaunchRequestParam.Lock(5000);
+    TEST_LOG("Lock returned: %u", result);
+    EXPECT_EQ(Core::ERROR_NONE, result);
     TEST_LOG("After onLaunchRequestParam.Lock");
 
     EVENT_UNSUBSCRIBE(0, _T("onApplicationLaunchRequest"), _T("client.events"), message);
