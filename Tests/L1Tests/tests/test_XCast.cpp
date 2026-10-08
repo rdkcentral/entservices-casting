@@ -22,7 +22,6 @@
 #include "XCast.h"
 
 #include "DispatcherMock.h"
-#include "DeviceInfoMock.h"
 #include "FactoriesImplementation.h"
 #include "ServiceMock.h"
 #include "ThunderPortability.h"
@@ -39,6 +38,7 @@
 #include "PowerManagerMock.h"
 #include "WorkerPoolImplementation.h"
 #include "XCastImplementation.h"
+#include <interfaces/IDeviceInfo.h>
 #include <sys/time.h>
 #include <future>
 #include <thread>
@@ -52,7 +52,53 @@ using ::testing::NiceMock;
 
 #define TEST_LOG(x, ...) fprintf(stderr, "\033[1;32m[%s:%d](%s)<PID:%d><TID:%d>" x "\n\033[0m", __FILE__, __LINE__, __FUNCTION__, getpid(), gettid(), ##__VA_ARGS__); fflush(stderr);
 
-using MockIDeviceInfo = DeviceInfoImplementationMock;
+// Mock class for IDeviceInfo interface
+class MockIDeviceInfo : public WPEFramework::Exchange::IDeviceInfo {
+public:
+    MockIDeviceInfo() : _refCount(1) {}
+    virtual ~MockIDeviceInfo() = default;
+
+    // Only mock the methods we actually use
+    MOCK_METHOD(Core::hresult, SerialNumber, (WPEFramework::Exchange::IDeviceInfo::DeviceSerialNo& serialNumber), (const, override));
+
+    // Stub implementations for other pure virtual methods from IDeviceInfo
+    Core::hresult Sku(WPEFramework::Exchange::IDeviceInfo::DeviceModelNo& deviceModelNo) const override { return Core::ERROR_NONE; }
+    Core::hresult Make(WPEFramework::Exchange::IDeviceInfo::DeviceMake& deviceMake) const override { return Core::ERROR_NONE; }
+    Core::hresult Model(WPEFramework::Exchange::IDeviceInfo::DeviceModel& deviceModel) const override { return Core::ERROR_NONE; }
+    Core::hresult DeviceType(WPEFramework::Exchange::IDeviceInfo::DeviceTypeInfos& deviceTypeInfos) const override { return Core::ERROR_NONE; }
+    Core::hresult SocName(WPEFramework::Exchange::IDeviceInfo::DeviceSoc& deviceSoc) const override { return Core::ERROR_NONE; }
+    Core::hresult DistributorId(WPEFramework::Exchange::IDeviceInfo::DeviceDistId& deviceDistId) const override { return Core::ERROR_NONE; }
+    Core::hresult Brand(WPEFramework::Exchange::IDeviceInfo::DeviceBrand& deviceBrand) const override { return Core::ERROR_NONE; }
+    Core::hresult ReleaseVersion(WPEFramework::Exchange::IDeviceInfo::DeviceReleaseVer& deviceReleaseVer) const override { return Core::ERROR_NONE; }
+    Core::hresult ChipSet(WPEFramework::Exchange::IDeviceInfo::DeviceChip& deviceChip) const override { return Core::ERROR_NONE; }
+    Core::hresult FirmwareVersion(WPEFramework::Exchange::IDeviceInfo::FirmwareversionInfo& firmwareVersionInfo) const override { return Core::ERROR_NONE; }
+    Core::hresult SystemInfo(WPEFramework::Exchange::IDeviceInfo::SystemInfos& systemInfo) const override { return Core::ERROR_NONE; }
+    Core::hresult Addresses(WPEFramework::Exchange::IDeviceInfo::IAddressesInfoIterator*& addressesInfo) const override { return Core::ERROR_NONE; }
+    Core::hresult EthMac(WPEFramework::Exchange::IDeviceInfo::EthernetMac& ethernetMac) const override { return Core::ERROR_NONE; }
+    Core::hresult EstbMac(WPEFramework::Exchange::IDeviceInfo::StbMac& stbMac) const override { return Core::ERROR_NONE; }
+    Core::hresult WifiMac(WPEFramework::Exchange::IDeviceInfo::WiFiMac& wiFiMac) const override { return Core::ERROR_NONE; }
+    Core::hresult EstbIp(WPEFramework::Exchange::IDeviceInfo::StbIp& stbIp) const override { return Core::ERROR_NONE; }
+    Core::hresult SupportedAudioPorts(WPEFramework::Exchange::IDeviceInfo::IStringIterator*& supportedAudioPorts, bool& success) const override { return Core::ERROR_NONE; }
+
+    // IUnknown interface methods - simple implementations
+    uint32_t AddRef() const override {
+        // Mock implementation - do nothing in tests
+        return 0;
+    }
+
+    uint32_t Release() const override {
+        // Mock implementation - return reference count
+        return Core::ERROR_NONE;
+    }
+
+    void* QueryInterface(const uint32_t interfaceNumber) override {
+        // Mock implementation
+        return nullptr;
+    }
+
+private:
+    mutable uint32_t _refCount;
+};
 
 // Template-based approach to access private methods for testing
 // This uses explicit template instantiation to access private members
@@ -1000,9 +1046,9 @@ TEST_F(XCastTest, onNetworkManagerEvents)
 
     ASSERT_NE(_networkManagerNotification, nullptr);
     _networkManagerNotification->onWiFiSignalQualityChange("myHomeSSID", -32, -106, 74, Exchange::INetworkManager::WIFI_SIGNAL_EXCELLENT);
-    _networkManagerNotification->onWiFiStateChange(Exchange::INetworkManager::WIFI_STATE_DISCONNECTED, "myHomeSSID");
+    _networkManagerNotification->onWiFiStateChange(Exchange::INetworkManager::WIFI_STATE_DISCONNECTED);
     _networkManagerNotification->onAvailableSSIDs("{\"AvailableSSIDs\":[{\"SSID\":\"myHomeSSID\",\"BSSID\":\"00:11:22:33:44:55\",\"SignalStrength\":\"-32\",\"Frequency\":\"2412\",\"Security\":\"WPA2-Personal\"},{\"SSID\":\"myOfficeSSID\",\"BSSID\":\"66:77:88:99:AA:BB\",\"SignalStrength\":\"-45\",\"Frequency\":\"2412\",\"Security\":\"WPA2-Enterprise\"}]}");
-    _networkManagerNotification->onInternetStatusChange(Exchange::INetworkManager::INTERNET_NOT_AVAILABLE, Exchange::INetworkManager::INTERNET_FULLY_CONNECTED, "eth0", "test");
+    _networkManagerNotification->onInternetStatusChange(Exchange::INetworkManager::INTERNET_NOT_AVAILABLE, Exchange::INetworkManager::INTERNET_FULLY_CONNECTED, "eth0");
     _networkManagerNotification->onInterfaceStateChange(Exchange::INetworkManager::INTERFACE_LINK_UP, "eth0");
     _networkManagerNotification->onIPAddressChange("eth0", "IPv4", "192.168.5.100", Exchange::INetworkManager::IP_ACQUIRED);
     sleep(1);
