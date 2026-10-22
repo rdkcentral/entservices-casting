@@ -41,7 +41,7 @@ cd ..
 
 git clone --branch develop https://github.com/rdkcentral/entservices-apis.git
 
-git clone --branch develop https://github.com/rdkcentral/entservices-testframework.git
+git clone --branch feature/RDKEMW-25013 https://github.com/rdkcentral/entservices-testframework.git
 
 git clone --branch main https://github.com/rdkcentral/networkmanager.git
 
@@ -89,6 +89,7 @@ echo "==========================================================================
 echo "buliding entservices-apis"
 cd entservices-apis
 rm -rf jsonrpc/DTV.json
+patch -p1 < $GITHUB_WORKSPACE/entservices-testframework/patches/RDKEMW-1007.patch
 cd ..
 
 cmake -G Ninja -S entservices-apis  -B build/entservices-apis \

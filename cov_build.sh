@@ -18,7 +18,6 @@ cmake -G Ninja -S "$GITHUB_WORKSPACE" -B build/entservices-casting \
 -DCMAKE_DISABLE_FIND_PACKAGE_RFC=ON \
 -DCOMCAST_CONFIG=OFF \
 -DRDK_SERVICES_COVERITY=ON \
--DRDK_SERVICES_L1_TEST=ON \
 -DPLUGIN_XCAST=ON \
 -DPLUGIN_MIRACAST=ON \
 -DCMAKE_CXX_FLAGS="-DEXCEPTIONS_ENABLE=ON \
@@ -28,12 +27,14 @@ cmake -G Ninja -S "$GITHUB_WORKSPACE" -B build/entservices-casting \
 -I ${GITHUB_WORKSPACE}/entservices-testframework/Tests/headers/rdk/iarmmgrs-hal \
 -I ${GITHUB_WORKSPACE}/entservices-testframework/Tests/headers/ccec/drivers \
 -I ${GITHUB_WORKSPACE}/entservices-testframework/Tests/headers/network \
+-I ${GITHUB_WORKSPACE}/entservices-casting/helpers \
 -I ${GITHUB_WORKSPACE}/entservices-testframework/Tests \
 -I ${GITHUB_WORKSPACE}/entservices-testframework/Tests/mocks \
 -I ${GITHUB_WORKSPACE}/entservices-testframework/Tests/mocks/thunder \
--I ${GITHUB_WORKSPACE}/entservices-testframework/Tests/mocks/devicesettings \
 -I ${GITHUB_WORKSPACE}/Thunder/Source \
 -I ${GITHUB_WORKSPACE}/Thunder/Source/core \
+-I ${GITHUB_WORKSPACE}/install/usr/include \
+-I ${GITHUB_WORKSPACE}/install/usr/include/WPEFramework \
 -I /usr/include/libdrm \
 -include ${GITHUB_WORKSPACE}/entservices-testframework/Tests/mocks/Iarm.h \
 -include ${GITHUB_WORKSPACE}/entservices-testframework/Tests/mocks/Rfc.h \
