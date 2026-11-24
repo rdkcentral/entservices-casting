@@ -146,6 +146,13 @@ touch gdialservicecommon.h
 echo "files created successfully"
 echo "======================================================================================"
 
+# Create mock libraries for Coverity build
+install -d /usr/lib/wpeframework/proxystubs /usr/lib
+cc -shared -x c -o /usr/lib/wpeframework/proxystubs/libWPEFrameworkNetworkManagerProxy.so /dev/null
+cc -shared -x c -o /usr/lib/libgdial-server.so /dev/null
+echo "mock libraries created successfully"
+echo "======================================================================================"
+
 cd ../../
 cp -r /usr/include/gstreamer-1.0/gst /usr/include/glib-2.0/* /usr/lib/x86_64-linux-gnu/glib-2.0/include/* /usr/local/include/trower-base64/base64.h .
 cp -v $GITHUB_WORKSPACE/networkmanager/interface/INetworkManager.h $GITHUB_WORKSPACE/install/usr/include/WPEFramework/interfaces/
