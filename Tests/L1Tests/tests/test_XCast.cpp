@@ -79,6 +79,12 @@ public:
     Core::hresult WifiMac(WPEFramework::Exchange::IDeviceInfo::WiFiMac& wiFiMac) const override { return Core::ERROR_NONE; }
     Core::hresult EstbIp(WPEFramework::Exchange::IDeviceInfo::StbIp& stbIp) const override { return Core::ERROR_NONE; }
     Core::hresult SupportedAudioPorts(WPEFramework::Exchange::IDeviceInfo::IStringIterator*& supportedAudioPorts, bool& success) const override { return Core::ERROR_NONE; }
+    Core::hresult DeviceId(WPEFramework::Exchange::IDeviceInfo::DeviceIdInfo& deviceIdInfo) const override { return Core::ERROR_NONE; }
+    Core::hresult HardwareId(WPEFramework::Exchange::IDeviceInfo::HardwareIdInfo& hardwareIdInfo) const override { return Core::ERROR_NONE; }
+    Core::hresult OsName(WPEFramework::Exchange::IDeviceInfo::DeviceOsName& deviceOsName) const override { return Core::ERROR_NONE; }
+    Core::hresult OsName(const string& osName) override { return Core::ERROR_NONE; }
+    Core::hresult OsVersion(WPEFramework::Exchange::IDeviceInfo::DeviceOsVersion& deviceOsVersion) const override { return Core::ERROR_NONE; }
+    Core::hresult OsVersion(const string& osVersion) override { return Core::ERROR_NONE; }
 
     // IUnknown interface methods - simple implementations
     uint32_t AddRef() const override {
@@ -678,13 +684,14 @@ TEST_F(XCastTest, onApplicationLaunchRequest)
             [&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
                 string text;
                 EXPECT_TRUE(json->ToString(text));
-                EXPECT_EQ(text, string(_T("{\"jsonrpc\":\"2.0\",\"method\":\"client.events.onApplicationLaunchRequest\",\"params\":{\"applicationName\":\"Youtube\",\"strPayLoad\":\"youtube_payload\",\"strQuery\":\"source_type=12\",\"strAddDataUrl\":\"http:\\/\\/youtube.com\"}}")));
+                EXPECT_EQ(text, string(_T("{\"jsonrpc\":\"2.0\",\"method\":\"client.events.onApplicationLaunchRequestWithParam\",\"params\":{\"applicationName\":\"Youtube\",\"strPayLoad\":\"youtube_payload\",\"strQuery\":\"source_type=12\",\"strAddDataUrl\":\"http:\\/\\/youtube.com\"}}")));
                 TEST_LOG("LaunchRequest with param event received");
                 onLaunchRequestParam.SetEvent();
                 return Core::ERROR_NONE;
             }));
 
     EVENT_SUBSCRIBE(0, _T("onApplicationLaunchRequest"), _T("client.events"), message);
+    EVENT_SUBSCRIBE(0, _T("onApplicationLaunchRequestWithParam"), _T("client.events"), message);
 
     GDialNotifier* gdialNotifier = gdialService::getObserverHandle();
     ASSERT_NE(gdialNotifier, nullptr);
@@ -694,6 +701,7 @@ TEST_F(XCastTest, onApplicationLaunchRequest)
     gdialNotifier->onApplicationLaunchRequestWithLaunchParam("Youtube", "youtube_payload", "source_type=12", "http://youtube.com");
     EXPECT_EQ(Core::ERROR_NONE, onLaunchRequestParam.Lock(5000));
 
+    EVENT_UNSUBSCRIBE(0, _T("onApplicationLaunchRequestWithParam"), _T("client.events"), message);
     EVENT_UNSUBSCRIBE(0, _T("onApplicationLaunchRequest"), _T("client.events"), message);
 
     if (Core::ERROR_NONE == status)
@@ -1046,9 +1054,9 @@ TEST_F(XCastTest, onNetworkManagerEvents)
 
     ASSERT_NE(_networkManagerNotification, nullptr);
     _networkManagerNotification->onWiFiSignalQualityChange("myHomeSSID", -32, -106, 74, Exchange::INetworkManager::WIFI_SIGNAL_EXCELLENT);
-    _networkManagerNotification->onWiFiStateChange(Exchange::INetworkManager::WIFI_STATE_DISCONNECTED);
+    _networkManagerNotification->onWiFiStateChange(Exchange::INetworkManager::WIFI_STATE_DISCONNECTED, "myHomeSSID");
     _networkManagerNotification->onAvailableSSIDs("{\"AvailableSSIDs\":[{\"SSID\":\"myHomeSSID\",\"BSSID\":\"00:11:22:33:44:55\",\"SignalStrength\":\"-32\",\"Frequency\":\"2412\",\"Security\":\"WPA2-Personal\"},{\"SSID\":\"myOfficeSSID\",\"BSSID\":\"66:77:88:99:AA:BB\",\"SignalStrength\":\"-45\",\"Frequency\":\"2412\",\"Security\":\"WPA2-Enterprise\"}]}");
-    _networkManagerNotification->onInternetStatusChange(Exchange::INetworkManager::INTERNET_NOT_AVAILABLE, Exchange::INetworkManager::INTERNET_FULLY_CONNECTED, "eth0");
+    _networkManagerNotification->onInternetStatusChange(Exchange::INetworkManager::INTERNET_NOT_AVAILABLE, Exchange::INetworkManager::INTERNET_FULLY_CONNECTED, "eth0", "test");
     _networkManagerNotification->onInterfaceStateChange(Exchange::INetworkManager::INTERFACE_LINK_UP, "eth0");
     _networkManagerNotification->onIPAddressChange("eth0", "IPv4", "192.168.5.100", Exchange::INetworkManager::IP_ACQUIRED);
     sleep(1);
